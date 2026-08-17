@@ -6,7 +6,7 @@ nothing touches LinkedIn. Set `DRY_RUN=false` only for the single happy-path
 verification, then flip it back.
 
 ```bash
-# standalone smoke test (from the phase root)
+# standalone smoke test (from the repo root)
 DRY_RUN=true uv run python mcp/linkedin_server.py   # then speak MCP over stdio, or:
 npx @modelcontextprotocol/inspector uv run python mcp/linkedin_server.py
 ```

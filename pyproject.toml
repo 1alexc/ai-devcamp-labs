@@ -1,5 +1,5 @@
 [project]
-name = "adk-devcamp-reference"
+name = "social-spark"
 version = "0.1.0"
 requires-python = ">=3.12"
 # Versions pinned exactly (go/no-go #4: agent frameworks move fast; codelab must reproduce).

@@ -1,7 +1,7 @@
 # Setup guide: Model Armor + DLP for the guardrails
 
-Phase 5's guardrails call two Google Cloud services. Both were enabled in
-Phase 0 (`modelarmor.googleapis.com`, `dlp.googleapis.com`); this guide creates
+Week 3's guardrails call two Google Cloud services. Both were enabled during
+initial setup (`modelarmor.googleapis.com`, `dlp.googleapis.com`); this guide creates
 the Model Armor template and points the app at it.
 
 ## 1. Create the Model Armor template
@@ -35,7 +35,7 @@ MODEL_ARMOR_REGION=europe-west2
 ```
 
 Leaving `MODEL_ARMOR_TEMPLATE_ID` **blank** turns off all three guardrail
-layers — the app reverts to Phase 4 behaviour. That's the switch for a
+layers — the app reverts to Week 2 behaviour. That's the switch for a
 before/after demo.
 
 ## 3. The quota-project gotcha (both services)

@@ -1,10 +1,11 @@
-# ADK DevCamp — Reference Implementation
+# Social Spark — Reference Implementation
 
 **This is a reference, not a starting point.** Workshop 1 has you build a
 smaller version of this agent yourself, step by step, in the
-[codelab](../adk-devcamp-poc) — an orchestrator that researches, drafts with
-Agent Skills, generates an image, and publishes through Buffer or LinkedIn
-behind a human-approval gate, with a CopilotKit web UI on top.
+[codelab](docs/agentic-devcamp-workshop-1.html) — an orchestrator that
+researches, drafts with Agent Skills, generates an image, and publishes
+through Buffer or LinkedIn behind a human-approval gate, with a CopilotKit
+web UI on top.
 
 Consult this repo if you get stuck or want to see the fully governed,
 production-tuned version further down the DevCamp road: guardrails
@@ -47,7 +48,7 @@ flowchart LR
 Each agent's model is env-driven (`RESEARCH_MODEL`, `DRAFT_MODEL`,
 `ORCHESTRATOR_MODEL`), defaulting to flash. The Week 4 experiment — drop
 research + orchestrator to `flash-lite`, keep drafting on `flash` — runs
-through the Phase 5 eval set to check quality parity. **Update 2026-08-14: it
+through the Week 3 eval set to check quality parity. **Update 2026-08-14: it
 does not reliably hold** — two repeat runs on unchanged code scored 2/5 and
 4/5, both times failing `on_brand_draft` (the drafted text itself, not the
 tool-use process, misses the semantic bar). The all-flash baseline passes
@@ -66,7 +67,7 @@ DRAFT_MODEL=gemini-flash-latest
 ### Deploy + observability (console/CLI guides)
 
 ```
-docs/cloud-run-deploy.md    scaffold → IAM → deploy → eval-gated CI/CD → the one real post
+docs/cloud-run-deploy.md    Dockerfile/cloudbuild.yaml → IAM → deploy → eval-gated CI/CD → the one real post
 docs/observability.md       Cloud Trace slowest-span · BigQuery analytics agent
 ```
 
@@ -99,7 +100,7 @@ live and show whatever it actually says; don't state parity as settled.
 
 ## Notes
 
-- Nothing about the app's *behaviour* changed this phase — same governed
-  multi-agent system as Phase 5. Phase 6 is packaging and tuning only, which is
-  exactly why the Phase 5 eval set is the right parity check.
+- Nothing about the app's *behaviour* changed this week — same governed
+  multi-agent system as Week 3. Week 4 is packaging and tuning only, which is
+  exactly why the Week 3 eval set is the right parity check.
 - `DRY_RUN=true` stays the default everywhere, including deployed secrets.

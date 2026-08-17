@@ -12,7 +12,7 @@ Each request fans out into spans: orchestrator → `memory_agent` (remote A2A
 hop) → `research_agent` → `draft_agent` → `create_post`. **Identify the slowest
 span** — on this pipeline it's almost always either the A2A memory hop (network
 + a full RAG retrieval) or `research_agent` (google_search grounding). That
-tells you where the Phase 6 model-downgrade or a caching change would pay off.
+tells you where the Week 4 model-downgrade or a caching change would pay off.
 📸 Trace waterfall screenshot = Week 4 latency slide.
 
 > Tip: the Model Armor guardrail calls show up as their own spans too. If
@@ -24,7 +24,7 @@ tells you where the Phase 6 model-downgrade or a caching change would pay off.
 For debugging what the model actually saw/said in prod, enable ADK's
 prompt-response logging (see the ADK observability docs). Keep in mind these
 logs may contain user content — apply the same DLP thinking to log retention
-that Phase 5 applies to posts.
+that Week 3 applies to posts.
 
 ## 3. BigQuery Agent Analytics
 
@@ -61,8 +61,8 @@ For this app, the three numbers worth watching in prod:
 
 1. **Guardrail refusal rate** — how often `guard_input` blocks a turn. A spike
    means either an attack or a false-positive regression (remember the fuzzy PI
-   filter from Phase 5).
+   filter from Week 3).
 2. **Approval → post conversion** — how many drafts actually get approved. Low
    conversion means drafting quality, not infra.
-3. **Cost per completed post** — ties the Phase 6 model mix back to money; this
+3. **Cost per completed post** — ties the Week 4 model mix back to money; this
    is the number that justifies flash-lite on research/orchestrator.

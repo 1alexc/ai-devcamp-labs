@@ -1,6 +1,6 @@
 # Setup guide: the real memory agent (Agent Garden RAG → Agent Engine)
 
-Phase 4's `memory_agent` is any A2A-speaking agent that knows your past posts.
+Week 2's `memory_agent` is any A2A-speaking agent that knows your past posts.
 For local dev you can run the mock (`uv run python backend/mock_memory_agent.py`)
 — this guide is for deploying the real thing. All console steps; ⏱ **time the
 deploy and note any IAM friction** — both numbers go in the codelab.
@@ -21,7 +21,7 @@ deploy and note any IAM friction** — both numbers go in the codelab.
 ## 2. Load your real past posts
 
 1. The deploy creates (or asks you to create) a **Discovery Engine datastore**
-   (the API was enabled in Phase 0).
+   (the API was enabled during initial setup).
 2. Upload **3–5 of your real past posts** as plain-text or PDF documents —
    copy-paste each post into its own `.txt` file first.
 3. Wait for indexing (minutes, not seconds — grab a coffee, note the time).

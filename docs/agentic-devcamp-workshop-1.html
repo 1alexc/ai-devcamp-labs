@@ -1,0 +1,1172 @@
+<meta charset="utf-8">
+<title>Agentic DevCamp Workshop 1</title>
+<style>
+  /* ---------- tokens ---------- */
+  :root {
+    --bg: #fafbfc;
+    --bg-panel: #ffffff;
+    --bg-sidebar: #f3f5f8;
+    --bg-sidebar-hover: #e9edf3;
+    --border: #dde1e6;
+    --border-soft: #e8eaee;
+    --text: #1f2430;
+    --text-muted: #5f6672;
+    --text-faint: #8a909b;
+    --accent: #1a73e8;
+    --accent-hover: #1558b0;
+    --accent-soft: #e8f0fe;
+    --red: #c5221f;
+    --red-soft: #fce8e6;
+    --yellow: #a15c00;
+    --yellow-soft: #fef7e0;
+    --green: #137333;
+    --green-soft: #e6f4ea;
+    --code-bg: #12161c;
+    --code-text: #e3e6ea;
+    --code-comment: #7c8a9c;
+    --code-border: #262b33;
+    --shadow: 0 1px 2px rgba(20, 24, 32, 0.06), 0 2px 12px rgba(20, 24, 32, 0.05);
+    --font-display: -apple-system, "Google Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-body: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171c;
+      --bg-panel: #1a1e24;
+      --bg-sidebar: #101317;
+      --bg-sidebar-hover: #1d222a;
+      --border: #2a2f37;
+      --border-soft: #242830;
+      --text: #e7e9ec;
+      --text-muted: #a7adb6;
+      --text-faint: #767c86;
+      --accent: #8ab4f8;
+      --accent-hover: #aecbfa;
+      --accent-soft: rgba(138, 180, 248, 0.14);
+      --red: #f28b82;
+      --red-soft: rgba(242, 139, 130, 0.12);
+      --yellow: #fdd663;
+      --yellow-soft: rgba(253, 214, 99, 0.1);
+      --green: #81c995;
+      --green-soft: rgba(129, 201, 149, 0.12);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 16px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171c;
+    --bg-panel: #1a1e24;
+    --bg-sidebar: #101317;
+    --bg-sidebar-hover: #1d222a;
+    --border: #2a2f37;
+    --border-soft: #242830;
+    --text: #e7e9ec;
+    --text-muted: #a7adb6;
+    --text-faint: #767c86;
+    --accent: #8ab4f8;
+    --accent-hover: #aecbfa;
+    --accent-soft: rgba(138, 180, 248, 0.14);
+    --red: #f28b82;
+    --red-soft: rgba(242, 139, 130, 0.12);
+    --yellow: #fdd663;
+    --yellow-soft: rgba(253, 214, 99, 0.1);
+    --green: #81c995;
+    --green-soft: rgba(129, 201, 149, 0.12);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; color: var(--text); margin: 0; }
+  a { color: var(--accent); }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  ul, ol { margin: 0 0 14px; padding-left: 1.3em; }
+  li { margin-bottom: 6px; max-width: 64ch; }
+  code { font-family: var(--font-mono); font-size: 0.87em; background: var(--accent-soft); color: var(--accent-hover); padding: 0.1em 0.4em; border-radius: 4px; }
+
+  /* ---------- progress bar ---------- */
+  .progress-track {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--border-soft); z-index: 50;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent); width: 0%;
+    transition: width 0.35s ease;
+  }
+
+  /* ---------- shell ---------- */
+  .shell { display: flex; min-height: 100vh; padding-top: 3px; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar {
+    width: 292px; flex: none; background: var(--bg-sidebar);
+    border-right: 1px solid var(--border); padding: 22px 14px 18px;
+    position: sticky; top: 3px; align-self: flex-start; height: calc(100vh - 3px);
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px 10px; }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 8px; flex: none;
+    background: conic-gradient(from 200deg, var(--accent), var(--green), var(--yellow), var(--red), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .brand-text { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 11.5px; color: var(--text-faint); letter-spacing: 0.02em; }
+
+  .step-nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .step-nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    border-left: 3px solid transparent;
+    color: var(--text-muted); font-size: 13.6px;
+  }
+  .step-nav-item:hover { background: var(--bg-sidebar-hover); color: var(--text); }
+  .step-nav-item.active { background: var(--accent-soft); color: var(--accent-hover); border-left-color: var(--accent); font-weight: 600; }
+  .step-nav-item.done .step-dot { background: var(--green); color: #fff; border-color: var(--green); }
+  .step-dot {
+    width: 20px; height: 20px; border-radius: 50%; flex: none;
+    border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 10.5px; font-weight: 700; color: var(--text-faint); background: var(--bg-panel);
+  }
+  .step-nav-item.active .step-dot { border-color: var(--accent); color: var(--accent-hover); }
+  .step-label-group { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .step-dur { font-size: 10.8px; color: var(--text-faint); }
+  .step-nav-item.optional .step-label::after {
+    content: "optional"; margin-left: 6px; font-size: 9.5px; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--yellow); border: 1px solid var(--yellow); border-radius: 4px;
+    padding: 1px 4px; vertical-align: middle;
+  }
+
+  .sidebar-foot {
+    margin-top: auto; padding: 12px 10px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-faint); line-height: 1.5;
+  }
+  .sidebar-foot a { color: var(--text-muted); text-decoration: underline; text-decoration-color: var(--border); }
+
+  /* ---------- main ---------- */
+  .main { flex: 1; min-width: 0; display: flex; justify-content: center; }
+  .content-col { width: 100%; max-width: 760px; padding: 48px 40px 40px; }
+
+  .step-panel { display: none; }
+  .step-panel.active { display: block; animation: fade-in 0.25s ease; }
+  @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .eyebrow .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--accent-soft); color: var(--accent-hover); border-radius: 5px;
+    padding: 2px 8px; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .eyebrow .pill.optional { background: var(--yellow-soft); color: var(--yellow); }
+  .eyebrow .dur { color: var(--text-faint); font-weight: 500; letter-spacing: 0.01em; }
+
+  .step-title { font-size: 28px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 18px; }
+  .step-panel h3 { font-size: 18.5px; font-weight: 700; margin: 30px 0 12px; letter-spacing: -0.01em; }
+  .step-panel h3:first-of-type { margin-top: 4px; }
+  .step-panel h4 { font-size: 14.5px; font-weight: 700; margin: 20px 0 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; font-family: var(--font-body); }
+
+  .lede { font-size: 16.5px; color: var(--text-muted); margin-bottom: 22px; }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 16px 0;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout-label {
+    display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; margin-bottom: 5px; color: var(--accent-hover);
+  }
+  .callout.warn { border-left-color: var(--red); background: var(--red-soft); }
+  .callout.warn .callout-label { color: var(--red); }
+  .callout.tip { border-left-color: var(--yellow); background: var(--yellow-soft); }
+  .callout.tip .callout-label { color: var(--yellow); }
+  .callout.check { border-left-color: var(--green); background: var(--green-soft); }
+  .callout.check .callout-label { color: var(--green); }
+
+  /* ---------- code ---------- */
+  .code-block { position: relative; margin: 14px 0 18px; border-radius: 10px; overflow: hidden; border: 1px solid var(--code-border); box-shadow: var(--shadow); }
+  .code-head {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #1a1f27; padding: 7px 12px; font-size: 11px; color: var(--code-comment);
+    font-family: var(--font-mono); letter-spacing: 0.02em; border-bottom: 1px solid var(--code-border);
+  }
+  .copy-btn {
+    background: transparent; border: 1px solid var(--code-border); color: var(--code-comment);
+    font-family: var(--font-body); font-size: 11px; padding: 3px 9px; border-radius: 5px; cursor: pointer;
+  }
+  .copy-btn:hover { color: var(--code-text); border-color: var(--code-comment); }
+  pre { margin: 0; background: var(--code-bg); padding: 14px 16px; overflow-x: auto; }
+  pre code { background: none; padding: 0; color: var(--code-text); font-size: 12.8px; line-height: 1.62; white-space: pre; }
+  .cm { color: var(--code-comment); }
+
+  /* ---------- tree ---------- */
+  .tree { font-family: var(--font-mono); font-size: 12.8px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; white-space: pre; overflow-x: auto; color: var(--text-muted); }
+
+  /* ---------- table ---------- */
+  .tbl-wrap { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.6px; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+  th { background: var(--bg-sidebar); font-weight: 700; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ---------- checkpoint list ---------- */
+  .checklist { list-style: none; padding: 0; margin: 14px 0 20px; display: flex; flex-direction: column; gap: 8px; }
+  .checklist li { display: flex; gap: 10px; align-items: flex-start; margin: 0; }
+  .checklist li::before { content: "✓"; color: var(--green); font-weight: 700; flex: none; margin-top: 1px; }
+
+  /* ---------- nav footer ---------- */
+  .step-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border);
+  }
+  .nav-btn {
+    font-family: var(--font-body); font-weight: 600; font-size: 14px; cursor: pointer;
+    border-radius: 8px; padding: 10px 18px; border: 1px solid var(--border); background: var(--bg-panel);
+    color: var(--text); display: inline-flex; align-items: center; gap: 6px;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent-hover); }
+  .nav-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+  .nav-btn:disabled { opacity: 0.35; cursor: default; }
+  .nav-btn:disabled:hover { border-color: var(--border); color: var(--text); }
+
+  /* ---------- given vs write table chips ---------- */
+  .chip { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; border-radius: 5px; padding: 2px 7px; }
+  .chip.given { background: var(--border-soft); color: var(--text-muted); }
+  .chip.write { background: var(--accent-soft); color: var(--accent-hover); }
+
+  /* ---------- figure / svg diagrams ---------- */
+  figure.diagram { margin: 20px 0 24px; padding: 18px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  figure.diagram svg { width: 100%; height: auto; display: block; color: var(--text); }
+  figure.diagram figcaption { margin-top: 10px; font-size: 12.5px; color: var(--text-faint); text-align: center; }
+  .accent-fill { fill: var(--accent); }
+  .accent-stroke { stroke: var(--accent); }
+  .green-stroke { stroke: var(--green); }
+  .green-fill { fill: var(--green); }
+  .yellow-stroke { stroke: var(--yellow); }
+  .red-stroke { stroke: var(--red); }
+  .muted-stroke { stroke: var(--text-faint); }
+  .soft-fill { fill: var(--bg-sidebar); }
+
+  /* ---------- mock UI ---------- */
+  .mock-stepper { display: flex; gap: 4px; margin: 16px 0 20px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); overflow-x: auto; }
+  .mock-stage { flex: 1; min-width: 84px; text-align: center; font-size: 11px; color: var(--text-faint); }
+  .mock-stage .dot { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-sidebar); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 14px; }
+  .mock-stage.done .dot { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+  .mock-stage.current .dot { background: var(--accent-soft); border-color: var(--accent); }
+  .mock-stage.done, .mock-stage.current { color: var(--text); font-weight: 600; }
+
+  /* ---------- mobile ---------- */
+  .mobile-topnav { display: none; }
+  @media (max-width: 880px) {
+    .sidebar { display: none; }
+    .mobile-topnav {
+      display: flex; gap: 6px; overflow-x: auto; position: sticky; top: 3px; z-index: 40;
+      background: var(--bg-sidebar); border-bottom: 1px solid var(--border); padding: 10px 12px;
+    }
+    .mobile-topnav button {
+      flex: none; font-family: var(--font-body); font-size: 12.5px; padding: 6px 12px; border-radius: 20px;
+      border: 1px solid var(--border); background: var(--bg-panel); color: var(--text-muted); cursor: pointer; white-space: nowrap;
+    }
+    .mobile-topnav button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    .content-col { padding: 28px 20px 32px; }
+    .step-title { font-size: 23px; }
+  }
+</style>
+
+<div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">✨</div>
+      <div>
+        <div class="brand-text">Social Spark</div>
+        <div class="brand-sub">Agentic DevCamp · Workshop 1</div>
+      </div>
+    </div>
+    <ol class="step-nav" id="stepNav"></ol>
+    <div class="sidebar-foot">
+      Stuck? The finished build lives in <code>social-spark-ref</code>, a reference to consult, not a starting point.
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="content-col">
+
+      <nav class="mobile-topnav" id="mobileNav"></nav>
+
+      <!-- ================= OVERVIEW ================= -->
+      <section class="step-panel" data-step="0">
+        <div class="eyebrow"><span class="pill">Overview</span></div>
+        <h1 class="step-title">Build Social Spark</h1>
+        <p class="lede">An ADK agent that turns an idea into a researched, on-brand, illustrated social post, approved by you, then published for real, all wrapped in a web app you didn't have to build.</p>
+
+        <p>Today you write a real ADK backend: an orchestrating agent with a hand-written tool, four Agent Skills (you author one yourself), an isolated research sub-agent, and a live MCP connection to Buffer that actually publishes what you approve. Then you wire up a CopilotKit frontend that's given to you, but you'll open the two files that make it <em>talk</em> to ADK, because that connection is the whole point of Step 8.</p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 720 300" role="img" aria-label="Idea flows into the social_poster orchestrator agent, which uses skills, an image tool, and an isolated web-research agent to build a draft; the draft passes through an approval gate before publishing via Buffer (primary) or LinkedIn (optional bonus).">
+            <defs>
+              <marker id="ov-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <!-- idea -->
+            <text x="34" y="70" font-size="12.5" fill="currentColor">💡 You</text>
+            <line x1="30" y1="80" x2="30" y2="118" stroke="currentColor" stroke-width="1.4" marker-end="url(#ov-arrow)"/>
+            <text x="40" y="105" font-size="10.5" fill="currentColor" opacity="0.65">idea</text>
+
+            <!-- orchestrator box -->
+            <rect x="10" y="118" width="150" height="52" rx="10" class="accent-stroke" fill="none" stroke-width="1.6"/>
+            <text x="85" y="140" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">social_poster</text>
+            <text x="85" y="156" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.65">orchestrator agent</text>
+
+            <!-- tools below, three boxes -->
+            <line x1="85" y1="170" x2="85" y2="188" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="85" y1="188" x2="30" y2="188" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="85" y1="188" x2="85" y2="188" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="85" y1="188" x2="140" y2="188" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="30" y1="188" x2="30" y2="200" stroke="currentColor" stroke-width="1.2" marker-end="url(#ov-arrow)"/>
+            <line x1="85" y1="188" x2="85" y2="200" stroke="currentColor" stroke-width="1.2" marker-end="url(#ov-arrow)"/>
+            <line x1="140" y1="188" x2="140" y2="200" stroke="currentColor" stroke-width="1.2" marker-end="url(#ov-arrow)"/>
+
+            <rect x="2" y="200" width="56" height="40" rx="7" class="muted-stroke" fill="none" stroke-width="1.2"/>
+            <text x="30" y="216" font-size="8.6" text-anchor="middle" fill="currentColor">Skills</text>
+            <text x="30" y="228" font-size="7.6" text-anchor="middle" fill="currentColor" opacity="0.6">on demand</text>
+
+            <rect x="60" y="200" width="56" height="40" rx="7" class="muted-stroke" fill="none" stroke-width="1.2"/>
+            <text x="88" y="216" font-size="8.6" text-anchor="middle" fill="currentColor">generate</text>
+            <text x="88" y="226" font-size="8.6" text-anchor="middle" fill="currentColor">_image</text>
+
+            <rect x="118" y="200" width="60" height="40" rx="7" class="muted-stroke" fill="none" stroke-width="1.2"/>
+            <text x="148" y="214" font-size="8.4" text-anchor="middle" fill="currentColor">web_</text>
+            <text x="148" y="224" font-size="8.4" text-anchor="middle" fill="currentColor">researcher</text>
+            <text x="148" y="234" font-size="7.2" text-anchor="middle" fill="currentColor" opacity="0.6">(isolated)</text>
+
+            <!-- arrow to gate -->
+            <line x1="160" y1="144" x2="264" y2="144" stroke="currentColor" stroke-width="1.4" marker-end="url(#ov-arrow)"/>
+            <text x="212" y="136" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">draft shown</text>
+
+            <!-- gate diamond -->
+            <polygon points="326,108 388,144 326,180 264,144" class="yellow-stroke" fill="none" stroke-width="1.6"/>
+            <text x="326" y="140" font-size="10.5" text-anchor="middle" font-weight="700" fill="currentColor">approval</text>
+            <text x="326" y="153" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">gate</text>
+
+            <!-- to buffer -->
+            <line x1="388" y1="144" x2="470" y2="102" stroke="currentColor" stroke-width="1.5" marker-end="url(#ov-arrow)"/>
+            <text x="430" y="94" font-size="9.5" fill="currentColor" opacity="0.75">approved</text>
+            <rect x="472" y="72" width="130" height="52" rx="10" class="green-stroke" fill="none" stroke-width="1.6"/>
+            <text x="537" y="94" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Buffer MCP</text>
+            <text x="537" y="109" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">remote · primary</text>
+
+            <!-- to linkedin, dashed -->
+            <line x1="388" y1="144" x2="470" y2="188" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ov-arrow)"/>
+            <text x="432" y="205" font-size="9.5" fill="currentColor" opacity="0.7">step 7, optional</text>
+            <rect x="472" y="164" width="130" height="52" rx="10" class="muted-stroke" stroke-dasharray="4 3" fill="none" stroke-width="1.4"/>
+            <text x="537" y="186" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">LinkedIn MCP</text>
+            <text x="537" y="201" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">stdio · bonus</text>
+
+            <!-- converge to posted -->
+            <line x1="602" y1="98" x2="660" y2="140" stroke="currentColor" stroke-width="1.3" marker-end="url(#ov-arrow)"/>
+            <line x1="602" y1="190" x2="660" y2="148" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ov-arrow)"/>
+            <text x="670" y="148" font-size="16" fill="currentColor">🚀</text>
+            <text x="668" y="166" font-size="9.5" fill="currentColor" opacity="0.7">posted</text>
+
+            <text x="10" y="272" font-size="10.5" fill="currentColor" opacity="0.6">Everything left of the gate you build Steps 1–5. The gate + Buffer is Step 6. LinkedIn is optional Step 7.</text>
+          </svg>
+          <figcaption>The full system you're building today: one orchestrating agent, its tools, and two ways out to a real publish.</figcaption>
+        </figure>
+
+        <h3>What's given vs. what you build</h3>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th style="width:36%">File / piece</th><th>Who does it</th></tr></thead>
+            <tbody>
+              <tr><td><code>tools.py</code> (Gemini image call)</td><td><span class="chip given">given</span> copy it in</td></tr>
+              <tr><td><code>skills/post-formatter/</code>, <code>platform-style/</code>, <code>poster-style/</code></td><td><span class="chip given">given</span> copy them in</td></tr>
+              <tr><td><code>skills/brand-voice/SKILL.md</code></td><td><span class="chip write">you write</span> Step 4</td></tr>
+              <tr><td><code>backend/social_poster/agent.py</code></td><td><span class="chip write">you write</span> Steps 2, 3, 4, 5, 6, 7</td></tr>
+              <tr><td><code>backend/main.py</code> (the AG-UI bridge)</td><td><span class="chip write">you write</span> Step 8 (only 30 lines, and it's the part that matters)</td></tr>
+              <tr><td><code>frontend/</code> (Next.js + CopilotKit app)</td><td><span class="chip given">given</span> copy the whole folder, Step 8, but you'll <em>read</em> two files in it</td></tr>
+              <tr><td><code>mcp/linkedin_server.py</code></td><td><span class="chip given">given</span> copy it in, Step 7 only</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Before you start</h3>
+        <ul>
+          <li>Completed the <a href="devcamp-attendee-setup-guide.md">pre-camp setup guide</a>: Python 3.12+, <code>uv</code>, Node 20+, the Google Cloud SDK authenticated against your DevCamp project, and <code>google-adk</code> installed.</li>
+          <li>A terminal, an editor, and roughly two hours. Every step has a time estimate in the sidebar; total for the core path (Steps 1–6, 8–9) is about <strong>1h45</strong>; Step 7 (LinkedIn) adds another <strong>15 min</strong> and is entirely optional.</li>
+          <li>A free <a href="https://buffer.com" target="_blank" rel="noopener">Buffer</a> account for Step 6 (takes two minutes, no card needed for the free tier).</li>
+        </ul>
+
+        <div class="callout tip">
+          <span class="callout-label">Running this in a 90-minute live session?</span>
+          <p>Skip Step 7 entirely, and treat Step 8 (wiring the frontend) as a guided copy-along rather than something everyone types from scratch; the payoff there is understanding <code>main.py</code>'s four ADK-relevant lines, not retyping 400 lines of React you didn't write.</p>
+        </div>
+
+        <div class="callout">
+          <span class="callout-label">If you fall behind</span>
+          <p>The reference repo (<code>social-spark-ref</code>, noted in the sidebar) has the finished, working version of everything below, plus a look at where the series goes next: governance, evals, deploy. It's there to unblock you, not to clone-and-run instead of building.</p>
+        </div>
+
+        <div class="step-footer">
+          <button class="nav-btn" disabled>← Back</button>
+          <button class="nav-btn primary" onclick="goTo(1)">Start Step 1 →</button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 1 ================= -->
+      <section class="step-panel" data-step="1">
+        <div class="eyebrow"><span class="pill">Step 1 of 9</span><span class="dur">⏱ 5 min</span></div>
+        <h1 class="step-title">Set up your workspace</h1>
+        <p class="lede">Scaffold the project, copy in the plumbing that isn't the point of today, and get your environment talking to Vertex AI.</p>
+
+        <div class="callout tip">
+          <span class="callout-label">First, clone the reference repo alongside this one</span>
+          <p>Clone <code>social-spark-ref</code> as a sibling folder to wherever you're building today (note the <code>-ref</code> suffix, to avoid colliding with your own <code>social-spark/</code> below); the commands assume <code>../social-spark-ref/</code> resolves to it. It's the fallback if a copy step below doesn't quite work, not something to build inside.</p>
+        </div>
+
+        <div class="code-block">
+          <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>mkdir -p social-spark/backend/social_poster
+cd social-spark
+
+<span class="cm"># Given plumbing: copy, don't type</span>
+cp ../social-spark-ref/pyproject.toml .
+cp ../social-spark-ref/backend/social_poster/tools.py backend/social_poster/
+mkdir -p skills
+cp -r ../social-spark-ref/skills/post-formatter skills/
+cp -r ../social-spark-ref/skills/platform-style skills/
+cp -r ../social-spark-ref/skills/poster-style skills/
+<span class="cm"># NOT brand-voice: you write that one yourself in Step 4</span>
+cp ../social-spark-ref/.env.example backend/social_poster/.env
+echo "from . import agent" > backend/social_poster/__init__.py
+touch backend/social_poster/agent.py
+
+uv sync</code></pre>
+        </div>
+
+        <p>Edit <code>backend/social_poster/.env</code>: set <code>GOOGLE_CLOUD_PROJECT</code> to your DevCamp project id, and confirm <code>GOOGLE_APPLICATION_CREDENTIALS</code> points at your ADC file. Leave everything else; you'll fill in <code>BUFFER_API_KEY</code> in Step 6.</p>
+
+        <h4>You should now have</h4>
+        <div class="tree">social-spark/
+├── pyproject.toml
+├── backend/social_poster/
+│   ├── __init__.py
+│   ├── agent.py        <span class="cm">← empty, you build this all workshop</span>
+│   ├── tools.py          <span class="cm">(given)</span>
+│   └── .env
+└── skills/
+    ├── post-formatter/   <span class="cm">(given)</span>
+    ├── platform-style/    <span class="cm">(given)</span>
+    └── poster-style/      <span class="cm">(given)</span></div>
+
+        <div class="callout check">
+          <span class="callout-label">Checkpoint</span>
+          <p><code>uv sync</code> completes with no errors, and <code>uv run python -c "import google.adk"</code> prints nothing (silence = success).</p>
+        </div>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(0)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(2)">Next: The smallest agent →</button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 2 ================= -->
+      <section class="step-panel" data-step="2">
+        <div class="eyebrow"><span class="pill">Step 2 of 9</span><span class="dur">⏱ 5 min</span></div>
+        <h1 class="step-title">The smallest possible agent</h1>
+        <p class="lede">Everything in ADK starts with one object: an <code>Agent</code>, a model, an instruction, and optionally tools.</p>
+
+        <div class="code-block">
+          <div class="code-head"><span>backend/social_poster/agent.py</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>from google.adk.agents import Agent
+
+root_agent = Agent(
+    name="social_poster",
+    model="gemini-flash-latest",
+    description="Helps the user turn an idea into a polished social media post.",
+    instruction="You help the user turn an idea into a social media post.",
+)</code></pre>
+        </div>
+
+        <div class="code-block">
+          <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>uv run adk web backend</code></pre>
+        </div>
+
+        <p>Open <code>http://localhost:8000</code>, select <strong>social_poster</strong>, say hi. That's a complete, working ADK agent: no tools yet, just a model and an instruction.</p>
+
+        <div class="callout check">
+          <span class="callout-label">Checkpoint</span>
+          <p>The agent replies in the ADK web chat. Leave <code>adk web</code> running; you'll re-test after every step.</p>
+        </div>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(1)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(3)">Next: Give it a tool →</button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 3 ================= -->
+      <section class="step-panel" data-step="3">
+        <div class="eyebrow"><span class="pill">Step 3 of 9</span><span class="dur">⏱ 10 min</span></div>
+        <h1 class="step-title">Give it a tool</h1>
+        <p class="lede">The easiest way to hand ADK a tool: write a plain Python function. ADK inspects its signature and docstring and wraps it automatically: no decorators, no schema to write by hand.</p>
+
+        <p><code>tools.py</code> (already copied in) has <code>generate_image(prompt: str) -&gt; dict</code>, which calls Gemini's image model and writes the result to <code>gallery/</code>. Wire it in:</p>
+
+        <div class="code-block">
+          <div class="code-head"><span>backend/social_poster/agent.py</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>from google.adk.agents import Agent
+from .tools import generate_image
+
+root_agent = Agent(
+    name="social_poster",
+    model="gemini-flash-latest",
+    description="Helps the user turn an idea into a polished social media post.",
+    instruction="""You help the user turn an idea into a social media post.
+If the user asks for an image, call generate_image with a detailed visual
+description and tell them where the file was saved.""",
+    tools=[generate_image],
+)</code></pre>
+        </div>
+
+        <p><strong>Restart <code>adk web</code></strong> and try: <em>Draft something about remote work, and add an image.</em> Watch the Trace tab: <code>generate_image</code> fires as a real tool call, and a PNG lands in <code>gallery/</code>.</p>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(2)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(4)">Next: Agent Skills →</button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 4 ================= -->
+      <section class="step-panel" data-step="4">
+        <div class="eyebrow"><span class="pill">Step 4 of 9</span><span class="dur">⏱ 15 min</span></div>
+        <h1 class="step-title">Teach it Agent Skills</h1>
+        <p class="lede">A Skill is a folder with a <code>SKILL.md</code> file: YAML frontmatter (name, description) plus markdown instructions. The agent decides when to load one via a tool call; the content isn't in the system prompt until it's actually needed. That's <em>progressive disclosure</em>: keep the default context small, pull in detail only when relevant.</p>
+
+        <p>Open the three skills you copied in and read them; that's the whole format:</p>
+        <ul>
+          <li><code>skills/post-formatter/SKILL.md</code> — structural rules (hook line, paragraph limits, hashtags)</li>
+          <li><code>skills/platform-style/SKILL.md</code> — points at a second-level reference file per platform (<code>references/linkedin.md</code>, <code>references/x.md</code>)</li>
+          <li><code>skills/poster-style/SKILL.md</code> — visual style rules for <code>generate_image</code> prompts (you'll wire this in properly once images route through the skill)</li>
+        </ul>
+
+        <h3>Now write one yourself: brand-voice</h3>
+        <p>Create <code>skills/brand-voice/SKILL.md</code>:</p>
+
+        <div class="code-block">
+          <div class="code-head"><span>skills/brand-voice/SKILL.md</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>---
+name: brand-voice
+description: Tone-of-voice and language rules for all written content. Load whenever drafting or revising a post.
+---
+
+# Brand Voice
+
+## Tone
+- Casual and warm, like explaining something interesting to a colleague.
+- British English throughout: organise, colour, whilst, learnt.
+- Short sentences. Active voice.
+
+## Banned clich&eacute;s
+Never use: "game-changer", "unlock the power of", "seamless", "leverage"
+(as a verb), "I'm thrilled to announce".</code></pre>
+        </div>
+
+        <div class="callout warn">
+          <span class="callout-label">Gotcha</span>
+          <p>The <code>name:</code> in the frontmatter <strong>must exactly match the directory name</strong>, or loading it raises an error. <code>brand-voice/</code> ↔ <code>name: brand-voice</code>.</p>
+        </div>
+
+        <h3>Wire all four skills in</h3>
+        <div class="code-block">
+          <div class="code-head"><span>backend/social_poster/agent.py</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>import pathlib
+from google.adk.agents import Agent
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
+from .tools import generate_image
+
+SKILLS_DIR = pathlib.Path(__file__).resolve().parents[2] / "skills"
+
+skill_toolset = SkillToolset(
+    skills=[
+        load_skill_from_dir(SKILLS_DIR / "post-formatter"),
+        load_skill_from_dir(SKILLS_DIR / "platform-style"),
+        load_skill_from_dir(SKILLS_DIR / "brand-voice"),
+        load_skill_from_dir(SKILLS_DIR / "poster-style"),
+    ],
+)
+
+root_agent = Agent(
+    name="social_poster",
+    model="gemini-flash-latest",
+    description="Helps the user turn an idea into a polished social media post.",
+    instruction="""You help the user turn an idea into a social media post.
+
+Workflow:
+1. When drafting, load and follow the relevant skills: post-formatter
+   (structure), platform-style (rules for the target platform), and
+   brand-voice (tone).
+2. If the user asks for an image, load and follow the poster-style skill,
+   then call generate_image with a detailed visual description and tell
+   them where the file was saved.""",
+    tools=[generate_image, skill_toolset],
+)</code></pre>
+        </div>
+
+        <p><strong>Restart and try:</strong> <em>I want a LinkedIn post about why agent evals matter more than demos.</em> Watch the Trace tab for <code>load_skill</code> calls: notice <code>platform-style</code> triggers a <em>second-level</em> read of <code>references/linkedin.md</code>, only because the draft is for LinkedIn. Ask for an X post instead and it reads <code>references/x.md</code>.</p>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(3)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(5)">Next: Web research →</button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 5 ================= -->
+      <section class="step-panel" data-step="5">
+        <div class="eyebrow"><span class="pill">Step 5 of 9</span><span class="dur">⏱ 10 min</span></div>
+        <h1 class="step-title">Add web research (and a real ADK constraint)</h1>
+        <p class="lede">Add <code>google_search</code>, a built-in tool, so the agent can ground drafts in real facts.</p>
+
+        <div class="callout warn">
+          <span class="callout-label">Gotcha</span>
+          <p>Vertex AI rejects a single model call that mixes <code>google_search</code> with your own function tools: <em>"Multiple tools are supported only when they are all search tools."</em> The fix: isolate search in its own agent, and expose that agent to the root agent as a tool via <code>AgentTool</code>. This is the idiomatic ADK pattern for "a tool that needs tools of its own."</p>
+        </div>
+
+        <div class="code-block">
+          <div class="code-head"><span>backend/social_poster/agent.py</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>from google.adk.tools import google_search
+from google.adk.tools.agent_tool import AgentTool
+
+search_agent = Agent(
+    name="web_researcher",
+    model="gemini-flash-latest",
+    description="Researches facts, dates, and context on the web.",
+    instruction="Research the given query and return a concise summary of relevant facts.",
+    tools=[google_search],
+)
+
+root_agent = Agent(
+    name="social_poster",
+    model="gemini-flash-latest",
+    description="Helps the user turn an idea into a polished social media post.",
+    instruction="""You help the user turn an idea into a social media post.
+
+Workflow:
+1. If the idea needs facts, dates, or context, research it with the
+   web_researcher tool first.
+2. When drafting, load and follow the relevant skills: post-formatter
+   (structure), platform-style (rules for the target platform), and
+   brand-voice (tone).
+3. If the user asks for an image, load and follow the poster-style skill,
+   then call generate_image with a detailed visual description and tell
+   them where the file was saved.""",
+    tools=[AgentTool(agent=search_agent), generate_image, skill_toolset],
+)</code></pre>
+        </div>
+
+        <p><strong>Run the full flow:</strong> idea → research → skills → draft → image, all in one conversation. <strong>This is a complete, standalone agent</strong>; everything below adds real publishing.</p>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(4)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(6)">Next: Publish via Buffer →</button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 6 ================= -->
+      <section class="step-panel" data-step="6">
+        <div class="eyebrow"><span class="pill">Step 6 of 9</span><span class="dur">⏱ 20 min</span></div>
+        <h1 class="step-title">Publish for real: Buffer + the approval gate</h1>
+        <p class="lede">So far every tool has been Python running in-process. <strong>MCP (Model Context Protocol)</strong> is a standard for connecting to tools that live in a separate process: could be someone else's server, any language, doesn't need to know anything about ADK. Buffer runs one at <code>https://mcp.buffer.com/mcp</code> — no server for you to write or copy, just a key and a URL.</p>
+
+        <h3>1. Connect a Buffer account</h3>
+        <ol>
+          <li>Create or log into a free <a href="https://buffer.com" target="_blank" rel="noopener">Buffer</a> account, and connect at least one channel (LinkedIn is fine to test with; Buffer authenticates to each platform on its own side).</li>
+          <li>Get an API key: Buffer's Publish settings → developer/API section.</li>
+          <li>Add it to <code>backend/social_poster/.env</code>: <code>BUFFER_API_KEY=...</code></li>
+        </ol>
+
+        <div class="callout warn">
+          <span class="callout-label">Gotcha: text only</span>
+          <p>Buffer's <code>create_post</code> must be <strong>text only</strong>. Buffer's servers can't fetch a locally-generated image file; confirmed live: <em>"Invalid post: Image could not be read from its URL."</em> If the user wants an image with a Buffer post, generate it for the local gallery only and say so; images only travel with LinkedIn's own tool (Step 7).</p>
+        </div>
+
+        <h3>2. Wire the toolset in, with the approval gate</h3>
+        <div class="code-block">
+          <div class="code-head"><span>backend/social_poster/agent.py</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>import os
+from google.adk.tools.mcp_tool import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+
+BUFFER_API_KEY = os.environ.get("BUFFER_API_KEY", "")
+
+buffer_toolset = McpToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://mcp.buffer.com/mcp",
+        headers={"Authorization": f"Bearer {BUFFER_API_KEY}"},
+    ),
+    <span class="cm"># Framework-level approval gate: see below, not just an instruction.</span>
+    require_confirmation=True,
+)</code></pre>
+        </div>
+
+        <p>Add it to <code>root_agent</code>'s <code>tools=[...]</code> list, and update the instruction with a posting rule:</p>
+
+        <div class="code-block">
+          <div class="code-head"><span>backend/social_poster/agent.py (instruction excerpt)</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>    instruction="""... (steps 1-3 from before) ...
+
+4. ALWAYS show the finished draft to the user and ask for their approval
+   before any posting action. For an immediate post, ask Buffer to publish
+   now rather than schedule.
+
+Posting rules (strict):
+- Only post AFTER the user has explicitly approved the exact draft shown to
+  them. "Yes", "post it" counts; enthusiasm about the idea does not.
+- After posting, share the returned confirmation with the user.""",
+    tools=[AgentTool(agent=search_agent), generate_image, skill_toolset, buffer_toolset],</code></pre>
+        </div>
+
+        <h3>Why <code>require_confirmation</code>, not just an instruction</h3>
+        <p>Right now the instruction text says "ask before posting", but that's a suggestion, not a guarantee. <code>require_confirmation=True</code> is code-level: ADK pauses any call into this toolset and forces an explicit <code>ToolConfirmation</code> before the call actually executes, no matter what the model decides on its own.</p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 700 210" role="img" aria-label="Comparing an instruction-only posting rule, where the model can call create_post directly with nothing to stop it, against require_confirmation true, where ADK intercepts the call and only executes it after the user explicitly approves or rejects.">
+            <defs>
+              <marker id="gate-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <text x="10" y="24" font-size="12.5" font-weight="700" fill="currentColor">Instruction only</text>
+            <rect x="10" y="36" width="110" height="34" rx="7" class="muted-stroke" fill="none" stroke-width="1.3"/>
+            <text x="65" y="57" font-size="10.5" text-anchor="middle" fill="currentColor">model</text>
+            <line x1="120" y1="53" x2="220" y2="53" stroke="currentColor" stroke-width="1.3" marker-end="url(#gate-arrow)"/>
+            <rect x="222" y="36" width="120" height="34" rx="7" class="red-stroke" fill="none" stroke-width="1.4"/>
+            <text x="282" y="57" font-size="10.5" text-anchor="middle" fill="currentColor">create_post</text>
+            <text x="10" y="94" font-size="10" fill="currentColor" opacity="0.7">A misreading model can call it directly; nothing in the runtime stops it.</text>
+
+            <line x1="0" y1="115" x2="700" y2="115" stroke="currentColor" stroke-width="1" opacity="0.15"/>
+
+            <text x="10" y="140" font-size="12.5" font-weight="700" fill="currentColor">require_confirmation=True</text>
+            <rect x="10" y="152" width="110" height="34" rx="7" class="muted-stroke" fill="none" stroke-width="1.3"/>
+            <text x="65" y="173" font-size="10.5" text-anchor="middle" fill="currentColor">model</text>
+            <line x1="120" y1="169" x2="210" y2="169" stroke="currentColor" stroke-width="1.3" marker-end="url(#gate-arrow)"/>
+            <polygon points="252,150 296,169 252,188 208,169" class="yellow-stroke" fill="none" stroke-width="1.5"/>
+            <text x="252" y="173" font-size="9" text-anchor="middle" fill="currentColor">ADK gate</text>
+            <line x1="296" y1="169" x2="380" y2="169" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#gate-arrow)"/>
+            <text x="338" y="160" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">renders in UI</text>
+            <rect x="382" y="152" width="110" height="34" rx="7" class="accent-stroke" fill="none" stroke-width="1.4"/>
+            <text x="437" y="173" font-size="10" text-anchor="middle" fill="currentColor">Approve / Reject</text>
+            <line x1="492" y1="169" x2="580" y2="169" stroke="currentColor" stroke-width="1.3" marker-end="url(#gate-arrow)"/>
+            <rect x="582" y="152" width="110" height="34" rx="7" class="green-stroke" fill="none" stroke-width="1.4"/>
+            <text x="637" y="173" font-size="10.5" text-anchor="middle" fill="currentColor">create_post</text>
+            <text x="10" y="206" font-size="10" fill="currentColor" opacity="0.7">Only fires after a human explicitly responds. Reject and it never runs.</text>
+          </svg>
+          <figcaption>The gap between "the instructions say to ask first" and a framework-level pause the model cannot talk its way around.</figcaption>
+        </figure>
+
+        <p><strong>Restart and try:</strong> draft → <em>Yes, post it.</em> Nothing fires until you approve inside <code>adk web</code>'s confirmation control; try rejecting once too, and confirm the post never goes out.</p>
+
+        <div class="callout warn">
+          <span class="callout-label">Real posts, no dry-run</span>
+          <p>Unlike LinkedIn (Step 7), Buffer has no <code>DRY_RUN</code> flag. A "scheduled" post is real and will publish later on whatever channel is connected: <code>require_confirmation=True</code> above is the actual safety net here, not a simulation.</p>
+        </div>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(5)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(7)">Next: LinkedIn (optional) →</button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 7 (optional) ================= -->
+      <section class="step-panel" data-step="7">
+        <div class="eyebrow"><span class="pill optional">Step 7 of 9 · Optional</span><span class="dur">⏱ 15 min</span></div>
+        <h1 class="step-title">Bonus: add LinkedIn as a second publisher</h1>
+        <p class="lede">Buffer covers scheduling and multi-platform posting. LinkedIn's own API adds one thing Buffer can't: an immediate post <em>with an image attached</em>. This step is entirely optional; skip to Step 8 if you're short on time.</p>
+
+        <h3>1. Copy the given LinkedIn MCP server</h3>
+        <div class="code-block">
+          <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>mkdir -p mcp
+cp ../social-spark-ref/mcp/linkedin_server.py mcp/
+uv add fastmcp==3.4.4 httpx==0.28.1</code></pre>
+        </div>
+
+        <h3>2. Get an access token</h3>
+        <ol>
+          <li>Create a LinkedIn Developer app: <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener">linkedin.com/developers/apps</a> → <em>Create app</em> (needs a company page; a dummy one is fine).</li>
+          <li>Add products: <strong>Share on LinkedIn</strong> (grants <code>w_member_social</code>) and <strong>Sign In with LinkedIn using OpenID Connect</strong> (grants <code>openid profile</code>), both instant self-serve.</li>
+          <li>Fastest path to a token: the <a href="https://www.linkedin.com/developers/tools/oauth/token-generator" target="_blank" rel="noopener">OAuth Token Generator</a> in the Developer Portal: select your app, check all scopes, <em>Request access token</em>, copy it straight in.</li>
+        </ol>
+
+        <div class="code-block">
+          <div class="code-head"><span>backend/social_poster/.env</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>DRY_RUN=true
+LINKEDIN_ACCESS_TOKEN=...</code></pre>
+        </div>
+
+        <div class="callout tip">
+          <span class="callout-label">Keep DRY_RUN=true</span>
+          <p>With <code>DRY_RUN=true</code> (the default), the server logs the payload and returns a fake URL; nothing touches LinkedIn. Only flip it for a single deliberate happy-path check, then flip it straight back.</p>
+        </div>
+
+        <h3>3. Wire both toolsets in with routing</h3>
+        <div class="code-block">
+          <div class="code-head"><span>backend/social_poster/agent.py</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>import sys
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
+from mcp import StdioServerParameters
+
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[2]
+MCP_SERVER = PROJECT_ROOT / "mcp" / "linkedin_server.py"
+
+linkedin_toolset = McpToolset(
+    connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command=sys.executable,
+            args=[str(MCP_SERVER)],
+            env={
+                "DRY_RUN": os.environ.get("DRY_RUN", "true"),
+                "LINKEDIN_ACCESS_TOKEN": os.environ.get("LINKEDIN_ACCESS_TOKEN", ""),
+            },
+        ),
+    ),
+    tool_filter=["get_profile", "create_post"],
+    require_confirmation=True,
+)
+
+<span class="cm"># POST_VIA overrides the LLM's own routing: "buffer" drops the LinkedIn</span>
+<span class="cm"># tool entirely, "linkedin" drops Buffer even if a key is set. Blank</span>
+<span class="cm"># exposes both and lets the agent route by what the user asks for.</span>
+POST_VIA = os.environ.get("POST_VIA", "").strip().lower()
+use_linkedin = POST_VIA != "buffer"
+use_buffer = bool(BUFFER_API_KEY) and POST_VIA != "linkedin"</code></pre>
+        </div>
+
+        <div class="callout warn">
+          <span class="callout-label">Known bug: pin POST_VIA explicitly</span>
+          <p>With both LinkedIn's tool and a real Buffer key active together, every turn fails: <code>"Duplicate function declaration found: create_post"</code>; the two tools share a name and Gemini rejects the collision. Leave <code>POST_VIA</code> blank <strong>only</strong> if <code>BUFFER_API_KEY</code> is also blank; otherwise set it to <code>buffer</code> or <code>linkedin</code> explicitly in <code>.env</code>.</p>
+        </div>
+
+        <p>Add the routing guidance to the instruction (choose LinkedIn for an image-carrying immediate post, Buffer for scheduling or other platforms), and add <code>linkedin_toolset</code> to <code>tools=[...]</code> alongside <code>buffer_toolset</code>. Both still gate through <code>require_confirmation=True</code>: same mechanism, two publishers.</p>
+
+        <p><strong>Restart and try:</strong> ask specifically for an immediate LinkedIn post with an image, then ask to schedule something for next week; watch it pick a different tool each time.</p>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(6)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(8)">Next: Give it a face →</button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 8 ================= -->
+      <section class="step-panel" data-step="8">
+        <div class="eyebrow"><span class="pill">Step 8 of 9</span><span class="dur">⏱ 15 min</span></div>
+        <h1 class="step-title">Give it a face: wire up the frontend</h1>
+        <p class="lede">CopilotKit + Next.js wiring is its own skill outside ADK, so the frontend is given to you; copy the whole folder. What matters today is the two connection points that make it <em>talk</em> to the agent you just built.</p>
+
+        <div class="code-block">
+          <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>cp -r ../social-spark-ref/frontend .
+cp ../social-spark-ref/run-backend.sh ../social-spark-ref/run-frontend.sh .
+chmod +x run-backend.sh run-frontend.sh</code></pre>
+        </div>
+
+        <h3>Connection point 1: the AG-UI bridge (you write this one)</h3>
+        <p>This is 30 lines, and it's the entire reason Step 8 exists: exposing the <em>exact same</em> <code>root_agent</code> object over HTTP.</p>
+
+        <div class="code-block">
+          <div class="code-head"><span>backend/main.py</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>import pathlib
+from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+load_dotenv(pathlib.Path(__file__).parent / "social_poster" / ".env")
+
+from backend.social_poster.agent import root_agent  <span class="cm"># the SAME agent object</span>
+
+app = FastAPI(title="social-agent AG-UI backend")
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"],
+                    allow_methods=["*"], allow_headers=["*"])
+
+adk_agent = ADKAgent(adk_agent=root_agent, app_name="social_poster", user_id="devcamp-user")
+add_adk_fastapi_endpoint(app, adk_agent, path="/api/adk")
+
+<span class="cm"># Serves generate_image's output files so the browser can render them</span>
+GALLERY_DIR = pathlib.Path(__file__).resolve().parents[1] / "gallery"
+GALLERY_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/outputs", StaticFiles(directory=GALLERY_DIR), name="outputs")</code></pre>
+        </div>
+
+        <p>That's the whole bridge. <code>root_agent</code> is imported unchanged from the <code>agent.py</code> you spent the last six steps writing.</p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 700 240" role="img" aria-label="The browser talks to a Next.js API route, which forwards to the FastAPI backend's api/adk endpoint over HTTP, which wraps the same root_agent object built in earlier steps. Two frontend components tap the same stream: ConfirmAction renders the approval gate, StagePanel reads pipeline_stage shared state.">
+            <defs>
+              <marker id="br-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <rect x="10" y="70" width="128" height="46" rx="9" class="muted-stroke" fill="none" stroke-width="1.3"/>
+            <text x="74" y="90" font-size="11" text-anchor="middle" fill="currentColor">Browser</text>
+            <text x="74" y="104" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.65">CopilotSidebar</text>
+
+            <line x1="138" y1="93" x2="204" y2="93" stroke="currentColor" stroke-width="1.3" marker-end="url(#br-arrow)"/>
+            <text x="171" y="84" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.7">:3000</text>
+
+            <rect x="206" y="70" width="150" height="46" rx="9" class="muted-stroke" fill="none" stroke-width="1.3"/>
+            <text x="281" y="88" font-size="10.5" text-anchor="middle" fill="currentColor">route.ts</text>
+            <text x="281" y="102" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.65">CopilotRuntime + HttpAgent</text>
+
+            <line x1="356" y1="93" x2="420" y2="93" stroke="currentColor" stroke-width="1.3" marker-end="url(#br-arrow)"/>
+            <text x="388" y="84" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.7">HTTP</text>
+
+            <rect x="422" y="60" width="150" height="66" rx="9" class="accent-stroke" fill="none" stroke-width="1.6"/>
+            <text x="497" y="82" font-size="10.5" text-anchor="middle" font-weight="700" fill="currentColor">main.py :8000</text>
+            <text x="497" y="96" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.7">/api/adk (ADKAgent)</text>
+            <text x="497" y="110" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.7">you wrote this</text>
+
+            <line x1="497" y1="126" x2="497" y2="150" stroke="currentColor" stroke-width="1.3" marker-end="url(#br-arrow)"/>
+            <rect x="422" y="152" width="150" height="38" rx="8" class="green-stroke" fill="none" stroke-width="1.4"/>
+            <text x="497" y="175" font-size="10.5" text-anchor="middle" fill="currentColor">root_agent</text>
+
+            <line x1="74" y1="116" x2="74" y2="150" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3"/>
+            <line x1="74" y1="150" x2="180" y2="150" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3"/>
+            <rect x="10" y="152" width="170" height="34" rx="7" class="yellow-stroke" fill="none" stroke-width="1.2"/>
+            <text x="95" y="170" font-size="9" text-anchor="middle" fill="currentColor">ConfirmAction.tsx</text>
+            <text x="95" y="181" font-size="7.6" text-anchor="middle" fill="currentColor" opacity="0.65">renders adk_request_confirmation</text>
+
+            <rect x="10" y="196" width="170" height="34" rx="7" class="yellow-stroke" fill="none" stroke-width="1.2"/>
+            <line x1="74" y1="186" x2="74" y2="196" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3"/>
+            <text x="95" y="214" font-size="9" text-anchor="middle" fill="currentColor">StagePanel.tsx</text>
+            <text x="95" y="225" font-size="7.6" text-anchor="middle" fill="currentColor" opacity="0.65">reads pipeline_stage state</text>
+          </svg>
+          <figcaption>The frontend is given, but these two components (yellow) are the ones tapping ADK's own event stream, which is why they're worth opening.</figcaption>
+        </figure>
+
+        <h3>Connection point 2: two given files worth reading</h3>
+        <p>Open these; don't retype them, just understand what they're doing, since they're what makes the approval gate and pipeline stepper actually visible in the browser.</p>
+
+        <div class="code-block">
+          <div class="code-head"><span>frontend/app/components/ConfirmAction.tsx (excerpt)</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>useCopilotAction({
+  name: "adk_request_confirmation",  <span class="cm">// ADK synthesizes exactly this call name</span>
+  renderAndWaitForResponse: ({ args, status, respond }) =&gt; {
+    <span class="cm">// ...renders Approve / Reject buttons...</span>
+    return (
+      &lt;button onClick={() =&gt; respond?.({ confirmed: true })}&gt;Approve&lt;/button&gt;
+    );
+  },
+});</code></pre>
+        </div>
+
+        <div class="callout warn">
+          <span class="callout-label">Gotcha</span>
+          <p>Without this component registered, nothing renders the pending confirmation: a plain-text <em>"yes, post it"</em> reply never resolves it, and the run just hangs. The framework-level gate from Step 6 needs a UI half; this is it.</p>
+        </div>
+
+        <div class="code-block">
+          <div class="code-head"><span>frontend/app/components/StagePanel.tsx (excerpt)</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>const { state } = useCoAgent&lt;AgentState&gt;({ name: "social_poster" });
+const current = state?.pipeline_stage ?? "idea";  <span class="cm">// shared state, not a message</span></code></pre>
+        </div>
+
+        <p>That shared <code>pipeline_stage</code> value is written by callbacks in <code>agent.py</code> (<code>before_agent_callback</code>, <code>after_tool_callback</code>, <code>after_agent_callback</code>) as the run progresses, one addition on top of the agent you built, purely for driving this UI.</p>
+
+        <h3>Run it: two terminals</h3>
+        <div class="code-block">
+          <div class="code-head"><span>terminal 1</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>./run-backend.sh    <span class="cm"># uv sync + uvicorn on :8000</span></code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-head"><span>terminal 2</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>./run-frontend.sh   <span class="cm"># npm install + next dev on :3000</span></code></pre>
+        </div>
+
+        <p>Open <code>http://localhost:3000</code> and continue as guest.</p>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(7)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(9)">Next: Run the golden path →</button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 9 ================= -->
+      <section class="step-panel" data-step="9">
+        <div class="eyebrow"><span class="pill">Step 9 of 9</span><span class="dur">⏱ 10 min</span></div>
+        <h1 class="step-title">Run the golden path</h1>
+        <p class="lede">One full loop, in the browser, exercising everything you built today.</p>
+
+        <p>In the chat sidebar: <em>Draft a LinkedIn post about why agent evals matter more than demos, with an illustration, and post it via Buffer.</em></p>
+
+        <div class="mock-stepper">
+          <div class="mock-stage done"><div class="dot">✓</div>Idea</div>
+          <div class="mock-stage done"><div class="dot">✓</div>Researching</div>
+          <div class="mock-stage done"><div class="dot">✓</div>Drafting</div>
+          <div class="mock-stage done"><div class="dot">✓</div>Image</div>
+          <div class="mock-stage current"><div class="dot">⏳</div>Approval</div>
+          <div class="mock-stage"><div class="dot">🚀</div>Posted</div>
+        </div>
+
+        <h3>What to verify</h3>
+        <ul class="checklist">
+          <li>The stage panel tracks the run live: Researching → Drafting → Image → Awaiting approval → Posted.</li>
+          <li>The activity feed shows every tool call — <code>web_researcher</code>, <code>load_skill</code>, <code>generate_image</code> — with expandable arguments and results.</li>
+          <li>A confirmation card appears before publishing, with Approve / Reject; try Reject once and confirm nothing posts.</li>
+          <li>On Approve, Buffer's response (or LinkedIn's dry-run URL, if you built Step 7) appears in the chat.</li>
+        </ul>
+
+        <h3>Troubleshooting</h3>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Symptom</th><th>Fix</th></tr></thead>
+            <tbody>
+              <tr><td>Wrong GCP project / creds showing</td><td><code>gcloud config configurations activate adk-devcamp</code></td></tr>
+              <tr><td>Port already in use</td><td>Something else is on 8000 or 3000; stop it, or run on a different port and update <code>ADK_BACKEND_URL</code></td></tr>
+              <tr><td>Chat hangs after "yes, post it"</td><td><code>ConfirmAction.tsx</code> missing or not imported into <code>page.tsx</code> (Step 8)</td></tr>
+              <tr><td><code>Duplicate function declaration: create_post</code></td><td>Both toolsets active with <code>POST_VIA</code> blank; pin it to <code>buffer</code> or <code>linkedin</code> (Step 7)</td></tr>
+              <tr><td>Buffer post fails with an image error</td><td>Never attach <code>image_path</code> to a Buffer call; text only (Step 6)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(8)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(10)">Finish →</button>
+        </div>
+      </section>
+
+      <!-- ================= SUMMARY ================= -->
+      <section class="step-panel" data-step="10">
+        <div class="eyebrow"><span class="pill">Wrap-up</span></div>
+        <h1 class="step-title">What you built</h1>
+
+        <ul class="checklist">
+          <li>An <code>Agent</code> with an instruction and a hand-written function tool</li>
+          <li>Agent Skills — progressive disclosure via <code>SkillToolset</code> + <code>load_skill_from_dir</code>, including one you wrote yourself</li>
+          <li><code>AgentTool</code> to isolate <code>google_search</code> — a real Vertex AI constraint, not an arbitrary pattern</li>
+          <li><code>McpToolset</code> against Buffer's remote server, gated by <code>require_confirmation=True</code> — a framework-level human-in-the-loop, independent of the model's own judgement</li>
+          <li>Optionally, a second publisher (LinkedIn) with request-level routing between the two</li>
+          <li>The AG-UI bridge that exposes that exact agent to a real web app, plus the two frontend files that make ADK's confirmation gate and shared state visible</li>
+        </ul>
+
+        <h3>What's next</h3>
+        <p>The DevCamp series keeps building on this same agent:</p>
+        <div class="tbl-wrap">
+          <table>
+            <tbody>
+              <tr><td style="width:120px"><strong>Scale</strong></td><td>Split into a multi-agent orchestrator (research / draft / route), add long-term memory over A2A</td></tr>
+              <tr><td><strong>Govern</strong></td><td>Model Armor + Cloud DLP guardrails on every agent, an eval-scored golden set</td></tr>
+              <tr><td><strong>Optimise</strong></td><td>Per-agent model pinning, Cloud Run deploy with an eval-gated CI/CD pipeline, observability</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="callout-label">If you got stuck anywhere today</span>
+          <p><code>social-spark-ref</code> has the finished, governed, deployed version of this whole series, including everything above. It's the finish line, worth a look for where this is headed, but not where you start next time.</p>
+        </div>
+
+        <div class="step-footer">
+          <button class="nav-btn" onclick="goTo(9)">← Back</button>
+          <button class="nav-btn primary" onclick="goTo(0)">Back to overview</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  const STEPS = [
+    { i: 0, label: "Overview", dur: "" },
+    { i: 1, label: "Set up your workspace", dur: "5m" },
+    { i: 2, label: "The smallest agent", dur: "5m" },
+    { i: 3, label: "Give it a tool", dur: "10m" },
+    { i: 4, label: "Agent Skills", dur: "15m" },
+    { i: 5, label: "Web research", dur: "10m" },
+    { i: 6, label: "Publish via Buffer", dur: "20m" },
+    { i: 7, label: "LinkedIn", dur: "15m", optional: true },
+    { i: 8, label: "Wire the frontend", dur: "15m" },
+    { i: 9, label: "Run the golden path", dur: "10m" },
+    { i: 10, label: "Wrap-up", dur: "" },
+  ];
+
+  const navEl = document.getElementById("stepNav");
+  const mobileEl = document.getElementById("mobileNav");
+
+  STEPS.forEach(s => {
+    const li = document.createElement("li");
+    li.className = "step-nav-item" + (s.optional ? " optional" : "");
+    li.dataset.step = s.i;
+    li.onclick = () => goTo(s.i);
+    const dotLabel = s.i === 0 ? "•" : (s.i === 10 ? "★" : s.i);
+    li.innerHTML = `<span class="step-dot">${dotLabel}</span>
+      <span class="step-label-group">
+        <span class="step-label">${s.label}</span>
+        ${s.dur ? `<span class="step-dur">${s.dur}</span>` : ""}
+      </span>`;
+    navEl.appendChild(li);
+
+    const btn = document.createElement("button");
+    btn.textContent = s.i === 0 ? "Overview" : (s.i === 10 ? "Wrap-up" : "Step " + s.i);
+    btn.dataset.step = s.i;
+    btn.onclick = () => goTo(s.i);
+    mobileEl.appendChild(btn);
+  });
+
+  let current = 0;
+  const seen = new Set([0]);
+
+  function goTo(n) {
+    current = n;
+    seen.add(n);
+    document.querySelectorAll(".step-panel").forEach(p => {
+      p.classList.toggle("active", parseInt(p.dataset.step) === n);
+    });
+    document.querySelectorAll(".step-nav-item").forEach(el => {
+      const s = parseInt(el.dataset.step);
+      el.classList.toggle("active", s === n);
+      el.classList.toggle("done", seen.has(s) && s !== n);
+    });
+    document.querySelectorAll(".mobile-topnav button").forEach(el => {
+      el.classList.toggle("active", parseInt(el.dataset.step) === n);
+    });
+    const pct = Math.round((n / 10) * 100);
+    document.getElementById("progressFill").style.width = pct + "%";
+    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+  }
+
+  function copyBlock(btn) {
+    const code = btn.closest(".code-block").querySelector("code");
+    const text = code.innerText;
+    const done = () => { const old = btn.textContent; btn.textContent = "Copied!"; setTimeout(() => btn.textContent = old, 1400); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => {});
+    }
+  }
+
+  goTo(0);
+</script>

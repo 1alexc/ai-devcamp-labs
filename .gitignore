@@ -1,0 +1,11 @@
+.env
+*.pyc
+__pycache__/
+.venv/
+gallery/
+.adk/
+node_modules/
+.next/
+.DS_Store
+eval_history/
+tsconfig.tsbuildinfo

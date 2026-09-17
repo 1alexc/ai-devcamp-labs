@@ -9,6 +9,7 @@ dependencies = [
     "python-dotenv==1.2.2",
     "fastmcp==3.4.4",
     "httpx==0.28.1",
+    "google-cloud-storage==3.13.0",
     "ag-ui-adk==0.7.0",
     "fastapi==0.139.0",
     "uvicorn==0.51.0",

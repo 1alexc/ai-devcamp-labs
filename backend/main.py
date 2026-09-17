@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv(pathlib.Path(__file__).parent / "social_poster" / ".env")
 
+from backend.social_poster import db  # noqa: E402  (needs .env first)
 from backend.social_poster.agent import root_agent  # noqa: E402  (needs .env first)
 
 app = FastAPI(title="social-agent AG-UI backend")
@@ -43,3 +44,11 @@ app.mount("/outputs", StaticFiles(directory=GALLERY_DIR), name="outputs")
 @app.get("/healthz")
 def healthz() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/api/posts")
+def posts() -> dict:
+    """Published posts (with whatever image they used), read from the local
+    SQLite store — durable across reloads/restarts, unlike ADK session state
+    or the browser's own chat history."""
+    return {"posts": db.list_posts()}

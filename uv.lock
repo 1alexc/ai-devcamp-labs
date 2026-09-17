@@ -2815,7 +2815,7 @@ wheels = [
 ]
 
 [[package]]
-name = "social-agent-phase6"
+name = "social-spark"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
@@ -2823,6 +2823,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "fastmcp" },
     { name = "google-adk", extra = ["a2a", "eval"] },
+    { name = "google-cloud-storage" },
     { name = "google-genai" },
     { name = "httpx" },
     { name = "python-dotenv" },
@@ -2837,6 +2838,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.139.0" },
     { name = "fastmcp", specifier = "==3.4.4" },
     { name = "google-adk", extras = ["a2a", "eval"], specifier = "==2.4.0" },
+    { name = "google-cloud-storage", specifier = "==3.13.0" },
     { name = "google-genai", specifier = "==2.11.0" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "python-dotenv", specifier = "==1.2.2" },

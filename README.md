@@ -1,6 +1,6 @@
-# Social Spark — Reference Implementation
+# Social Spark — End-to-End Implementation
 
-**This is a reference, not a starting point.** Workshop 1 has you build a
+**This is a reference, not a starting point.** [Workshop 1](https://sonikajanagill.com/social-spark/agentic-devcamp-workshop-1.html) has you build a
 smaller version of this agent yourself, step by step, in the
 [codelab](docs/agentic-devcamp-workshop-1.html) — an orchestrator that
 researches, drafts with Agent Skills, generates an image, and publishes
@@ -13,6 +13,13 @@ production-tuned version further down the DevCamp road: guardrails
 per-agent model pinning, evals, and a Cloud Run deploy pipeline. It's the
 finish line, not step 1 — don't `git clone` and run this instead of doing the
 codelab.
+
+## Running it
+
+Two halves, run in separate terminals:
+
+- **[backend/README.md](backend/README.md)** — the ADK agent (setup, env vars, `adk web`, evals, optional LinkedIn/Buffer/GCS/memory/guardrails pieces)
+- **[frontend/README.md](frontend/README.md)** — the CopilotKit UI
 
 ## What's in here
 
@@ -39,6 +46,17 @@ flowchart LR
     SM -.-> CR
     CR --> OBS
     FE --> CR
+
+    classDef blue fill:#e8f0fe,stroke:#1a73e8,stroke-width:1.5px,color:#1a73e8;
+    classDef green fill:#e6f4ea,stroke:#137333,stroke-width:1.5px,color:#137333;
+    classDef yellow fill:#fef7e0,stroke:#a15c00,stroke-width:1.5px,color:#a15c00;
+    classDef red fill:#fce8e6,stroke:#c5221f,stroke-width:1.5px,color:#c5221f;
+    class CODE,CR,FE blue;
+    class EVAL,OBS green;
+    class CB yellow;
+    class SM red;
+    style dev fill:#f1f3f4,stroke:#dadce0,color:#3c4043;
+    style gcp fill:#f1f3f4,stroke:#dadce0,color:#3c4043;
 ```
 
 ## What's new

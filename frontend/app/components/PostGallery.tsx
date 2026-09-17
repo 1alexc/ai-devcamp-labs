@@ -4,7 +4,13 @@
 // stream ActivityFeed reads. Images are local files written by
 // tools.py:generate_image — backend/main.py mounts them at /outputs so the
 // browser can actually render them.
+//
+// The live message stream only covers THIS browser session — reload the
+// page or restart the backend and it's gone. /api/posts (backend/social_poster/db.py)
+// is the durable record of what actually got published, so it's merged in
+// underneath the live list to fill in anything from before this page load.
 
+import { useEffect, useState } from "react";
 import { useCopilotChatInternal } from "@copilotkit/react-core";
 
 const BACKEND_ORIGIN = process.env.NEXT_PUBLIC_BACKEND_ORIGIN || "http://localhost:8000";
@@ -15,12 +21,16 @@ type PostEntry = {
   platform: string;
   url?: string;
   failed: boolean;
+  imageUrl?: string;
 };
 
 type ImageEntry = {
   id: string;
   url: string;
   prompt: string;
+  imagePath: string;
+  hostedUrl?: string;
+  hostedDryRun?: boolean;
 };
 
 function tryParseJSON(raw: unknown): any {
@@ -46,6 +56,52 @@ function inferPlatform(args: any): string {
   return args?.channelId ? "Buffer" : "LinkedIn";
 }
 
+// Recursively collect every string leaf from a tool call's args — LinkedIn's
+// create_post carries the image under a known `image_path` key, but Buffer's
+// schema is hosted/dynamic (could nest it under `media`, `attachments`, etc.),
+// so this searches every value rather than guessing one key name.
+function collectStrings(value: unknown, acc: string[] = []): string[] {
+  if (typeof value === "string") {
+    acc.push(value);
+  } else if (Array.isArray(value)) {
+    value.forEach((v) => collectStrings(v, acc));
+  } else if (value && typeof value === "object") {
+    Object.values(value).forEach((v) => collectStrings(v, acc));
+  }
+  return acc;
+}
+
+// Matches a create_post call back to the image it attached, by looking for
+// that image's local path or hosted URL anywhere in the call's args.
+function findImageForPost(args: any, images: ImageEntry[]): ImageEntry | undefined {
+  const candidates = collectStrings(args);
+  return images.find(
+    (img) =>
+      candidates.includes(img.imagePath) || (img.hostedUrl && candidates.includes(img.hostedUrl)),
+  );
+}
+
+type DbPost = {
+  id: number;
+  platform: string;
+  text: string;
+  image_path: string | null;
+  image_url: string | null;
+  post_url: string | null;
+};
+
+function dbPostToEntry(row: DbPost): PostEntry {
+  const filename = row.image_path ? row.image_path.split("/").pop() : undefined;
+  return {
+    id: `db-${row.id}`,
+    text: row.text,
+    platform: row.platform,
+    url: row.post_url ?? undefined,
+    failed: false,
+    imageUrl: row.image_url ?? (filename ? `${BACKEND_ORIGIN}/outputs/${filename}` : undefined),
+  };
+}
+
 function collectGallery(messages: any[]): { images: ImageEntry[]; posts: PostEntry[] } {
   const images: ImageEntry[] = [];
   const posts: PostEntry[] = [];
@@ -55,7 +111,7 @@ function collectGallery(messages: any[]): { images: ImageEntry[]; posts: PostEnt
     if (msg.role === "assistant" && Array.isArray(msg.toolCalls)) {
       for (const call of msg.toolCalls) {
         const name = call.function?.name;
-        if (name === "generate_image" || name === "create_post") {
+        if (name === "generate_image" || name === "create_post" || name === "upload_image") {
           pending.set(call.id, { name, args: tryParseJSON(call.function?.arguments) });
         }
       }
@@ -72,7 +128,16 @@ function collectGallery(messages: any[]): { images: ImageEntry[]; posts: PostEnt
             id: msg.toolCallId,
             url: `${BACKEND_ORIGIN}/outputs/${filename}`,
             prompt: call.args?.prompt ?? "",
+            imagePath: result.image_path,
           });
+        }
+      } else if (call.name === "upload_image") {
+        if (!failed && result?.url && call.args?.image_path) {
+          const match = images.find((img) => img.imagePath === call.args.image_path);
+          if (match) {
+            match.hostedUrl = result.url;
+            match.hostedDryRun = Boolean(result.dry_run);
+          }
         }
       } else if (call.name === "create_post" && !failed) {
         posts.push({
@@ -81,6 +146,7 @@ function collectGallery(messages: any[]): { images: ImageEntry[]; posts: PostEnt
           platform: inferPlatform(call.args),
           url: result?.post_url ?? result?.url,
           failed: false,
+          imageUrl: findImageForPost(call.args, images)?.url,
         });
       }
     }
@@ -90,7 +156,20 @@ function collectGallery(messages: any[]): { images: ImageEntry[]; posts: PostEnt
 
 export function PostGallery() {
   const { messages } = useCopilotChatInternal();
-  const { images, posts } = collectGallery((messages as any[]) ?? []);
+  const { images, posts: livePosts } = collectGallery((messages as any[]) ?? []);
+
+  const [dbPosts, setDbPosts] = useState<PostEntry[]>([]);
+  useEffect(() => {
+    fetch(`${BACKEND_ORIGIN}/api/posts`)
+      .then((r) => r.json())
+      .then((data) => setDbPosts((data.posts ?? []).map(dbPostToEntry)))
+      .catch(() => {
+        // backend/db unreachable — the live-session list below still works
+      });
+  }, []);
+
+  const liveUrls = new Set(livePosts.map((p) => p.url).filter(Boolean));
+  const posts = [...livePosts, ...dbPosts.filter((p) => !p.url || !liveUrls.has(p.url))];
 
   if (images.length === 0 && posts.length === 0) {
     return null; // nothing approved/generated yet — keep the dashboard uncluttered
@@ -104,12 +183,20 @@ export function PostGallery() {
           {posts.map((p) => (
             <li key={p.id}>
               <span className="gallery-platform">{p.platform}</span>
-              <p>{p.text.length > 160 ? `${p.text.slice(0, 160)}…` : p.text}</p>
-              {p.url && (
-                <a href={p.url} target="_blank" rel="noreferrer">
-                  view
-                </a>
-              )}
+              <div className={p.imageUrl ? "gallery-post-body" : undefined}>
+                {p.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="gallery-post-thumb" src={p.imageUrl} alt="" />
+                )}
+                <div>
+                  <p>{p.text.length > 160 ? `${p.text.slice(0, 160)}…` : p.text}</p>
+                  {p.url && (
+                    <a href={p.url} target="_blank" rel="noreferrer">
+                      view
+                    </a>
+                  )}
+                </div>
+              </div>
             </li>
           ))}
         </ul>
@@ -117,8 +204,25 @@ export function PostGallery() {
       {images.length > 0 && (
         <div className="gallery-images">
           {images.map((img) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={img.id} src={img.url} alt={img.prompt} title={img.prompt} />
+            <div key={img.id} className="gallery-image">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.url} alt={img.prompt} title={img.prompt} />
+              {img.hostedUrl &&
+                (img.hostedDryRun ? (
+                  <span className="gallery-hosted gallery-hosted-dryrun" title={img.hostedUrl}>
+                    DRY_RUN — not actually uploaded
+                  </span>
+                ) : (
+                  <a
+                    className="gallery-hosted"
+                    href={img.hostedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Hosted on GCS ↗
+                  </a>
+                ))}
+            </div>
           ))}
         </div>
       )}

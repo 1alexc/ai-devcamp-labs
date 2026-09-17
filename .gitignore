@@ -3,6 +3,7 @@
 __pycache__/
 .venv/
 gallery/
+social_spark.db
 .adk/
 node_modules/
 .next/

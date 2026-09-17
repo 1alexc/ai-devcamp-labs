@@ -174,6 +174,12 @@ def redact_pii(text: str) -> str:
         json={
             "inspectConfig": {
                 "infoTypes": [{"name": t} for t in _DLP_INFO_TYPES],
+                # Unspecified defaults to POSSIBLE, DLP's most permissive
+                # tier — loose enough that a capitalized product/project noun
+                # (e.g. "Agent Substrate") reads as PERSON_NAME. LIKELY trades
+                # a little recall on genuinely borderline names for far fewer
+                # false positives on ordinary capitalized nouns.
+                "minLikelihood": "LIKELY",
             },
             "deidentifyConfig": {
                 "infoTypeTransformations": {

@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { CopilotKit } from "@copilotkit/react-core";
 import { CopilotSidebar } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 
 import { ActivityFeed } from "./components/ActivityFeed";
 import { AuthProvider, GoogleSignInButton, useAuth } from "./components/auth";
+import { ChatResizeHandle } from "./components/ChatResizeHandle";
 import { ConfirmAction } from "./components/ConfirmAction";
 import { GoogleDots, Logo } from "./components/Logo";
 import { PostGallery } from "./components/PostGallery";
@@ -98,11 +100,15 @@ function SignInScreen() {
 
 function Dashboard() {
   const { user } = useAuth();
+  const [chatOpen, setChatOpen] = useState(true); // matches defaultOpen below
+
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" agent="social_poster" showDevConsole={false}>
+      <ChatResizeHandle visible={chatOpen} />
       <CopilotSidebar
         defaultOpen
         clickOutsideToClose={false}
+        onSetOpen={setChatOpen}
         suggestions={SUGGESTIONS}
         labels={{
           title: "Social Spark",

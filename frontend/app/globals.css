@@ -22,6 +22,10 @@
   --copilot-kit-secondary-contrast-color: var(--g-grey-900);
   --copilot-kit-separator-color: var(--g-grey-300);
   --copilot-kit-muted-color: var(--g-grey-600);
+
+  /* Chat sidebar width, draggable via ChatResizeHandle. 28rem matches
+     CopilotKit's own default so nothing shifts before the user resizes. */
+  --chat-width: 28rem;
 }
 
 html {
@@ -519,6 +523,21 @@ a {
   color: var(--g-blue);
 }
 
+.gallery-post-body {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.gallery-post-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--g-grey-300);
+  flex-shrink: 0;
+}
+
 .gallery-images {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
@@ -533,6 +552,65 @@ a {
   border-radius: 8px;
   border: 1px solid var(--g-grey-300);
   cursor: pointer;
+}
+
+.gallery-image {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gallery-hosted {
+  font-size: 10px;
+  text-align: center;
+}
+
+.gallery-hosted:not(.gallery-hosted-dryrun) {
+  color: var(--g-blue);
+}
+
+.gallery-hosted-dryrun {
+  color: var(--g-grey-600);
+  font-style: italic;
+}
+
+/* ---------- Resizable chat sidebar ---------- */
+/* Overrides CopilotKit's fixed 28rem sidebar width (see sidebar.css/window.css
+   in @copilotkit/react-ui) with a CSS var ChatResizeHandle drags live. The
+   sidebar is anchored to the right edge, so widening it extends leftward. */
+
+.chat-resize-handle {
+  display: none; /* chat is full-screen below 640px — nothing to resize */
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: var(--chat-width);
+  width: 6px;
+  margin-right: -3px;
+  cursor: col-resize;
+  z-index: 31; /* above .copilotKitSidebar's z-index: 30 */
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+@media (min-width: 640px) {
+  .copilotKitSidebar .copilotKitWindow {
+    width: var(--chat-width) !important;
+  }
+
+  .copilotKitSidebarContentWrapper.sidebarExpanded {
+    margin-right: var(--chat-width) !important;
+  }
+
+  .chat-resize-handle {
+    display: block;
+  }
+}
+
+.chat-resize-handle:hover,
+.chat-resize-handle:active {
+  background-color: var(--g-blue);
+  opacity: 0.4;
 }
 
 .google-dots {

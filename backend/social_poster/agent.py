@@ -1,6 +1,16 @@
 """The social_poster multi-agent system: an orchestrator (`social_poster`)
 over `research_agent`, `draft_agent`, an optional `memory_agent`, and posting
-toolsets for LinkedIn and Buffer.
+toolsets, plus three guardrail layers from guardrails.py wired onto EVERY
+agent:
+
+- Model Armor screens each model call's input (before_model_callback) and
+  output (after_model_callback); MEDIUM_AND_ABOVE findings get a friendly
+  refusal instead of a model call.
+- Cloud DLP redacts PII (person names, emails, phone numbers, locations) from
+  final drafts on their way into create_post (before_tool_callback).
+
+All three no-op when MODEL_ARMOR_TEMPLATE_ID is unset, so ungoverned
+behaviour is one env var away for A/B demos.
 """
 
 import datetime
@@ -30,7 +40,7 @@ from google.adk.tools.tool_context import ToolContext
 from google.genai import types as genai_types
 from mcp import StdioServerParameters
 
-from . import db
+from . import db, guardrails
 from .tools import check_text_length, generate_image, upload_image
 
 log = logging.getLogger(__name__)
@@ -72,6 +82,8 @@ concise, factual summary: key facts, dates, numbers, and anything surprising
 or quotable. No drafting — just the research notes.""",
     tools=[google_search],
     output_key="research_notes",
+    before_model_callback=guardrails.guard_input,
+    after_model_callback=guardrails.guard_output,
 )
 
 # --- Specialist: drafting -----------------------------------------------------
@@ -203,7 +215,8 @@ Rules:
    the orchestrator handles that.""",
     tools=[skill_toolset, generate_image, check_text_length, *([upload_image] if use_gcs else [])],
     output_key="current_draft",
-    after_model_callback=_catch_image_placeholder,
+    before_model_callback=guardrails.guard_input,
+    after_model_callback=[_catch_image_placeholder, guardrails.guard_output],
     after_tool_callback=_track_image_state,
 )
 
@@ -460,6 +473,12 @@ root_agent = Agent(
     instruction=f"""You orchestrate turning an idea into a social media post.
 You do not research or draft yourself — you route work to specialist tools.
 
+IMPORTANT — before ANY other step, including memory consultation: if the
+user's message contains pasted or uploaded source text with real people's
+personal details (names, emails, phone numbers, locations), run
+redact_pii_text on that text immediately, show the user the cleaned version,
+and only ever work from the cleaned version afterwards.
+
 Workflow:{_MEMORY_ROUTING}
 1. If the idea needs facts, dates, or context, call research_agent first.
 2. Call draft_agent to write the post (and generate an image if wanted). It
@@ -481,11 +500,14 @@ Posting rules (strict):
         *([AgentTool(agent=memory_agent)] if memory_agent else []),
         AgentTool(agent=research_agent),
         AgentTool(agent=draft_agent),
+        guardrails.redact_pii_text,
         *([linkedin_toolset, linkedin_post_toolset] if use_linkedin else []),
         *([buffer_toolset, buffer_post_toolset] if use_buffer else []),
     ],
     before_agent_callback=_init_stage,
-    before_tool_callback=_delay_buffer_post,
+    before_model_callback=guardrails.guard_input,
+    after_model_callback=guardrails.guard_output,
+    before_tool_callback=[_delay_buffer_post, guardrails.redact_before_post],
     after_tool_callback=_track_stage,
     after_agent_callback=_stage_after_agent,
 )

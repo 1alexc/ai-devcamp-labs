@@ -1,8 +1,7 @@
-"""Phase 5: the Phase 4 multi-agent system, now governed.
-
-Same architecture as Phase 4 (orchestrator over research_agent, draft_agent,
-optional memory_agent + posting toolsets), plus three guardrail layers from
-guardrails.py wired onto EVERY agent:
+"""The social_poster multi-agent system: an orchestrator (`social_poster`)
+over `research_agent`, `draft_agent`, an optional `memory_agent`, and posting
+toolsets, plus three guardrail layers from guardrails.py wired onto EVERY
+agent:
 
 - Model Armor screens each model call's input (before_model_callback) and
   output (after_model_callback); MEDIUM_AND_ABOVE findings get a friendly
@@ -10,10 +9,11 @@ guardrails.py wired onto EVERY agent:
 - Cloud DLP redacts PII (person names, emails, phone numbers, locations) from
   final drafts on their way into create_post (before_tool_callback).
 
-All three no-op when MODEL_ARMOR_TEMPLATE_ID is unset, so Phase 4 behaviour
-is one env var away for A/B demos.
+All three no-op when MODEL_ARMOR_TEMPLATE_ID is unset, so ungoverned
+behaviour is one env var away for A/B demos.
 """
 
+import datetime
 import json
 import logging
 import os
@@ -45,9 +45,9 @@ from .tools import check_text_length, generate_image, upload_image
 
 log = logging.getLogger(__name__)
 
-PHASE_ROOT = pathlib.Path(__file__).resolve().parents[2]
-SKILLS_DIR = PHASE_ROOT / "skills"
-MCP_SERVER = PHASE_ROOT / "mcp" / "linkedin_server.py"  # McpToolset needs absolute paths
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+SKILLS_DIR = REPO_ROOT / "skills"
+MCP_SERVER = REPO_ROOT / "mcp" / "linkedin_server.py"  # McpToolset needs absolute paths
 
 # --- Image hosting (optional) --------------------------------------------------
 # Buffer's create_post can't fetch a locally-generated image file — it needs a
@@ -59,12 +59,12 @@ MCP_SERVER = PHASE_ROOT / "mcp" / "linkedin_server.py"  # McpToolset needs absol
 # Buffer posts stay text-only, exactly like before this existed.
 use_gcs = bool(os.environ.get("GCS_BUCKET_NAME", "").strip())
 
-# --- Per-agent model pinning (Phase 6) ----------------------------------------
+# --- Per-agent model pinning ---------------------------------------------
 # Each agent's model comes from env so cost/latency can be tuned per role
 # without touching code, and re-run through evals to confirm parity. Defaults
-# match Phase 4/5 (all flash). The Week 4 experiment: move the two agents that
-# don't need deep reasoning (research summarisation, the routing orchestrator)
-# to flash-lite, keep draft_agent on flash where quality shows most.
+# are all flash. One cost experiment: move the two agents that don't need
+# deep reasoning (research summarisation, the routing orchestrator) to
+# flash-lite, keep draft_agent on flash where quality shows most.
 RESEARCH_MODEL = os.environ.get("RESEARCH_MODEL", "gemini-flash-latest")
 DRAFT_MODEL = os.environ.get("DRAFT_MODEL", "gemini-flash-latest")
 ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "gemini-flash-latest")
@@ -238,7 +238,7 @@ if MEMORY_AGENT_CARD_URL:
         agent_card=MEMORY_AGENT_CARD_URL,
     )
 
-# --- Posting toolsets (unchanged from phase 2/3) ------------------------------
+# --- Posting toolsets -----------------------------------------------------
 def _linkedin_connection() -> StdioConnectionParams:
     return StdioConnectionParams(
         server_params=StdioServerParameters(
@@ -288,11 +288,24 @@ buffer_toolset = None
 buffer_post_toolset = None
 if BUFFER_API_KEY:
     # Same split as LinkedIn above: only create_post needs the confirmation
-    # gate. Buffer's tool list is hosted/dynamic (we don't hardcode it), so
-    # this uses a ToolPredicate instead of an explicit name list.
+    # gate — buffer_post_toolset below still uses a ToolPredicate since
+    # that's the one Buffer tool we DO want matched dynamically regardless
+    # of what else Buffer ships.
+    #
+    # buffer_toolset itself is deliberately an explicit allowlist, not
+    # "every other tool": Buffer's MCP server exposes 20 tools total
+    # (idea/template management, a GraphQL escape hatch via
+    # execute_query/execute_mutation, etc.), but the agent only ever needs
+    # channel lookup + account/timezone info to build create_post's args.
+    # Confirmed live: exposing all 19 non-create_post tools alongside
+    # AgentTool(draft_agent) makes gemini-2.5-flash/pro emit malformed
+    # pseudo-code function calls (`print(default_api.draft_agent(...))`)
+    # instead of real ones — narrowing to just what's used fixes it
+    # outright, and is better least-privilege practice regardless of the
+    # model bug.
     buffer_toolset = McpToolset(
         connection_params=_buffer_connection(),
-        tool_filter=lambda tool, readonly_context=None: tool.name != "create_post",
+        tool_filter=["list_channels", "get_account"],
     )
     buffer_post_toolset = McpToolset(
         connection_params=_buffer_connection(),
@@ -304,6 +317,37 @@ elif POST_VIA == "buffer":
 
 use_linkedin = POST_VIA != "buffer"
 use_buffer = bool(BUFFER_API_KEY) and POST_VIA != "linkedin"
+
+# Buffer has no DRY_RUN equivalent (unlike the local LinkedIn MCP server) —
+# its remote server posts for real the instant shareNow/addToQueue clears,
+# and the model chooses `mode` itself, so nothing here stops it from picking
+# an immediate one. Force every Buffer post at least this many minutes into
+# the future (customScheduled + dueAt) so there's a real window to review or
+# cancel it in Buffer's own UI, instead of trusting the model's choice of
+# mode. Set to 0 to disable for a live demo where an immediate real post is
+# the point.
+BUFFER_REVIEW_DELAY_MINUTES = int(os.environ.get("BUFFER_REVIEW_DELAY_MINUTES", "60"))
+
+
+def _delay_buffer_post(
+    tool: BaseTool, args: dict[str, Any], tool_context: ToolContext
+) -> Optional[dict]:
+    if (
+        tool.name == "create_post"
+        and args.get("channelId")  # Buffer-only field; LinkedIn's local server has none
+        and BUFFER_REVIEW_DELAY_MINUTES > 0
+    ):
+        due = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+            minutes=BUFFER_REVIEW_DELAY_MINUTES
+        )
+        args["mode"] = "customScheduled"
+        args["dueAt"] = due.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+        log.info(
+            "Buffer post delayed to %s (BUFFER_REVIEW_DELAY_MINUTES=%d) for review",
+            args["dueAt"],
+            BUFFER_REVIEW_DELAY_MINUTES,
+        )
+    return None
 
 # --- Pipeline stage, surfaced to the frontend via AG-UI shared state ----------
 # idea -> consulting_memory -> researching -> drafting -> awaiting_approval -> posted
@@ -463,7 +507,7 @@ Posting rules (strict):
     before_agent_callback=_init_stage,
     before_model_callback=guardrails.guard_input,
     after_model_callback=guardrails.guard_output,
-    before_tool_callback=guardrails.redact_before_post,
+    before_tool_callback=[_delay_buffer_post, guardrails.redact_before_post],
     after_tool_callback=_track_stage,
     after_agent_callback=_stage_after_agent,
 )

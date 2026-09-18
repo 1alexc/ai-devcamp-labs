@@ -51,7 +51,7 @@ function unwrapMcpContent(result: any): any {
   return result;
 }
 
-// Buffer's create_post takes a channelId; LinkedIn's (phase 2 MCP) does not.
+// Buffer's create_post takes a channelId; LinkedIn's MCP does not.
 function inferPlatform(args: any): string {
   return args?.channelId ? "Buffer" : "LinkedIn";
 }

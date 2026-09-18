@@ -1,36 +1,33 @@
-# AI DevCamp 2026: Pre-Camp Setup Guide
-**Send after registration, via email + pinned in Discord. Complete everything before Saturday 5 September.**
-Setup takes 45 to 60 minutes. Do it early: the Discord #setup-help channel and a live setup clinic (date TBC, week of 25 Aug) are there to unblock you before Day 1.
+# AI DevCamp Pro: Agents — Pre-Camp Setup Guide
+**Sent via email + pinned in Discord from 24 September. Complete everything before Saturday 26 September.**
+Setup takes 45 to 60 minutes. Do it early: the Discord #setup-help channel, your buddy group, and a live setup clinic (week of 21 September, date TBC) are there to unblock you before the first workshop.
 
 ---
 
 ## What you're setting up, in one line
-A Google Cloud account with $300 of free credit, a local dev environment, and the Antigravity IDE, everything the four workshops need.
+A Google Cloud account with $300 of free credit and a spend cap, a local dev environment, a coding agent (Antigravity by default) with a Vertex AI fallback, and a buddy who has checked your setup.
 
 ## Important notes before you start
-- **Cost:** the whole camp is designed to fit well inside Google's $300 free trial credit (90 days). We'll set a real spend cap (not just an email alert) together in Week 1 so nothing surprises you.
+- **Cost:** the whole camp is designed to fit well inside Google's $300 free trial credit (90 days). You'll set a real spend cap (not just an email alert) in Step 1 so nothing surprises you.
 - **Card required:** Google asks for a credit/debit card to verify identity when you start the free trial. You are not charged during the trial, and it does not auto-charge when the trial ends without you upgrading.
-- **The $300 credit covers Vertex AI, not the separate Gemini API / AI Studio billing system.** All model calls in this camp (including image generation) go through **Vertex AI inside your GCP project**, so they're covered. If you ever grab a standalone API key from aistudio.google.com instead, that's on a different account with its own billing (Google is moving it to a mandatory prepaid balance from Sep 2026); don't put a card on that one. Its free tier is enough as a backup (see Step 3).
-- **Your IDE, your account:** you'll code in Google Antigravity (free tier). Any AI IDE accounts, quotas, or subscriptions are your own responsibility; the camp only uses your GCP credit for cloud resources.
+- **The $300 credit covers Vertex AI, not the separate Gemini API / AI Studio billing system.** All model calls in this camp (including image generation) go through **Vertex AI inside your GCP project**, so they're covered. If you ever grab a standalone API key from aistudio.google.com, that's a different account with its own billing (Google is moving it to a mandatory prepaid balance from September 2026); don't put a card on that one.
+- **Your coding agent, your account:** you'll code with Google Antigravity by default (Claude Code or Gemini CLI also work; the labs give you prompts and checkpoints, not code). Any AI IDE accounts, quotas, or subscriptions are your own responsibility; the camp only uses your GCP credit for cloud resources.
 - **Windows users:** you'll need WSL 2 (Windows Subsystem for Linux). Everything below happens inside WSL.
 
 ---
 
-## Step 1: Google Cloud account + project (15 min)
+## Step 1: Google Cloud account + project + spend cap (20 min)
 1. Go to cloud.google.com/free and start the free trial with a Google account (a personal Gmail is fine; work accounts often have restrictions, avoid them).
 2. Create a new project named `ai-devcamp-<yourname>`.
 3. Set the default region when asked: **europe-west1**.
-4. Enable these APIs (console → APIs & Services → Enable): Vertex AI API, Cloud Run, Cloud Build, Sensitive Data Protection (DLP), Model Armor, Discovery Engine.
-
-✅ Checkpoint: the Vertex AI page in the console loads without an "enable API" prompt.
-
+4. Enable these APIs (console → APIs & Services → Enable): Vertex AI API, Cloud Run, Cloud Build, Sensitive Data Protection (DLP), Model Armor, Discovery Engine, Cloud Resource Manager API, App Hub API. The last two aren't obviously "Vertex AI" but Agent Runtime deploys (Session 2, Scale) fail or show a degraded console without them — confirmed by actually deploying, not just reading docs.
 5. **Set a spend cap** (console → Billing → Budgets & alerts): create a budget scoped to your `ai-devcamp-<yourname>` project, alert thresholds at 50/80/100%, **and** turn on the spend-cap option scoped to the Vertex AI / Gemini API service (currently in preview). Unlike a plain alert, the spend cap actually pauses further Vertex AI usage once you hit 100%. A plain email alert doesn't stop anything.
 
-✅ Checkpoint: Budgets & alerts shows your budget with the spend cap enabled, not just an alert.
+✅ Checkpoint: the Vertex AI page in the console loads without an "enable API" prompt, and Budgets & alerts shows your budget with the spend cap enabled.
 
 ## Step 2: Local tools (15 min)
 Install, in order:
-1. **Python 3.11+** (python.org or your package manager)
+1. **Python 3.12+** (python.org or your package manager; the project requires 3.12)
 2. **uv** (Python package manager): `curl -LsSf https://astral.sh/uv/install.sh | sh`
 3. **Node.js 20+** (nodejs.org)
 4. **Google Cloud SDK** (cloud.google.com/sdk), then:
@@ -39,49 +36,60 @@ Install, in order:
    gcloud auth application-default login
    gcloud config set project ai-devcamp-<yourname>
    ```
-5. **ADK**: `pip install google-adk` (or `uv pip install google-adk`)
-6. **Git** + a **GitHub account** (in Week 1 you'll create your own private repo from our template with one click; your code stays private, you just grant the mentor account read access so we can support you and track progress)
+5. **ADK**: `uv pip install google-adk` (or `pip install google-adk`)
+6. **Git** + a **GitHub account**. In Lab 1 you'll clone the starter repo: the web frontend, the LinkedIn MCP server and the Agent Skills come prebuilt; you build the agent backend.
 
 ✅ Checkpoint: `adk --version`, `node --version`, and `gcloud config get-value project` all return sensible answers.
 
-## Step 3: Antigravity (10 min)
+## Step 3: Antigravity with the Vertex AI fallback (10 min, required)
 1. Download Google Antigravity and sign in with your Google account.
-2. Configure the quota fallback so a busy workshop can't stall you: in Antigravity settings, add a Vertex AI connection (your project, europe-west1) as your primary model access. For the backup key, grab a **free-tier** key from aistudio.google.com (no card, no billing setup). It's rate-limited but enough to get you through a stall, and it's completely separate from your $300 Vertex AI credit. Do **not** enable Prepay/billing on that AI Studio account; you shouldn't need it. Full walkthrough with screenshots: [link to guide, TBC].
+2. **Required, not optional:** configure the Vertex AI fallback. With hundreds of people in the workshop at once, Antigravity's free quota can run out mid-session; the fallback bills to your $300 credit instead and keeps you moving. In Antigravity settings, add a Vertex AI connection (your project). **Prefer `global` over `europe-west1` for the connection's location if Antigravity offers the choice** — `europe-west1` doesn't serve `gemini-flash-latest` (see Step 4's checkpoint below; not separately re-verified for Antigravity's own connection UI specifically, so if `global` isn't an option there, try it and confirm with the checkpoint before Saturday rather than assuming). Full walkthrough with screenshots: [link to guide, TBC].
+3. Optional second backup: a **free-tier** key from aistudio.google.com (no card, no billing setup). It's rate-limited but enough to get through a stall, and it's separate from your $300 credit. Do **not** enable Prepay/billing on that account.
+4. Prefer another coding agent (Claude Code, Gemini CLI)? Fine. The labs give you the prompt to type and the result to check, not the code, so any agent works.
 
-✅ Checkpoint: ask Antigravity to create a hello-world Python file; review its plan, accept, run it.
+✅ Checkpoint: ask Antigravity to create a hello-world Python file; review its plan, accept, run it. Then switch the model connection to Vertex AI and repeat once.
 
 ## Step 4: Environment variables (5 min)
 Create a `.env` you'll reuse all camp:
 ```
 GOOGLE_GENAI_USE_VERTEXAI=TRUE
 GOOGLE_CLOUD_PROJECT=ai-devcamp-<yourname>
-GOOGLE_CLOUD_LOCATION=europe-west1
+GOOGLE_CLOUD_LOCATION=global
 DRY_RUN=true
 ```
 (`DRY_RUN=true` means the LinkedIn posting tool logs posts instead of publishing. Nobody posts anything by accident in this camp.)
 
-## Step 5: Optional but recommended (10 min)
-- **LinkedIn Developer app** (only needed if you want to publish a real post in Week 4; everything else works in dry-run): developer guide will be shared in Week 3. Skip for now if short on time.
-- Join **Discord** [invite link] and say hi in #introductions. Channels: #setup-help, #week-1 to #week-4, #show-your-use-case.
-- Think of **one use case of your own**: an agent you'd like to exist. You'll declare it in Week 1 and build it alongside ours.
+**Use `global`, not `europe-west1`, here — confirmed by direct testing, not assumption.** `gemini-flash-latest` returns a 404 "Publisher model not found" in `europe-west1` (and in `europe-west2`, hit the same way during Scale deploy testing): regional Vertex AI endpoints can lag behind `global` for the newest flash models. `global` is the one location confirmed to actually serve `gemini-flash-latest`. This is unrelated to Step 1's project region (europe-west1 is fine there — that's just project metadata, not the model call's location) and to Model Armor's region in Session 3 (Model Armor specifically needs a real region, `global` doesn't work for *that* call — the two settings are independent, don't conflate them).
+
+✅ Checkpoint: `uv run adk web` against any agent and send one message — a 404 "Publisher model ... was not found" means `GOOGLE_CLOUD_LOCATION` is still set to a region, not `global`.
+
+## Step 5: Buddy check (5 min)
+You'll be placed in a small buddy group in Discord before the first workshop. Before Saturday, post your checkpoint results from Steps 1–3 in your group thread and confirm one buddy's results in return. Broken setups get fixed in the group or at the setup clinic, not during the workshop.
+
+## Step 6: Recommended before Saturday (10 min)
+- **Buffer account:** Lab 1 publishes through Buffer's MCP server. Create a free Buffer account and connect at least one channel (a LinkedIn profile is fine). No card needed for the free tier. You'll grab the API key during the lab.
+- **LinkedIn Developer app** (optional bonus step in Lab 1; everything else works through Buffer or in dry-run): skip for now if short on time, a guide is linked from the lab.
+- Join **Discord** [invite link] and say hi in #introductions. Channels: #setup-help, #session-1 to #session-4, #show-your-use-case.
+- Think of **one use case of your own**: an agent you'd like to exist. You'll declare it in Lab 1 and build it alongside ours as each lab's Assignment.
 
 ---
 
 ## The running use case you'll build
-An agent that turns your idea (text, with a voice demo) into a formatted LinkedIn post: it researches the web, remembers your past posts, drafts with Agent Skills, waits for your approval in a proper web UI, and posts via MCP. Built in Week 1, made production-ready by Week 4.
+An agent that turns your idea into a formatted social post: it researches the web, drafts with Agent Skills, generates an image, waits for your approval in a proper web UI, and publishes via MCP. Built in Lab 1, made production-ready across Labs 2 to 4.
 
 ## Schedule
-| Week | Thursday (theory, 1hr) | Saturday (workshop, 2hr) | Stage |
+| Session | Thursday (theory, 1hr) | Saturday (workshop, 2hr) | Pillar |
 |---|---|---|---|
-| 1 | 3 Sept (kickoff, hybrid: Skyscanner + online) | 5 Sept | Build |
-| 2 | 10 Sept | 12 Sept | Scale |
-| 3 | 17 Sept | 19 Sept | Govern |
-| 4 | 24 Sept | 26 Sept | Optimise |
+| Kickoff | 23 Sept, 6–9pm, hybrid: Skyscanner + online | — | Series overview + trends |
+| 1 | 24 Sept | 26 Sept | Build |
+| 2 | 1 Oct | 3 Oct | Scale |
+| 3 | 8 Oct | 10 Oct | Govern |
+| 4 | 15 Oct | 17 Oct | Optimise |
 
 ## If something breaks
-1. Search #setup-help first, someone has probably hit it.
+1. Ask your buddy group, then search #setup-help; someone has probably hit it.
 2. Post: your OS, the exact command, the exact error.
-3. Still stuck on Saturday? Pair with a neighbour; broken environments follow along on the instructor project and fix after.
+3. Still stuck on Saturday? Pair with a buddy; broken environments follow along on the instructor project and fix after.
 
-See you on the 3rd.
+See you on Saturday 26 September.
 GDG London × AI DevCamp mentors

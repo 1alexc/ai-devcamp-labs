@@ -6,8 +6,8 @@ type AgentState = {
   pipeline_stage?: string;
 };
 
-// Phase 4: image generation moved inside draft_agent (folded into Drafting);
-// memory consultation added ahead of research.
+// Image generation happens inside draft_agent (folded into Drafting);
+// memory consultation happens ahead of research.
 const STAGES: { key: string; icon: string; label: string }[] = [
   { key: "idea", icon: "💡", label: "Idea" },
   { key: "consulting_memory", icon: "🧠", label: "Consulting memory" },

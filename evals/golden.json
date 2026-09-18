@@ -1,6 +1,6 @@
 {
   "eval_set_id": "golden",
-  "name": "Phase 5 golden set",
+  "name": "social_poster golden set",
   "description": "The five behaviours that must never regress: on-brand drafting, approval gating, memory consultation, injection blocking, PII redaction. Run with the mock memory server up (uv run python backend/mock_memory_agent.py) and MEMORY_AGENT_CARD_URL set. Scoring is semantic (final_response_match_v2) plus rubric-based tool-use quality — NOT tool_trajectory_avg_score, because AgentTool calls carry LLM-generated free-text args that strict trajectory matching can never equal (see LEARNINGS.md).",
   "eval_cases": [
     {

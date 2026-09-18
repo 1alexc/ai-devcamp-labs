@@ -10,3 +10,8 @@ node_modules/
 .DS_Store
 eval_history/
 tsconfig.tsbuildinfo
+ai_devcamp_docs/
+
+# Coding Agents
+.agents/
+.claude/

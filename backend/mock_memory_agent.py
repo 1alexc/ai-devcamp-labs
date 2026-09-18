@@ -1,13 +1,13 @@
 """Local mock of the Agent Engine RAG memory agent, served over A2A.
 
-The real Phase 4 memory agent is the Agent Garden RAG sample deployed to
+The real memory agent is the Agent Garden RAG sample deployed to
 Agent Engine with your actual past posts in its datastore (see
 docs/agent-engine-rag-setup.md). This mock serves the same A2A protocol
 locally with a handful of hardcoded "past posts", so the A2A wiring, the
-orchestrator's memory consultation, and the Phase 5 eval can all run without
+orchestrator's memory consultation, and the eval suite can all run without
 a cloud deploy.
 
-Run from the phase root (keep it running in its own terminal):
+Run from the repo root (keep it running in its own terminal):
 
     uv run python backend/mock_memory_agent.py
 

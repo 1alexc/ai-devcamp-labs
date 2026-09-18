@@ -1,6 +1,6 @@
 """AG-UI bridge: exposes the social_poster agent to the CopilotKit frontend.
 
-Run from the phase root:  uv run uvicorn backend.main:app --port 8000
+Run from the repo root:  uv run uvicorn backend.main:app --port 8000
 """
 
 import pathlib

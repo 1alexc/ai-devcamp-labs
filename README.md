@@ -2,7 +2,7 @@
 
 **This is a reference, not a starting point.** [Workshop 1](https://sonikajanagill.com/social-spark/agentic-devcamp-workshop-1.html) has you build a
 smaller version of this agent yourself, step by step, in the
-[codelab](docs/agentic-devcamp-workshop-1.html) — an orchestrator that
+[Lab 1: Build codelab](docs/lab-1-build.html) — an orchestrator that
 researches, drafts with Agent Skills, generates an image, and publishes
 through Buffer or LinkedIn behind a human-approval gate, with a CopilotKit
 web UI on top.

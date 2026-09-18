@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AG-UI backend on :8000. Run from this phase's root.
+# AG-UI backend on :8000. Run from the repo root.
 set -euo pipefail
 cd "$(dirname "$0")"
 uv sync

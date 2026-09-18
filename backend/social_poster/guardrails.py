@@ -1,18 +1,18 @@
-"""Phase 5 guardrails: Model Armor on every model call, DLP before posting.
+"""Guardrails: Model Armor on every model call, DLP before posting.
 
-Three independent layers (the Week 3 lesson is that they're LAYERS, not
-alternatives — different layers catch different attacks):
+Three independent layers (they're LAYERS, not alternatives — different
+layers catch different attacks):
 
   guard_input   before_model_callback  Model Armor sanitizeUserPrompt
   guard_output  after_model_callback   Model Armor sanitizeModelResponse
   redact_before_post  before_tool_callback  DLP de-identify on create_post text
 
 All three no-op if MODEL_ARMOR_TEMPLATE_ID is unset (same env-gated pattern as
-Buffer/memory), so earlier-phase behaviour is reproducible by clearing one var.
+Buffer/memory), so ungoverned behaviour is reproducible by clearing one var.
 
 Model Armor only answers on regional endpoints; DLP is fine on the global one.
 Both are called via REST with the ambient ADC (GOOGLE_APPLICATION_CREDENTIALS
-→ the devcamp ADC file), so no new auth setup beyond Phase 0.
+→ the devcamp ADC file), so no new auth setup is needed.
 """
 
 import logging
@@ -218,7 +218,7 @@ def redact_before_post(
     """before_tool_callback: final drafts get a DLP pass on their way out.
     Mutating args in place changes what the tool actually receives (the same
     dict is passed on to the call); returning None lets the call proceed."""
-    if not MA_TEMPLATE:  # guardrails off ⇒ redaction off too, keep phases comparable
+    if not MA_TEMPLATE:  # guardrails off ⇒ redaction off too
         return None
     if tool.name == "create_post" and isinstance(args.get("text"), str):
         redacted = redact_pii(args["text"])

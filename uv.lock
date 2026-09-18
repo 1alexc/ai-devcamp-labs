@@ -2833,9 +2833,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "ag-ui-adk", specifier = "==0.7.0" },
-    { name = "ag-ui-adk", specifier = ">=0.7.0" },
     { name = "fastapi", specifier = "==0.139.0" },
-    { name = "fastapi", specifier = ">=0.139.0" },
     { name = "fastmcp", specifier = "==3.4.4" },
     { name = "google-adk", extras = ["a2a", "eval"], specifier = "==2.4.0" },
     { name = "google-cloud-storage", specifier = "==3.13.0" },
@@ -2843,7 +2841,6 @@ requires-dist = [
     { name = "httpx", specifier = "==0.28.1" },
     { name = "python-dotenv", specifier = "==1.2.2" },
     { name = "uvicorn", specifier = "==0.51.0" },
-    { name = "uvicorn", specifier = ">=0.51.0" },
 ]
 
 [[package]]

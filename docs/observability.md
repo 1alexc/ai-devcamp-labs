@@ -1,7 +1,36 @@
-# Setup guide: observability (Week 4)
+# Setup guide: observability (Optimize)
 
-Once the agent is on Cloud Run, use Google Cloud's tracing and analytics to
-see what's actually happening in production.
+Once the agent is deployed (Cloud Run or Agent Runtime), use Google Cloud's
+tracing and analytics to see what's actually happening in production.
+
+## 0. Agent Runtime instrumentation (confirmed via a real deploy, Scale spike)
+
+Agent Runtime deployments expose two console toggles under the engine's
+**Traces** page (`agent-platform/runtimes/.../traces`), separate from
+anything you set in `env_vars` at deploy time:
+
+- **Enable instrumentation of OpenTelemetry traces, logs and metrics** —
+  populates the agent observability dashboard and traces pages at all.
+  Telemetry cost varies by volume ingested. The legacy `enable_tracing` flag
+  must not be set to `false`, or it overrides this.
+- **Enable the logging of prompt inputs and response outputs** — off by
+  default (only a minimal skeleton of each prompt/response is captured, no
+  actual content or tool-call parameters). Turning it on collects the full
+  content of user prompts, responses, and the user ID, which **may include
+  sensitive data or PII** — the console's own warning is explicit: ensure
+  you have end-user consent, notices, and data-handling policies in place
+  before enabling this on anything but a throwaway test engine. Same
+  DLP-retention thinking as the Govern pillar's guardrails applies here.
+
+Both map to environment variables you'll see listed alongside the toggles
+(read-only there, but this is what they correspond to if you're setting them
+via the deploy config's own `env_vars` instead):
+
+| Env var | Value | What it does |
+|---|---|---|
+| `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY` | `true` | The OTel traces/logs/metrics toggle |
+| `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` | `NO_CONTENT` (default) or full content | The prompt/response content toggle |
+| `OTEL_SEMCONV_STABILITY_OPT_IN` | `gen_ai_latest_experimental` | Opts into the current (experimental) GenAI semantic-convention schema for span attributes |
 
 ## 1. Cloud Trace — find the slowest span
 

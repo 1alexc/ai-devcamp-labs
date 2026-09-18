@@ -16,15 +16,19 @@ behaviour is one env var away for A/B demos.
 import datetime
 import json
 import logging
+import mimetypes
 import os
 import pathlib
 import re
 import sys
+import time
+import uuid
 from typing import Any, Optional
 
 from google.adk.agents import Agent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
+from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.skills import load_skill_from_dir
 from google.adk.tools import google_search
@@ -41,7 +45,13 @@ from google.genai import types as genai_types
 from mcp import StdioServerParameters
 
 from . import db, guardrails
-from .tools import check_text_length, generate_image, upload_image
+from .tools import (
+    OUTPUTS_DIR,
+    check_text_length,
+    generate_image,
+    upload_image,
+    use_provided_image_url,
+)
 
 log = logging.getLogger(__name__)
 
@@ -58,6 +68,15 @@ MCP_SERVER = REPO_ROOT / "mcp" / "linkedin_server.py"  # McpToolset needs absolu
 # a signed URL instead. Leave blank to skip: images stay local-only and
 # Buffer posts stay text-only, exactly like before this existed.
 use_gcs = bool(os.environ.get("GCS_BUCKET_NAME", "").strip())
+
+# The chat needs SOME browser-loadable URL to preview the image inline — the
+# GCS hosted URL above isn't guaranteed to be one; this project's bucket
+# currently 403s to a plain fetch because Public Access Prevention is
+# enforced (see LEARNINGS.md), and there's no reason a *preview* should
+# depend on the bucket being public anyway. backend/main.py already serves
+# local gallery files at /outputs for exactly this reason (PostGallery.tsx
+# uses it client-side) — reuse that instead of the hosted URL for display.
+BACKEND_PUBLIC_ORIGIN = os.environ.get("BACKEND_PUBLIC_ORIGIN", "http://localhost:8000")
 
 # --- Per-agent model pinning ---------------------------------------------
 # Each agent's model comes from env so cost/latency can be tuned per role
@@ -116,15 +135,77 @@ def _track_image_state(
     tool: BaseTool, args: dict[str, Any], tool_context: ToolContext, tool_response: dict
 ) -> Optional[dict]:
     if tool.name == "generate_image" and tool_response.get("status") == "success":
-        tool_context.state["current_image_path"] = tool_response["image_path"]
-        tool_context.state.pop("current_image_url", None)  # belonged to the old image
+        image_path = tool_response["image_path"]
+        tool_context.state["current_image_path"] = image_path
+        filename = pathlib.Path(image_path).name
+        tool_context.state["current_image_display_url"] = f"{BACKEND_PUBLIC_ORIGIN}/outputs/{filename}"
+        # ADK's State has no pop()/del — only __setitem__/get/update. Every
+        # reader here treats None the same as absent (inject_session_state's
+        # {{...?}} template and the plain .get() calls below both do), so
+        # clearing to None is the correct way to unset a state key.
+        tool_context.state["current_image_url"] = None  # belonged to the old image
     elif (
         tool.name == "upload_image"
         and tool_response.get("status") == "success"
         and not tool_response.get("dry_run")
     ):
         tool_context.state["current_image_url"] = tool_response["url"]
+    elif tool.name == "use_provided_image_url" and tool_response.get("status") == "success":
+        # A user-supplied URL is already public and already the thing to
+        # both display and post — no local file, no GCS upload, so both
+        # state keys just point at the same URL directly.
+        url = tool_response["url"]
+        tool_context.state["current_image_path"] = None
+        tool_context.state["current_image_display_url"] = url
+        tool_context.state["current_image_url"] = url
     return None
+
+
+# A user can attach an image straight in the chat (CopilotKit's `attachments`
+# config, frontend/app/page.tsx). Confirmed by reading ag_ui_adk's actual
+# conversion code (utils/converters.py::_media_content_to_part) that this
+# really does arrive as a genuine types.Part(inline_data=...) — real
+# multimodal content, not just text describing an attachment. But
+# AgentTool.run_async (confirmed by reading ITS source too) only ever
+# forwards a plain text string to a sub-agent — draft_agent can never see
+# this Part directly, no matter how root_agent's instruction is worded. So
+# this has to be intercepted here, on root_agent, before draft_agent is ever
+# called: save the attachment to gallery/ and populate the same
+# current_image_path/current_image_display_url state that generate_image
+# writes, and draft_agent's existing "an image already exists, reuse it"
+# rule (see its instruction below) picks it up with no changes on its end.
+def _stage_attached_image(
+    callback_context: CallbackContext, llm_request: LlmRequest
+) -> Optional[LlmResponse]:
+    # llm_request.contents holds the FULL conversation history on every
+    # single call, not just the new turn — checking only the LAST content,
+    # and only when it's actually a fresh user turn, stops the same old
+    # attachment from being re-staged (and current_image_path silently
+    # reset) on every later turn that still has it in history.
+    contents = llm_request.contents
+    if not contents:
+        return None
+    last = contents[-1]
+    if last.role != "user" or not last.parts:
+        return None
+    for part in last.parts:
+        blob = part.inline_data
+        if not blob or not blob.data or not (blob.mime_type or "").startswith("image/"):
+            continue
+        ext = mimetypes.guess_extension(blob.mime_type) or ".png"
+        filename = f"chat-upload-{int(time.time())}-{uuid.uuid4().hex[:8]}{ext}"
+        image_path = OUTPUTS_DIR / filename
+        OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+        image_path.write_bytes(blob.data)
+        callback_context.state["current_image_path"] = str(image_path)
+        callback_context.state["current_image_display_url"] = (
+            f"{BACKEND_PUBLIC_ORIGIN}/outputs/{filename}"
+        )
+        callback_context.state["current_image_url"] = None  # not hosted yet
+        log.info("Staged a chat-attached image for the current post: %s", image_path)
+        return None  # only the first image in the turn — one image per post
+    return None
+
 
 # Confirmed live (2026-09-17): despite the instruction above, draft_agent
 # sometimes writes "Image Description: <text>" (or "(Image: ...)") instead of
@@ -199,21 +280,32 @@ Rules:
    (structure), platform-style (rules for the target platform), and
    brand-voice (tone).
 2. Ground the draft in the research notes when they exist; never invent facts.
-3. Images cost real money to generate. If an image already exists above for
-   this same post, REUSE it — report that same path/URL, do not call
-   generate_image again. Only call generate_image if there is no existing
-   image yet, or the user explicitly asks for a new/different image (a
-   genuinely new, unrelated post idea also counts as needing its own new
-   image — don't reuse an old post's image for a different topic). When you
-   do call it, load the poster-style skill first, give a detailed visual
-   description, and ACTUALLY CALL the tool — never write a placeholder like
-   "(Image: ...)" or describe the image in the post text instead of calling
-   it. The image is a separate attachment, not part of the post's
-   words.{_GCS_UPLOAD_STEP}
+3. Images cost real money to generate — and don't need to be generated at
+   all if the user already has one:
+   - If the user gives you a URL to an image (pasted a link, said "use this
+     image: <url>", etc.) rather than asking you to generate one, call
+     use_provided_image_url with that exact URL and use it as-is. Never
+     call generate_image or upload_image for it — it's already hosted.
+   - Otherwise, if an image already exists above for this same post, REUSE
+     it — report that same path/URL, do not call generate_image again.
+   - Otherwise, if the user wants an image, call generate_image (only for a
+     genuinely new/different image the user explicitly asks for, or a new
+     unrelated post idea — don't reuse an old post's image for a different
+     topic). Load the poster-style skill first, give a detailed visual
+     description, and ACTUALLY CALL the tool — never write a placeholder
+     like "(Image: ...)" or describe the image in the post text instead of
+     calling it. The image is a separate attachment, not part of the
+     post's words.{_GCS_UPLOAD_STEP}
 4. Return ONLY the draft text (with no image caption or placeholder in it)
    and the image path/URL if any — no commentary about approvals or posting;
    the orchestrator handles that.""",
-    tools=[skill_toolset, generate_image, check_text_length, *([upload_image] if use_gcs else [])],
+    tools=[
+        skill_toolset,
+        generate_image,
+        use_provided_image_url,
+        check_text_length,
+        *([upload_image] if use_gcs else []),
+    ],
     output_key="current_draft",
     before_model_callback=guardrails.guard_input,
     after_model_callback=[_catch_image_placeholder, guardrails.guard_output],
@@ -484,8 +576,18 @@ Workflow:{_MEMORY_ROUTING}
 2. Call draft_agent to write the post (and generate an image if wanted). It
    reads the research notes automatically; pass it the idea, target platform,
    and any user preferences.
-3. Show the finished draft to the user and ask for approval. For revisions,
-   call draft_agent again with the feedback.
+3. Show the finished draft to the user and ask for approval. If an image
+   was generated, the user needs to actually SEE it before approving, not
+   just read a description — embed it as Markdown on its own line right
+   after the draft text and hashtags, using EXACTLY this pre-resolved URL,
+   verbatim, do not substitute a different one from draft_agent's own
+   result text: `![post image]({{current_image_display_url?}})` (this
+   renders the CURRENT local image via the backend's own /outputs route —
+   deliberately not the GCS hosted URL draft_agent reports, which needs a
+   public bucket grant this project's Public Access Prevention setting
+   blocks; see LEARNINGS.md). If that comes out blank, no image exists yet
+   — don't fabricate a caption or link. For revisions, call draft_agent
+   again with the feedback.
 4. ALWAYS get explicit approval before any posting action.
 {_IMAGE_REUSE_NOTE}
 {_BUFFER_ROUTING}
@@ -505,7 +607,7 @@ Posting rules (strict):
         *([buffer_toolset, buffer_post_toolset] if use_buffer else []),
     ],
     before_agent_callback=_init_stage,
-    before_model_callback=guardrails.guard_input,
+    before_model_callback=[guardrails.guard_input, _stage_attached_image],
     after_model_callback=guardrails.guard_output,
     before_tool_callback=[_delay_buffer_post, guardrails.redact_before_post],
     after_tool_callback=_track_stage,

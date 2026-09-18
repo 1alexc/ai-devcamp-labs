@@ -12,6 +12,88 @@ terminology sweep.)
 
 <!-- Add entries below, newest first. -->
 
+**2026-09-18 — Build — the GCS "public bucket" setup in `.env.example`
+doesn't work when Public Access Prevention is on, and this project's own
+bucket is a live example.** `upload_image` (tools.py) returns a plain
+`storage.googleapis.com` object URL on the assumption the bucket has
+`allUsers:objectViewer` — `.env.example`'s own setup steps tell you to grant
+it. Tried it live on this project's `social-spark-creatives` bucket:
+`gcloud storage buckets add-iam-policy-binding ... --member=allUsers
+--role=roles/storage.objectViewer` → `HTTPError 412: The member bindings
+allUsers and allAuthenticatedUsers are not allowed since public access
+prevention is enforced.` Checked the bucket's actual IAM policy directly
+(`gcloud storage buckets get-iam-policy`) — no `allUsers` binding exists at
+all, confirming every hosted URL this app has ever produced 403s to a plain
+browser fetch; nobody had actually opened one until embedding it as a chat
+image made that visible. **Public Access Prevention is a common default on
+managed/shared GCP projects** (this DevCamp project has it) — don't assume
+`.env.example`'s bucket instructions will work as written; check first with
+`gcloud storage buckets describe gs://YOUR_BUCKET
+--format="value(iamConfiguration.publicAccessPrevention)"`. **Fix (shipped,
+`agent.py`)**: don't depend on the hosted URL for the in-chat image
+*preview* at all — a new `current_image_display_url` state key
+(`BACKEND_PUBLIC_ORIGIN` + `/outputs/<filename>`, the same static route
+`backend/main.py` already serves for `PostGallery.tsx`) is computed
+server-side in `_track_image_state` and the orchestrator's instruction
+embeds that exact pre-resolved URL verbatim as Markdown
+(`![post image]({{current_image_display_url?}})`) — deterministic, no
+reliance on the model correctly picking/copying a URL out of draft_agent's
+free-text result. The GCS hosted URL is untouched and still what
+`upload_image`/Buffer's `create_post` use for actual posting — this fix is
+preview-only. **Codelab material**: worth a callout in whichever lab
+introduces GCS image hosting — "this bucket step may 412 on managed
+projects, and the in-chat preview doesn't need it to work" saves attendees
+from concluding the whole feature is broken.
+**Follow-up (shipped, `tools.py`)**: fixed the actual posting path too, not
+just the preview — `upload_image` now returns a V4 *signed* URL instead of
+a plain public one, signed via service-account impersonation
+(`google.auth.impersonated_credentials`, a new `GCS_SIGNING_SERVICE_ACCOUNT`
+env var) rather than a downloaded key file, which this project's
+credentials policy doesn't allow. Confirmed the impersonation path is
+required, not optional, for local dev specifically: this project's ADC is
+an `authorized_user` (a human Google account via `gcloud auth
+application-default login`), and only service-account credentials carry a
+signable identity — a human identity can't self-sign at all, it has to
+borrow a service account's identity for exactly that. Needs a one-time,
+human-run IAM setup (create the uploader SA, grant it
+`storage.objectAdmin` on the bucket, grant the calling identity
+`iam.serviceAccountTokenCreator` on that SA) — first shipped as raw gcloud
+commands in `.env.example`'s comments, then promoted to an actual
+idempotent script (`gcs-setup.sh`, repo root) once it became
+clear a comment block isn't discoverable enough for attendees to actually
+find and run correctly by hand. **This is NOT part of Lab 1's taught
+curriculum** — Lab 1
+deliberately keeps Buffer posts text-only and only attaches images via
+LinkedIn's own tool (Step 7), specifically to avoid this exact complexity;
+this fix is for the reference app's more advanced capability, so it's
+documented as an explicitly optional step in
+`docs/devcamp-attendee-setup-guide.md` (Step 6), not folded into the
+mandatory pre-camp steps everyone has to do.
+
+**2026-09-18 — Scale — `useCopilotAction`/`useRenderTool`-style rendering
+cannot see tool calls nested inside an `AgentTool`.** Tried rendering
+`generate_image`'s result inline in chat by registering a
+`useCopilotAction({ name: "generate_image", available: "disabled", render:
+... })` (the same pattern `ConfirmAction.tsx` uses for ADK's synthetic
+`adk_request_confirmation` call). It never fired. Root-caused by reading the
+raw AG-UI SSE stream directly (`read_network_requests` on the
+`/api/copilotkit` POST): the orchestrator's stream only carries
+`TOOL_CALL_START`/`ARGS`/`END`/`RESULT` for the top-level `draft_agent`
+`AgentTool` call — `generate_image` and `upload_image`, called *inside*
+`draft_agent`'s own sub-agent execution, never get their own top-level
+AG-UI tool-call events at all; they're absorbed into `draft_agent`'s single
+result. Frontend tool-call-name-matching renderers fundamentally cannot see
+these — there is no event to match against, at any name. **What DOES
+survive nested calls**: `STATE_DELTA`/`STATE_SNAPSHOT` events — the
+`current_image_path`/`current_image_url` writes from `_track_image_state`
+(an `after_tool_callback`, running inside the nested call) showed up
+correctly in the top-level stream every time, confirmed from the same raw
+SSE capture. **Codelab material**: session state (`output_key`,
+`tool_context.state`) is the only reliable channel for surfacing anything
+that happens inside a sub-agent's `AgentTool` call to the frontend — don't
+reach for tool-call rendering hooks for that, they're scoped to the
+orchestrator's own direct tool calls only.
+
 **2026-09-18 — Scale — local `adk web` testing is completely unaffected by
 everything below.** Worth stating explicitly, not just implying: every
 issue in this file was hit while *deploying to a regional Agent Runtime

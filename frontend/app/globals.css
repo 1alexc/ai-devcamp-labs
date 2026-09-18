@@ -26,6 +26,9 @@
   /* Chat sidebar width, draggable via ChatResizeHandle. 28rem matches
      CopilotKit's own default so nothing shifts before the user resizes. */
   --chat-width: 28rem;
+
+  /* Swap to var(--g-blue) for a blue gallery-tile border instead of green. */
+  --gallery-tile-border: var(--g-green);
 }
 
 html {
@@ -270,8 +273,7 @@ a {
 }
 
 .activity-item {
-  border: 1px solid var(--g-grey-300);
-  border-left: 4px solid var(--g-blue-bright);
+  border: 1.5px solid var(--g-blue-bright);
   border-radius: 10px;
   padding: 8px 12px;
   font-size: 13px;
@@ -279,11 +281,11 @@ a {
 }
 
 .activity-item.ok {
-  border-left-color: var(--g-green);
+  border-color: var(--g-green);
 }
 
 .activity-item.error {
-  border-left-color: var(--g-red);
+  border-color: var(--g-red);
 }
 
 .activity-item .tool-name {
@@ -482,24 +484,56 @@ a {
   color: var(--g-grey-600);
 }
 
+/* ---------- Generated image preview (inline in chat) ---------- */
+/* The orchestrator embeds the post's image as Markdown (![...](hosted URL)),
+   and CopilotKit's chat already renders message content as Markdown (see
+   the existing **bold** headings). react-markdown puts the class on the
+   wrapping <p> (.copilotKitMarkdownElement.copilotKitParagraph), not on
+   the <img> itself, which renders bare with no size constraint. */
+
+.copilotKitMarkdown img {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  border-radius: 10px;
+  border: 1px solid var(--g-grey-300);
+  margin: 6px 0;
+}
+
 /* ---------- Post gallery ---------- */
 
 .gallery-posts {
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 220px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  max-height: 520px;
   overflow-y: auto;
+  padding: 2px; /* keeps tile focus/hover rings from clipping at the edge */
 }
 
-.gallery-posts li {
-  border: 1px solid var(--g-grey-300);
-  border-left: 4px solid var(--g-green);
-  border-radius: 10px;
-  padding: 8px 12px;
+.gallery-tile {
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid var(--gallery-tile-border);
+  border-radius: 12px;
+  overflow: hidden;
   background: var(--g-grey-50);
   font-size: 13px;
+}
+
+.gallery-tile-image {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-tile-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .gallery-platform {
@@ -509,33 +543,40 @@ a {
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--g-green);
-  margin-bottom: 4px;
 }
 
-.gallery-posts p {
-  margin: 0 0 4px;
+.gallery-tile-body p {
+  margin: 0;
   color: var(--g-grey-600);
   line-height: 1.4;
 }
 
-.gallery-posts a {
+.gallery-tile-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gallery-readmore {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--g-blue);
+  cursor: pointer;
+}
+
+.gallery-readmore:hover {
+  text-decoration: underline;
+}
+
+.gallery-tile-body a {
   font-size: 12px;
   color: var(--g-blue);
-}
-
-.gallery-post-body {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.gallery-post-thumb {
-  width: 56px;
-  height: 56px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid var(--g-grey-300);
-  flex-shrink: 0;
 }
 
 .gallery-images {

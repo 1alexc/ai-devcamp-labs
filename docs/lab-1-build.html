@@ -464,7 +464,7 @@ cp .env.example backend/social_poster/.env
 uv sync</code></pre>
         </div>
 
-        <p>Edit <code>backend/social_poster/.env</code>: set <code>GOOGLE_CLOUD_PROJECT</code> to your DevCamp project id, and confirm <code>GOOGLE_APPLICATION_CREDENTIALS</code> points at your ADC file. Leave everything else; you'll fill in <code>BUFFER_API_KEY</code> in Step 6.</p>
+        <p>Edit <code>backend/social_poster/.env</code>: set <code>GOOGLE_CLOUD_PROJECT</code> to your DevCamp project id (no service-account key file needed anywhere — <code>gcloud auth application-default login</code> from Step 2 of the setup guide is enough). Leave everything else; you'll fill in <code>BUFFER_API_KEY</code> in Step 6.</p>
 
         <h4>You should now have</h4>
         <div class="tree">social-spark/

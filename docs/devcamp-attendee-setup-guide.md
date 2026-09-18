@@ -69,6 +69,7 @@ You'll be placed in a small buddy group in Discord before the first workshop. Be
 ## Step 6: Recommended before Saturday (10 min)
 - **Buffer account:** Lab 1 publishes through Buffer's MCP server. Create a free Buffer account and connect at least one channel (a LinkedIn profile is fine). No card needed for the free tier. You'll grab the API key during the lab.
 - **LinkedIn Developer app** (optional bonus step in Lab 1; everything else works through Buffer or in dry-run): skip for now if short on time, a guide is linked from the lab.
+- **GCS image hosting for Buffer** (optional, advanced — not part of Lab 1's taught steps, which keep Buffer text-only by design; only relevant if you want Buffer posts to carry an image like the reference build does): needs a one-time IAM setup outside the app's own reach — a dedicated service account, granted signing rights via impersonation rather than a downloaded key. Set `GOOGLE_CLOUD_PROJECT`/`GCS_BUCKET_NAME` in your `.env`, then run `./gcs-setup.sh` from the repo root — it does the IAM setup and updates your `.env` for you (see `.env.example`'s GCS section for what it does). Skip this entirely unless you're specifically extending past Lab 1.
 - Join **Discord** [invite link] and say hi in #introductions. Channels: #setup-help, #session-1 to #session-4, #show-your-use-case.
 - Think of **one use case of your own**: an agent you'd like to exist. You'll declare it in Lab 1 and build it alongside ours as each lab's Assignment.
 

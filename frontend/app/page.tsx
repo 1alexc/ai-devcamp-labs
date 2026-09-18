@@ -110,6 +110,7 @@ function Dashboard() {
         clickOutsideToClose={false}
         onSetOpen={setChatOpen}
         suggestions={SUGGESTIONS}
+        attachments={{ enabled: true, accept: "image/*" }}
         labels={{
           title: "Social Spark",
           initial: `Hi${user?.guest ? "" : ` ${user?.name.split(" ")[0]}`}! 👋 Give me a post idea and a platform (LinkedIn or X) and I'll consult your posting memory, research, draft, and illustrate it. Nothing gets posted without your approval.`,

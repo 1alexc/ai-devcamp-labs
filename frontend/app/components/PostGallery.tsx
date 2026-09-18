@@ -154,6 +154,11 @@ function collectGallery(messages: any[]): { images: ImageEntry[]; posts: PostEnt
   return { images, posts };
 }
 
+// Below this length a tile's text always fits within the 4-line clamp, so
+// no "Read more" toggle is offered — avoids a button that would expand to
+// reveal nothing new.
+const TILE_TEXT_PREVIEW_LIMIT = 180;
+
 export function PostGallery() {
   const { messages } = useCopilotChatInternal();
   const { images, posts: livePosts } = collectGallery((messages as any[]) ?? []);
@@ -171,6 +176,15 @@ export function PostGallery() {
   const liveUrls = new Set(livePosts.map((p) => p.url).filter(Boolean));
   const posts = [...livePosts, ...dbPosts.filter((p) => !p.url || !liveUrls.has(p.url))];
 
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   if (images.length === 0 && posts.length === 0) {
     return null; // nothing approved/generated yet — keep the dashboard uncluttered
   }
@@ -180,25 +194,36 @@ export function PostGallery() {
       <h2>Approved Posts &amp; Images</h2>
       {posts.length > 0 && (
         <ul className="gallery-posts">
-          {posts.map((p) => (
-            <li key={p.id}>
-              <span className="gallery-platform">{p.platform}</span>
-              <div className={p.imageUrl ? "gallery-post-body" : undefined}>
+          {posts.map((p) => {
+            const isExpanded = expanded.has(p.id);
+            const isLong = p.text.length > TILE_TEXT_PREVIEW_LIMIT;
+            return (
+              <li key={p.id} className="gallery-tile">
                 {p.imageUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img className="gallery-post-thumb" src={p.imageUrl} alt="" />
+                  <img className="gallery-tile-image" src={p.imageUrl} alt="" />
                 )}
-                <div>
-                  <p>{p.text.length > 160 ? `${p.text.slice(0, 160)}…` : p.text}</p>
+                <div className="gallery-tile-body">
+                  <span className="gallery-platform">{p.platform}</span>
+                  <p className={isExpanded ? undefined : "gallery-tile-text"}>{p.text}</p>
+                  {isLong && (
+                    <button
+                      type="button"
+                      className="gallery-readmore"
+                      onClick={() => toggleExpanded(p.id)}
+                    >
+                      {isExpanded ? "Show less" : "Read more"}
+                    </button>
+                  )}
                   {p.url && (
                     <a href={p.url} target="_blank" rel="noreferrer">
-                      view
+                      view ↗
                     </a>
                   )}
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
       {images.length > 0 && (

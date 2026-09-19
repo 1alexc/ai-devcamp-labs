@@ -46,8 +46,26 @@ Install, in order:
 2. **Required, not optional:** configure the Vertex AI fallback. With hundreds of people in the workshop at once, Antigravity's free quota can run out mid-session; the fallback bills to your $300 credit instead and keeps you moving. In Antigravity settings, add a Vertex AI connection (your project). **Prefer `global` over `europe-west1` for the connection's location if Antigravity offers the choice** — `europe-west1` doesn't serve `gemini-flash-latest` (see Step 4's checkpoint below; not separately re-verified for Antigravity's own connection UI specifically, so if `global` isn't an option there, try it and confirm with the checkpoint before Saturday rather than assuming). Full walkthrough with screenshots: [link to guide, TBC].
 3. Optional second backup: a **free-tier** key from aistudio.google.com (no card, no billing setup). It's rate-limited but enough to get through a stall, and it's separate from your $300 credit. Do **not** enable Prepay/billing on that account.
 4. Prefer another coding agent (Claude Code, Gemini CLI)? Fine. The labs give you the prompt to type and the result to check, not the code, so any agent works.
+5. **Teach your coding agent about ADK** — one command, worth more than it looks:
+   ```
+   uvx google-agents-cli setup
+   ```
+   This installs Google's `agents-cli` **and** detects which coding agents you
+   have (Antigravity, Claude Code, Cursor, Windsurf…), then installs a set of
+   ADK development skills into each one. Every lab works by you prompting your
+   coding agent to build something — this is what makes its answers actually
+   match current ADK, instead of whatever its training data remembers. Add
+   `--dry-run` first if you'd like to see what it would change before it does,
+   or `--workspace` to install into the project folder rather than globally.
+
+   > These are skills for the *AI that writes your code*. They're a different
+   > thing from the **Agent Skills** in the starter repo's `skills/` folder,
+   > which are instructions your *agent* loads at runtime — you'll build with
+   > those in Lab 1.
 
 ✅ Checkpoint: ask Antigravity to create a hello-world Python file; review its plan, accept, run it. Then switch the model connection to Vertex AI and repeat once.
+
+✅ Checkpoint: `agents-cli --version` returns a version, and asking your coding agent "what ADK skills do you have?" lists several `google-agents-cli-*` entries.
 
 ## Step 4: Environment variables (5 min)
 Create a `.env` you'll reuse all camp:

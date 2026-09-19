@@ -53,11 +53,19 @@ uv run adk web backend    # chat + trace inspector, no frontend needed
 
 ## Tooling
 
-- **`agents-cli`** (`uv tool install google-agents-cli`) is Google's own
-  scaffolding/deploy/eval CLI for ADK projects. It already auto-detects
-  this exact file as its Claude Code guidance-file convention (`CLAUDE.md`
-  for Claude Code, `GEMINI.md` for Gemini CLI, this file otherwise). Useful:
+- **`agents-cli`** (`uvx google-agents-cli setup`) is Google's own
+  scaffolding/deploy/eval CLI for ADK projects. `setup` installs the CLI and
+  also detects your installed coding agents (Antigravity, Claude Code,
+  Cursor, Windsurf…) and installs ADK development skills into each — do this
+  before building, so your agent's ADK answers match the current API rather
+  than stale training data. `--dry-run` previews; `--workspace` installs into
+  this project instead of globally. The CLI already auto-detects this exact
+  file as its Claude Code guidance-file convention (`CLAUDE.md` for Claude
+  Code, `GEMINI.md` for Gemini CLI, this file otherwise). Useful:
   `agents-cli scaffold`, `agents-cli eval run`, `agents-cli deploy`.
+  Note the naming collision: those are skills for the coding agent. The
+  markdown in this repo's `skills/` folder is a different thing — ADK **Agent
+  Skills**, loaded at runtime by `draft_agent`'s `SkillToolset`.
 - If your coding agent has a documentation-lookup capability (an MCP server
   that fetches live docs), use it — ADK and the Agent Platform move fast
   enough that training data goes stale. Two root sources either way:

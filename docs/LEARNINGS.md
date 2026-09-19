@@ -12,6 +12,200 @@ terminology sweep.)
 
 <!-- Add entries below, newest first. -->
 
+**2026-09-18 — Govern — the Govern pillar has a hard dependency chain, and it
+starts in Scale: Agent Runtime deploy → Agent Registry → Governance Policy.**
+Tried to attach a `SemanticGovernancePolicy` to a hand-registered agent (an
+`A2A_AGENT_CARD` pushed into Agent Registry via `services.create`) and got
+`FAILED_PRECONDITION` / `SEMANTIC_GOVERNANCE_POLICY_AGENT_NOT_CONFIGURED`:
+*"Agent ... is not configured with a valid RuntimeIdentity."* Pointing the
+policy straight at the `reasoningEngines/{id}` resource fails differently —
+`SEMANTIC_GOVERNANCE_POLICY_AGENT_INVALID_NAME`, *"Expected format:
+projects/*/locations/*/agents/*"*. The policy's `agent` field wants an **Agent
+Registry** name, and that registry entry must carry a runtime identity. **What
+actually works**: deploying to Agent Runtime with `identity_type=AGENT_IDENTITY`
+**auto-registers the engine in Agent Registry** — no manual registration step at
+all. The auto-created entry carries exactly what the policy API demands, in an
+`attributes` block: `agentregistry.googleapis.com/system/RuntimeIdentity`
+(the `principal://agents.global.proj-{NUM}.system.id.goog/...` principal),
+`.../RuntimeReference` (the `//aiplatform.googleapis.com/...reasoningEngines/{id}`
+URI) and `.../Framework` (`google-adk`). Confirmed end to end: deployed a
+minimal engine, watched `spike-probe-engine` appear in
+`agents.list` unprompted, then created a policy against that registry name
+successfully. **Codelab material**: Lab 3 can't be a standalone Govern lab —
+it needs Lab 2's deployed, identity-enabled engine as its literal
+prerequisite. That's a feature, not a problem: it's the cleanest possible
+demonstration of why the pillars are ordered the way Google orders them. Say
+it out loud in the theory section rather than letting attendees discover it
+as a 400.
+
+**2026-09-18 — Govern — the Governance Policy Engine is a singleton you must
+provision first, the provisioning method is undocumented, and it's
+region-gated.** `projects.locations.semanticGovernancePolicies` is a real
+**v1** (not beta) surface with full CRUD, and `list` returns `200 {}` in
+every region tried — which is misleading, because `create` then fails with
+`SEMANTIC_GOVERNANCE_POLICY_ENGINE_NOT_ENABLED_IN_REGION`. There is a
+singleton `projects/{p}/locations/{l}/semanticGovernancePolicyEngine`
+resource gating all of it, and it starts `INACTIVE`. **Region reality**
+(checked directly): the engine service exists in `us-central1`, and is
+flatly unavailable in **`global` and `europe-west2`** — *"The Semantic
+Governance Policy Engine service is not available in location X."* A
+London-based camp cannot do this in an EU region as things stand.
+**The provisioning method is not in the discovery doc**: the API listing
+shows only `semanticGovernancePolicyEngine.deprovision` — no `get`, no
+`provision`. Both exist anyway. `GET` on the singleton works fine, and
+`:provision` / `:activate` / `:enable` all 404. What actually provisions it
+is a plain **`PATCH` with `?updateMask=gatewayConfigs`** (an undocumented
+`UpdateSemanticGovernancePolicyEngineOperationMetadata` LRO); a body of
+`{"gatewayConfigs":{"default":{}}}` took it `INACTIVE` → `PROVISIONING` →
+`ACTIVE` in about **3 minutes**, standing up a PSC service attachment behind
+the scenes. Once `ACTIVE`, policy creation works immediately. **Codelab
+material**: budget a few minutes of dead time for this in Lab 3 and kick it
+off before the theory segment, not during the hands-on. And don't trust a
+discovery doc's method list as complete for these newer surfaces — probe the
+verbs directly.
+
+**2026-09-18 — Govern — Governance Policies are natural-language
+constraints, and they bind to the agent's identity principal.** Once the
+engine was `ACTIVE`, this created cleanly and came back resolved: a
+`naturalLanguageConstraint` of *"The agent must never publish a social post
+without explicit human approval"*, an `agent` pointing at the Agent Registry
+name, and — populated by the server, not by me — an `agentIdentity` of
+`principal://agents.global.proj-{NUM}.system.id.goog/resources/aiplatform/.../reasoningEngines/{id}`.
+The policy resource also supports `mcpTools` (scoping a policy to specific
+tools on a specific registered `mcpServers/{id}`) and
+`agentResponseCustomization` (what the user sees when the policy denies).
+**Codelab material**: this is the single best Govern demo in the whole
+platform — the policy is a plain English sentence, versioned as a cloud
+resource, bound to a cryptographic agent identity. It contrasts beautifully
+with `guardrails.py`'s hand-rolled Model Armor/DLP REST calls: same intent,
+completely different level of abstraction. Not verified in this spike:
+whether the constraint is actually *enforced* at runtime on a live turn —
+only that the policy resource creates and resolves correctly. Don't claim
+enforcement on stage without testing a denied turn first.
+
+**2026-09-18 — Govern — Agent Gateway provisions in seconds, not days — but
+getting a usable serving endpoint is a separate, unsolved problem.** The
+fear going in was that Agent Gateway would be a multi-day networking
+project. It isn't, at the resource level: `gcloud network-services
+agent-gateways` is real (though it has **no `create` subcommand** — only
+`delete`/`describe`/`export`/`import`/`list`; the REST API *does* have
+`create`), and a `googleManaged` gateway with **no VPC, subnet, or DNS
+config at all** created in **3.4 seconds**. Two format gotchas cost more time
+than the provisioning did: the `registries` field's own docstring shows a
+trailing slash (`.../locations/{location}/`) which the validator **rejects**,
+and `agentConnectivityTemplate` must use the project **number**, not the
+project ID, or you get a confusing "incorrect resource name" error naming a
+format that looks identical to what you sent. **Where it stops**: the
+output-only `agentGatewayCard` (which carries the `mtlsEndpoint` and root
+certificates clients would actually connect to) stayed empty. Creating an
+`AgentConnectivityTemplate` (`CENTRALIZED` / `CLIENT_TO_AGENT` / `PUBLIC` /
+`CLOUD_RUN`) succeeded, but PATCHing it onto the gateway returned a
+successful LRO whose result **silently did not persist the field** — the
+gateway read back without it, and without a card. Also worth knowing: the
+template's `agentCompute` enum is `GKE` / `CLOUD_RUN` / `BORG` — there is
+**no Agent Runtime option**, so a gateway fronts your Cloud Run or GKE
+deployment, not your `reasoningEngine`. **Codelab material**: Lab 3 should
+take v5's stated fallback for this item (console/CLI walkthrough, concept
+explained) — but the honest version is better than the cautious one. Show
+the real resource being created live in 3 seconds, show the empty card, and
+name exactly what's missing. "Here is the integration boundary" is a more
+useful lesson than either "it works" or "it's too hard."
+
+**2026-09-18 — Optimise — Online Evaluation is real and in v1, but creating
+an evaluator is gated in this project; multi-turn arrives as `sessionScope`,
+not as a separately-named product.** Two findings here, one good and one
+blocking. **Good**: there is no separate "Multi-Turn AutoRaters" API to hunt
+for — multi-turn evaluation is a *mode* of `onlineEvaluators`. The
+`cloudObservability` block takes either `traceScope` (evaluate single traces)
+or **`sessionScope`** — explicitly *"a group of traces with the same
+conversation ID"* — with an `inactivityTrigger.threshold` deciding when a
+conversation counts as finished, and rich filter predicates (`userTurns`,
+`toolCalls`, `toolCallErrors`, `modelCallErrors`, `totalTokenUsage`,
+`duration`). The data source is Cloud Trace + Cloud Logging via OpenTelemetry
+semconv ≥ `1.39.0`, which lines up directly with the tracing already
+documented in `docs/observability.md`. It samples on a fixed 10-minute
+interval. **Blocking**: every well-formed `onlineEvaluators.create` returns a
+bare `400 INVALID_ARGUMENT` — *"Request contains an invalid argument."* with
+no `details`, no field violation, nothing. Ruled out by bisection: it is not
+the metric (six predefined names, plus inline LLM-based, all identical), not
+the scope type, not the region (`us-central1`, `us-east4`, `europe-west4`,
+`global` all identical), and **not the agent** — it fails the same way
+against a real, live, identity-enabled engine as against a fabricated
+resource ID. The tell: an **empty body `{}` returns the exact same error**,
+while genuinely malformed payloads earlier produced a *different*, specific
+failure (a `500` naming the missing `inactivityTrigger.threshold`, and a
+detailed 400 for an unknown query param). So the request is parsed and then
+refused wholesale — an allowlist/preview gate surfacing as
+`INVALID_ARGUMENT` rather than `PERMISSION_DENIED`. Read paths work fine
+(`list` is `200 {}`). One more regional note: `onlineEvaluators` is **not
+supported in `europe-west2`** at all (`"Location europe-west2 is not
+supported."`) while `evaluationRuns`/`evaluationSets`/`evaluationMetrics`
+answer there. The Python SDK confirms the gap from the other direction:
+`vertexai.Client().evals` has **no online-evaluator method whatsoever**.
+**Codelab material**: take v5's stated fallback for this item and present it
+honestly — the API surface is worth showing (it's a genuinely good design),
+but don't plan a live demo on it without getting the project allowlisted
+first.
+
+**2026-09-18 — Optimise — multi-turn *simulation* works today and is the
+right substitute for the gated Online Evaluation demo.**
+`vertexai.Client().evals.generate_conversation_scenarios(...)` ran
+successfully against this project on the first properly-formed call and
+returned genuinely usable material for social_poster: two scenarios, each
+with a `starting_prompt`, a `test_case_title`, and a multi-turn
+`conversation_plan` — including one where the simulated user *corrects a
+figure mid-conversation and asks for an addition*, then approves the revised
+draft. That is exactly the approval-gate behaviour `evals/golden.json`
+already tries to pin down, generated automatically. **API gotcha**: the
+`UserScenarioGenerationConfig` field is **`count`**, not `user_scenario_count`
+— setting the latter gets you a backend error insisting
+`user_scenario_count cannot be None`, because the SDK never forwarded it.
+Unlike `onlineEvaluators`, this service returns detailed, field-level
+validation errors (a full `DataFoundryService.GenerateUserScenarios` message),
+which is itself a useful signal that it's genuinely enabled rather than
+gated. Also present and unexplored in the same SDK module:
+`create_evaluation_run`, `batch_evaluate`, `generate_rubrics` (rubric-based
+autoraters), `generate_loss_clusters`, and a separate `client.skills` module
+(create/get/list/update/delete/retrieve/revisions) — the Agent Skills surface,
+which matters for the `agents-cli` skills question in the plan. **Codelab
+material**: Lab 4's hands-on can be *simulation → eval run*, which works
+today, with Online Evaluation shown as the API it grows into. That's a
+stronger lab than `adk eval` alone and needs no allowlist.
+
+**2026-09-18 — Govern — deprovisioning the Governance Policy Engine failed
+and left it stuck; treat provisioning as a one-way door for the day.**
+Cleanup after the spike: the policy deleted fine, but
+`semanticGovernancePolicyEngine:deprovision` returned an LRO that completed
+with `error: {code: 13, message: "INTERNAL"}`, leaving the engine
+`state=FAILED` with `gatewayConfigs: {default: {state: DEPROVISIONING}}` and
+its PSC service attachment still present. Every subsequent write — a retry of
+`:deprovision`, and a `PATCH` clearing `gatewayConfigs` to `{}` — is refused
+with `FAILED_PRECONDITION` / *"Precondition check failed."* while the gateway
+config sits in `DEPROVISIONING`. The `FAILED` enum's own description
+anticipates this: *"The engine may have partial infrastructure that needs
+explicit deprovision."* Likely relevant: the `default` gateway config was
+`state: FAILED` from the moment provisioning finished — an empty
+`{"default":{}}` gateway config on the project's default VPC apparently
+can't actually come up, even though the engine as a whole reported `ACTIVE`
+and policies worked fine. **Two lessons**: (1) provision the engine with
+`gatewayConfigs` you actually intend to use, or expect a half-failed gateway
+riding along; (2) don't provision this in a shared/live project casually
+assuming you can back it out the same day. **Codelab material**: if Lab 3
+has attendees provision this in their own projects, they need to be told
+up front that it may not deprovision cleanly — and the teardown checklist
+needs to say so rather than implying a tidy `delete`.
+**Final state, checked ~90 minutes later**: still `FAILED` /
+`DEPROVISIONING`, with `updateTime` frozen at the moment the deprovision
+LRO failed — it is genuinely wedged, not slowly draining. **The reassuring
+half**: nothing landed in the customer project. `gcloud compute
+forwarding-rules list` and `network-attachments list` are both empty, Cloud
+DNS was never even enabled on the project, and the surviving
+`pscServiceAttachment` lives in a Google **tenant** project
+(`...-tp`), not in the user's VPC. So the residue is entirely on the
+Google-managed side — no stray billable networking resources to hunt down,
+just a control-plane resource that won't return to `INACTIVE` without
+Google's help.
+
 **2026-09-18 — Build — the GCS "public bucket" setup in `.env.example`
 doesn't work when Public Access Prevention is on, and this project's own
 bucket is a live example.** `upload_image` (tools.py) returns a plain

@@ -12,6 +12,311 @@ terminology sweep.)
 
 <!-- Add entries below, newest first. -->
 
+**2026-09-19/20 — Scale — getting a Secret Manager secret into a deployed
+agent: `secretEnv` does not work, runtime retrieval does, and an import-time
+`raise` hid the whole thing.** Switching the deployed agent to Buffer (the only
+route to X) took six failed deploys, and there were **two independent causes**
+— worth separating, because chasing them as one wasted most of that time.
+
+**Cause 1 — `secretEnv` is rejected on a container-based deployment.** Whether
+set via `agents-cli deploy --secrets BUFFER_API_KEY=buffer-api-key:latest` or
+by PATCHing `spec.deploymentSpec.secretEnv` over raw REST, the update fails with
+`code: 3, "The Reasoning Engine failed to be updated."` — no field, no cause, no
+container build, no logs. **Isolated with a control**: the same deploy differing
+*only* by `--secrets`, with `POST_VIA` left on its working value, still failed.
+**Ruled out**: the documented prerequisite ("add roles/secretmanager.secretAccessor
+to the AI Platform Reasoning Engine Service Agent") was verified in place on
+`service-{NUM}@gcp-sa-aiplatform-re.iam.gserviceaccount.com`, which exists and
+holds `roles/aiplatform.reasoningEngineServiceAgent`; a 150s propagation wait;
+the secret itself (automatic replication, one enabled version, non-empty). Note
+the earlier Scale spike *did* get Secret Manager working — on the **cloudpickle**
+path, via `env_vars={"secret": ..., "version": ...}`. The likely conclusion is
+that `secretEnv` does not apply to container-based deployments, but that is
+inference, not a documented statement.
+
+**Cause 2 — and this is the one that made everything undiagnosable.**
+`agent.py` had `raise RuntimeError("POST_VIA=buffer requires BUFFER_API_KEY")`
+at **module import**. On Agent Runtime, an import that raises kills the
+container before it logs anything, and the platform reports exactly the same
+opaque "failed to be updated" as Cause 1 — so a perfectly ordinary application
+error was indistinguishable from a platform rejection. **Replacing the raise
+with a logged fallback to LinkedIn made the next deploy succeed immediately**,
+and the container's own logs then said precisely what was wrong. **General
+lesson worth more than the specific bug**: never `raise` at import time in a
+deployed agent. Degrade, log, and stay up — otherwise every failure is a black
+box.
+
+**The fix that works**: don't put the secret in the deployment at all. Carry
+only the secret's *name* as a plain env var (`BUFFER_API_KEY_SECRET`, which is
+not sensitive) and have the agent fetch the value at runtime with its own Agent
+Identity — which is exactly what Google's own docs prescribe
+(`secret-manager/docs/integrate-secret-manager-with-adk`: grant the agent
+identity `roles/secretmanager.secretAccessor`, read at runtime). It is better
+practice regardless: the secret never appears in the deployment spec, and
+rotating it needs no redeploy.
+
+**But use ADK's client, not a hand-rolled REST call.** A first attempt used
+`google.auth.default()` + a bearer token against
+`secretmanager.googleapis.com/v1/...:access` to avoid adding a dependency. It
+works locally and returns **HTTP 401 Unauthorized** inside the Agent Runtime
+container — 401, not 403, so credentials rather than permissions, with the
+grant in place. Switching to
+`google.adk.integrations.secret_manager.secret_client.SecretManagerClient`
+(needs `google-cloud-secret-manager`, which ADK does not pull in by default)
+worked first try: the gRPC client handles the Agent Identity credential
+correctly where a raw `Authorization` header does not. Confirmed live — the
+deployed agent now lists Buffer's channels (Instagram, Facebook, Twitter,
+LinkedIn, Pinterest, YouTube, Mastodon, TikTok, Threads, Bluesky) instead of
+"I can post to LinkedIn."
+
+**Codelab material**: three separate teaching points, all earned. (1) Never
+raise at import in a deployed agent — it converts a readable error into an
+opaque platform failure. (2) Runtime secret retrieval beats injected secret env
+vars anyway, and is what Google documents. (3) When a Google API returns 401
+rather than 403 from inside a managed runtime, suspect the credential *type*,
+not the IAM grant — and reach for the official client before hand-rolling HTTP.
+
+**2026-09-19 — Build/Govern — the agent claimed it posted to X and returned a
+LinkedIn dry-run URL. Two bugs, one visible.** Asked for an X post, the
+deployed agent drafted one, said *"Your post has been successfully sent to X!
+You can view it here: https://www.linkedin.com/feed/update/...dryrun-..."*.
+Both halves are wrong: the platform is not the one requested, and "successfully
+sent" describes a dry run that posted nothing. The routing half is explained —
+`POST_VIA=linkedin` overrides the model's routing entirely, so the Buffer
+toolset (the only path to X) was never constructed and the agent used the only
+tool it had. **But the agent should not have claimed X**, and should not report
+a dry run as a successful send: the tool result carries `"dry_run": true` and
+`"note": "DRY_RUN=true, nothing was posted."`, and the model narrated over it.
+**Codelab material**: a first-rate Govern example, and better than a contrived
+one because it happened by accident in a real session — an agent confidently
+reporting a successful action on a platform it never touched is exactly the
+failure class guardrails and eval cases exist to catch. Worth a golden eval
+case ("never claim a post succeeded when the tool result says dry_run") and
+worth fixing in the orchestrator's instructions independently.
+
+**2026-09-19 — Scale — deploying the frontend too: the whole problem is auth,
+and one piece of it only breaks in a production build.** Running the CopilotKit
+frontend on Cloud Run against an Agent Runtime backend works, but three things
+have to be right and only the first is obvious.
+1. **The browser can never call the backend directly.** Agent Runtime's `/api`
+   passthrough is a Google API endpoint needing a bearer token, and a browser
+   has no safe way to hold one. `PostGallery.tsx` fetched `/api/posts` and
+   `/outputs/<file>` **client-side**, so the gallery breaks the moment the
+   backend is deployed. Fix: same-origin Next route handlers
+   (`app/api/posts`, `app/outputs/[...path]`) that proxy server-side and add
+   the token, with `PostGallery` defaulting to same-origin.
+2. **The service account needs `roles/aiplatform.user`** (it contains
+   `aiplatform.reasoningEngines.query`). Easy to miss because project owners
+   have it implicitly — the local frontend works for the person who built it
+   and 403s for everyone else.
+3. **The one that cost real time**: pointing `HttpAgent` at the passthrough and
+   passing a custom `fetch` to attach the token **works in dev and silently
+   fails in a production build** — the engine answers `401 UNAUTHENTICATED`.
+   The tell was that `/api/posts` (our own handler, same credentials, same
+   container) returned `200` at the same moment, which rules out IAM, the
+   token, and the URL. Don't rely on the `fetch` override surviving the
+   CopilotKit runtime's internals. **Fix**: give the app its own
+   `app/api/adk` route that proxies to the backend with the token, and point
+   `HttpAgent` at `http://127.0.0.1:${PORT}/api/adk` — server-to-self over
+   loopback. Everything then goes through one proven code path, and SSE still
+   streams because the upstream body is passed straight through.
+**Protecting the deployed frontend**: `--no-allow-unauthenticated` plus
+`gcloud run services proxy` is the right workshop answer — the service is
+genuinely private (verified: 403 unauthenticated, 200 with an identity token),
+attendees need zero OAuth setup, and the app's own Google sign-in is optional
+anyway because it falls back to "Continue as guest". IAP is the upgrade for
+real sharing. **Codelab material**: this is a strong Lab 2 segment precisely
+because the failure is asymmetric — one route works and another doesn't, in
+the same container, with the same credentials. Teaching attendees to compare a
+working path against a broken one is more useful than handing them the answer.
+
+**2026-09-19 — Scale/Optimise — a red `ERROR` traceback in the deployed
+agent's logs that means nothing is wrong: OpenTelemetry `detach()` across an
+async-generator boundary.** Seen in Cloud Logging right after a successful
+run: `ValueError: <Token var=<ContextVar name='current_context' ...>> was
+created in a different Context`, logged at **severity ERROR** with a full
+traceback. The chain, read from the actual log payload rather than guessed:
+`google/adk/runners.py:579 _run_node_async → yield event` →
+`google/adk/telemetry/_instrumentation.py:85 record_invocation → yield` →
+`google/adk/telemetry/node_tracing.py:215 _use_invoke_workflow_span → yield
+span` → `opentelemetry/trace/__init__.py start_as_current_span` →
+`opentelemetry/context/__init__.py:143 detach(token)`. **Mechanism**: ADK's
+`_run_node_async` is an async *generator* wrapped in an OTel span context
+manager. `attach()` returns a token bound to the `contextvars.Context` it was
+created in; the generator then suspends at `yield event`, and with SSE
+Starlette resumes the streaming body in a **different task**, so by the time
+the span closes, `detach()` is running in a context that never saw the
+`attach()`. **Confirmed harmless**: it fires during span *cleanup*, after the
+work completes; the timestamps line up exactly with the HITL confirmation test
+that succeeded end-to-end (`create_post` → `adk_request_confirmation`, full
+event stream, correct gating); and all four ERROR entries in the engine's
+entire log are this one issue (two tracebacks, logged as two entries each) —
+there are no other errors. **Why it never shows up locally**: `agents-cli
+deploy` sets `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY: true`, so the span
+machinery only runs once deployed. It is an upstream ADK↔OTel interaction, not
+project code, and not specific to the container deploy path. Silencing it means
+setting that var to `false`, which costs you Cloud Trace — a bad trade given
+the Optimise pillar depends on tracing. **Codelab material**: every attendee
+who deploys and then opens their logs will see this, at ERROR, on a request
+that worked — a textbook way to lose twenty minutes of a workshop. Name it up
+front in Lab 2's teardown/observability step: "you will see this, here is why,
+ignore it." **Open question for Lab 4, flagged not answered**: if the spans are
+mis-parented, does that affect anything that *reads* traces — specifically
+Online Evaluation's `sessionScope`, which groups traces by conversation ID?
+Worth testing before Lab 4 leans on trace-based evaluation.
+
+**2026-09-19 — Scale — there are TWO Agent Runtime deployment models, and
+picking the container one removes most of the pain documented below.** Every
+Scale entry dated 2026-09-18 was learned against the **cloudpickle model**:
+`vertexai.Client().agent_engines.create(agent=AdkApp(...))`, which pickles the
+agent object, ships `extra_packages`, and re-imports your module remotely. That
+is a real, documented path and it works. But `agents-cli deploy -d
+agent_runtime` uses a **completely different model**: it packages the project,
+and Agent Engine builds a container image **from your project's own
+`Dockerfile`** — the same image that would serve Cloud Run or GKE. The current
+docs are blunt about which is preferred: *"No `gcloud` CLI exists for Agent
+Runtime. Deploy via `agents-cli deploy`."* **Why this matters here**: this repo
+already had a hand-written `Dockerfile` (built for Cloud Run, `CMD` =
+`uvicorn backend.main:app`, already `COPY`ing `skills/` and `mcp/` after the
+Prep-phase fix), so the container path needed *no new packaging code at all* —
+where the cloudpickle path needed a 230-line deploy script to stage a clean
+copy, pin requirements exactly, and pin models before import. File selection
+honours `.gcloudignore`/`.gitignore`, so `backend/social_poster/.env` is
+excluded automatically — the secret-leak hazard that forced the staged-copy
+dance simply doesn't arise. **Codelab material**: Lab 2 should teach
+`agents-cli deploy` as one command, and mention the SDK path only as "the
+lower-level API underneath". Don't teach the packaging gymnastics — they're an
+artifact of the model, not of Agent Runtime.
+
+**2026-09-19 — Scale — the `/api` passthrough serves your container's own
+FastAPI app, which means the CopilotKit bridge does not need to be built.**
+This was the plan's riskiest item — a custom FastAPI service that would call
+`async_stream_query` and feed each ADK `Event` through `EventTranslator`,
+**reimplementing `ADKAgent`'s HITL resume loop**, with a documented fallback
+for when it failed. It turns out to be unnecessary. Agent Engine exposes the
+container's HTTP routes externally under an `/api` prefix:
+`https://{loc}-aiplatform.googleapis.com/reasoningEngines/v1/{resource}/api/{container_path}`,
+and the platform injects that base as `APP_URL` into the container's own env.
+Since our Dockerfile serves `backend/main.py`, and `main.py` mounts AG-UI at
+`/api/adk`, the deployed engine answers AG-UI at `{APP_URL}/api/adk`.
+**Verified live against a real deployment, not inferred**: `GET /docs` returns
+the FastAPI Swagger UI; `GET /openapi.json` returns `"title": "social-agent
+AG-UI backend"` with `/api/adk` in `paths` — proof it is our app, not ADK's
+generic surface. Then a real `POST` with a `RunAgentInput` body streamed back
+a complete AG-UI SSE run: `RUN_STARTED` → `STATE_DELTA`
+(`{"op":"add","path":"/pipeline_stage","value":"idea"}`) →
+`TEXT_MESSAGE_START/CONTENT/END` → `STATE_SNAPSHOT` → `RUN_FINISHED`.
+**Everything the bridge would have had to reimplement works natively.**
+**Codelab material**: this turns Lab 2's "advanced UI step or boundary
+explanation" from a hedge into a real, live demo — and it's a great lesson in
+its own right: before building an adapter, check whether the platform already
+speaks your protocol.
+
+**2026-09-19 — Scale — `STATE_DELTA`, nested `AgentTool` calls, multi-turn
+sessions and the HITL confirmation gate all survive the passthrough.** Taken
+one at a time, because each was separately uncertain:
+* **`STATE_DELTA`/`STATE_SNAPSHOT`** — previously "untested at all", and the
+  one that mattered most, since the 2026-09-18 entry below established that
+  session state is the *only* channel that can surface anything happening
+  inside a sub-agent's `AgentTool` call. Confirmed: `pipeline_stage` arrives
+  and transitions (`idea` → `drafting`), which is what `StagePanel.tsx` reads.
+* **Nested `AgentTool` calls** — the orchestrator's `draft_agent` call streams
+  `TOOL_CALL_START`/`ARGS`/`END`/`RESULT` as normal.
+* **Sessions across separate client calls** — three separate `curl` invocations
+  sharing one `threadId` continued one conversation, with the draft from call
+  two still present in call three. That is the Scale phase's Step B "Sessions"
+  requirement, satisfied without extra work: `ag_ui_adk` maps `threadId` onto
+  the ADK session, and the deployed container keeps it.
+* **HITL confirmation** — the decisive one. Turn one drafted and (correctly,
+  per the `refuses_post_without_approval` golden case) stopped to ask for
+  approval. Turn two, "Approved. Post it now.", produced
+  `TOOL_CALL_START` with `"toolCallName":"create_post"` followed immediately
+  by `"toolCallName":"adk_request_confirmation"` — the exact synthetic call
+  `ConfirmAction.tsx` renders. Gated, not executed; `DRY_RUN=true` throughout
+  and the confirmation was never answered, so nothing was posted.
+**Codelab material**: the remaining work for a live CopilotKit demo is auth
+(the Next.js layer proxying with a bearer token), not protocol. Worth saying
+plainly in Lab 2 that the hard part turned out to be the boring part.
+
+**2026-09-19 — Scale — `GOOGLE_CLOUD_LOCATION` is NOT reserved on the
+container path, so the model-pinning constraint below doesn't apply there.**
+The 2026-09-18 entry established that `GOOGLE_CLOUD_PROJECT` and
+`GOOGLE_CLOUD_LOCATION` are reserved `env_vars` names rejected with
+`FAILED_PRECONDITION`, and concluded that pinned regional models were therefore
+the *only* option since `global` could not be forced. On the container path
+that reasoning collapses: `agents-cli deploy` sets `GOOGLE_CLOUD_LOCATION:
+global` itself, printing it in the deploy's env summary. With `global`
+resolution available, `gemini-flash-latest` would resolve normally. (Models
+were still pinned to `gemini-2.5-flash` in this test, so the `-latest`-on-
+container combination is *not* separately confirmed — but the constraint that
+forced pinning is demonstrably absent.) **Consequence for Lab 2**: the
+"pin your models before deploying" step, and the deliberate error around
+missing `extra_packages`, are both **cloudpickle-path artifacts**. Neither
+exists on the path the lab will actually teach. Replacement deliberate-error
+candidates from today's run are in the next entry.
+
+**2026-09-19 — Scale — three real gotchas hit deploying via `agents-cli`, any
+of which would stall an attendee.**
+1. **`cloudresourcemanager.googleapis.com` must be enabled**, or the deploy
+   dies with a `403 PermissionDenied ... SERVICE_DISABLED` from deep inside a
+   gRPC stack trace — not an obvious "enable this API" message at the top.
+   Worth noting that this plan's own notes claimed the API had already been
+   enabled during the earlier spike; `gcloud services list --enabled` showed
+   it was not. Verify, don't trust the note.
+2. **`agents-cli deploy --status` needs `-d agent_runtime` too** when the
+   project has no `agents-cli-manifest.yaml`. Without it you get "No
+   agents-cli-manifest.yaml found in the current directory or its parents",
+   which reads like the deploy itself failed — it hasn't; only the status
+   lookup has. Polled six times before spotting it.
+3. **No manifest means defaults**, announced as a warning: service name
+   `agent`, *agent directory `app`*, building from the repo root. The `app`
+   default is harmless for this repo — our own `Dockerfile`'s `CMD` decides
+   what runs, and the passthrough addresses container paths directly — but it
+   looks alarming given the agent actually lives at `backend/social_poster/`.
+   `--service-name` overrides the first; the second can be ignored here.
+**Codelab material**: (1) belongs in the setup guide's API list. (2) is a
+strong candidate for Lab 2's deliberate error, replacing the now-obsolete
+`extra_packages` one — it's real, it's confusing, and the fix is one flag.
+
+**2026-09-19 — Govern — yesterday's "Agent Gateway has no serving endpoint"
+conclusion was looking from the wrong end.** The 2026-09-18 entry below
+reported creating a `googleManaged` gateway in 3.4s, finding `agentGatewayCard`
+empty, failing to attach an `AgentConnectivityTemplate`, and concluding
+"PARTIAL — take the fallback". The missing piece: **you bind agents to a
+gateway from the *agent* side, at deploy time**, not by configuring the gateway
+to expose an endpoint. `agents-cli deploy` takes `--agent-gateway-ingress` and
+`--agent-gateway-egress`, each a full gateway resource name; ingress wants a
+gateway with `governedAccessPath=CLIENT_TO_AGENT` (exactly what was built
+yesterday), egress wants `AGENT_TO_ANYWHERE`. **The agent must have Agent
+Identity.** Egress additionally requires the image to trust the gateway's root
+CA — the Dockerfile must consume an `AGENT_GATEWAY_ROOT_CERTIFICATES` build
+arg, which `agents-cli scaffold enhance . --agent-gateway` adds, and deploying
+`--agent-gateway-egress` against a Dockerfile lacking it fails with a pointer
+to that command. Also confirmed from the same source: **there are no
+`agents-cli` commands for creating or managing gateways or Semantic Governance
+policies at all** — `deploy`'s gateway support is purely a binding passthrough;
+creation stays Console/Terraform/REST, which is what yesterday's spike used.
+**Not yet tested**: an actual ingress binding against this project. **Codelab
+material**: Lab 3's gateway segment can be more than a console walkthrough —
+create the gateway, bind a deployed agent to it with one deploy flag — but the
+binding itself still needs proving before promising it on stage.
+
+**2026-09-19 — General — `agents-cli` coverage is genuinely uneven across the
+four pillars, and that unevenness is worth teaching rather than hiding.**
+Checked per pillar rather than assumed: **Build** — `agents-cli setup` is
+valuable (installs the CLI plus ADK skills into whichever coding agent the
+attendee has), but `scaffold create`/`enhance` does *not* fit this repo, as
+already established in `docs/cloud-run-deploy.md` back in August (it clobbers
+the hand-pinned `pyproject.toml` and expects `app/`, not
+`backend/social_poster/`). **Scale** — `agents-cli deploy` is the documented
+path, full stop. **Govern** — no commands exist for Agent Gateway or Semantic
+Governance; it's REST/gcloud/Terraform/Console. **Optimise** — `agents-cli
+eval` fits. **Codelab material**: standardise on `agents-cli` where it exists
+so attendees learn one tool rather than four idioms, and say out loud in Lab 3
+why Govern drops to raw APIs. "Here is where the tooling is mature and here is
+where it isn't yet" is more useful to someone taking this back to their own
+org than a uniform-looking set of commands would be.
+
 **2026-09-18 — Govern — the Govern pillar has a hard dependency chain, and it
 starts in Scale: Agent Runtime deploy → Agent Registry → Governance Policy.**
 Tried to attach a `SemanticGovernancePolicy` to a hand-registered agent (an
@@ -299,6 +604,12 @@ the agent, testing it locally, Sessions 1's whole workshop) carries none of
 this risk — the friction is real but scoped to one specific step, not
 pervasive. Attendees should not come away thinking ADK itself is fragile.
 
+> **Scope note (added 2026-09-19):** hit on the **cloudpickle** deploy path,
+> where regional model pinning was forced. On the container path
+> (`agents-cli deploy`) `GOOGLE_CLOUD_LOCATION` is settable and set to
+> `global`, so the pinned-model precondition may not apply. The
+> least-privilege lesson stands regardless.
+
 **2026-09-18 — Scale — `AgentTool` breaks with `MALFORMED_FUNCTION_CALL`
 when paired with a broad MCP toolset, on pinned regional models.** Deploying
 `social_poster` to Agent Runtime, the orchestrator's
@@ -344,6 +655,12 @@ complexity to what the model needs, and expect pinned/older models to be
 less tolerant of large or generic (e.g. GraphQL-style) tool schemas than
 whatever `-latest` currently resolves to."
 
+> **Superseded in part (2026-09-19):** true on the **cloudpickle** path,
+> where `GOOGLE_CLOUD_LOCATION` is a reserved, rejected env var. On the
+> container path `agents-cli deploy` sets it to `global` itself, so the
+> "pinned versions are the only option" conclusion does not carry over. The
+> attendee-setup-guide half of this entry still stands.
+
 **2026-09-18 — Scale — `gemini-flash-latest` only resolves via the
 `global` endpoint; every region 404s.** Confirmed directly: a plain
 `generate_content` call with `gemini-flash-latest` 404s
@@ -361,6 +678,11 @@ bug also existed in the attendee setup guide** —
 all. Fixed to `global` in the live file. **Codelab material**: Lab 2 needs
 an explicit "pin your models before deploying" step; don't let attendees
 discover this via a cryptic 404 mid-workshop the way I did.
+
+> **Superseded for the taught path (2026-09-19):** entirely a **cloudpickle**
+> concern. The container path builds from the project's own `Dockerfile` and
+> `uv.lock`, so there is no `requirements` list to get wrong and no
+> `extra_packages` to forget.
 
 **2026-09-18 — Scale — Agent Runtime packaging: `requirements` needs both
 `google-cloud-aiplatform[...,adk]` and an explicit `google-adk[a2a,eval,mcp]`

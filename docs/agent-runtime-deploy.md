@@ -27,7 +27,7 @@ a step is added.
 uvx google-agents-cli deploy -d agent_runtime \
   --project adk-devcamp-poc --region us-central1 --agent-identity \
   --service-name social-spark-poster \
-  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,RESEARCH_MODEL=gemini-2.5-flash,DRAFT_MODEL=gemini-2.5-flash,ORCHESTRATOR_MODEL=gemini-2.5-flash,GCS_BUCKET_NAME=social-spark-creatives" \
+  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,RESEARCH_MODEL=gemini-2.5-flash,DRAFT_MODEL=gemini-2.5-flash,ORCHESTRATOR_MODEL=gemini-2.5-flash,GCS_BUCKET_NAME=YOUR_BUCKET" \
   --no-confirm-project --no-wait
 ```
 

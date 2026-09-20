@@ -35,7 +35,10 @@ PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "adk-devcamp-poc")
 # policy to this agent at all.
 LOCATION = os.environ.get("AGENT_RUNTIME_LOCATION", "us-central1")
 
-STAGING_BUCKET = os.environ.get("AGENT_RUNTIME_STAGING_BUCKET", "gs://social-spark-creatives")
+# No default: GCS bucket names are globally unique across all of Google Cloud,
+# so one person's bucket is never a sensible fallback for anyone else. Failing
+# with a named env var beats failing with someone else's 403.
+STAGING_BUCKET = os.environ.get("AGENT_RUNTIME_STAGING_BUCKET", "")
 
 DISPLAY_NAME = "social-spark-social-poster"
 
@@ -189,6 +192,16 @@ def main() -> int:
         help="enable GCS image hosting (needs gcs-setup.sh already run)",
     )
     args = parser.parse_args()
+
+    if not STAGING_BUCKET:
+        print(
+            "AGENT_RUNTIME_STAGING_BUCKET is not set. Agent Runtime needs a GCS\n"
+            "bucket to stage the deployment through — bucket names are globally\n"
+            "unique, so there is no default worth guessing:\n"
+            "  export AGENT_RUNTIME_STAGING_BUCKET=gs://your-bucket",
+            file=sys.stderr,
+        )
+        return 2
 
     set_local_model_env()
     if args.with_gcs:

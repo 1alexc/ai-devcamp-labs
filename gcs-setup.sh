@@ -87,6 +87,103 @@ else
 fi
 echo
 
-# === Step 2: (add the next one-time manual GCP step here) ==================
+# === Step 2: APIs needed for Agent Runtime deploys ==========================
+# `agents-cli deploy -d agent_runtime` fails without Cloud Resource Manager,
+# and not with a helpful message — it surfaces as a 403 SERVICE_DISABLED from
+# deep inside a gRPC stack trace. The rest are needed because Agent Runtime
+# builds a container image from this repo's Dockerfile.
+echo "=== Step 2: APIs for Agent Runtime ==="
+gcloud services enable \
+  cloudresourcemanager.googleapis.com \
+  aiplatform.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  run.googleapis.com \
+  secretmanager.googleapis.com \
+  --project="$GOOGLE_CLOUD_PROJECT" >/dev/null
+echo "Enabled (or already enabled)."
+echo
+
+# === Step 3: permission to call a deployed agent ============================
+# A deployed agent is reached through Agent Runtime's `/api` passthrough
+# (https://LOCATION-aiplatform.googleapis.com/reasoningEngines/v1/.../api/...),
+# which is a Google API endpoint and needs a bearer token with the right role.
+# Project owners have this implicitly, which is an easy way to not notice the
+# requirement until someone with narrower access hits a 403.
+echo "=== Step 3: aiplatform.user for calling deployed agents ==="
+gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
+  --member="user:$PERSONAL_EMAIL" \
+  --role="roles/aiplatform.user" \
+  --condition=None >/dev/null
+echo "Granted roles/aiplatform.user to $PERSONAL_EMAIL."
+echo
+
+# === Step 4: service account for the deployed frontend ======================
+# The frontend calls the passthrough server-side (frontend/app/api/copilotkit/
+# route.ts mints a token from ADC), so when it runs on Cloud Run it needs its
+# own identity with the same role. Locally this step is unnecessary — ADC is
+# already your own account, covered by Step 3.
+echo "=== Step 4: Cloud Run frontend service account ==="
+FE_SA_NAME="social-spark-frontend"
+FE_SA_EMAIL="$FE_SA_NAME@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com"
+if gcloud iam service-accounts describe "$FE_SA_EMAIL" --project="$GOOGLE_CLOUD_PROJECT" >/dev/null 2>&1; then
+  echo "Service account $FE_SA_EMAIL already exists, skipping create."
+else
+  gcloud iam service-accounts create "$FE_SA_NAME" \
+    --project="$GOOGLE_CLOUD_PROJECT" \
+    --display-name="Social Spark frontend (Cloud Run)" >/dev/null
+  echo "Created $FE_SA_EMAIL."
+fi
+gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
+  --member="serviceAccount:$FE_SA_EMAIL" \
+  --role="roles/aiplatform.user" \
+  --condition=None >/dev/null
+echo "Granted roles/aiplatform.user to $FE_SA_EMAIL."
+echo "Deploy the frontend with:  --service-account=$FE_SA_EMAIL"
+echo
+
+# === Step 5: Buffer API key in Secret Manager ==============================
+# Buffer is what lets the agent post to X (and anything else you connect) —
+# the local LinkedIn MCP server only does LinkedIn. A deployed agent therefore
+# needs the Buffer token, and it must go through Secret Manager: passing it as
+# a plain env var leaves it readable in clear text in the console.
+#
+# The key is read straight out of backend/social_poster/.env here, so it never
+# gets pasted into a shell history or a chat window.
+echo "=== Step 5: Buffer API key secret ==="
+BUFFER_SECRET_ID="buffer-api-key"
+ENV_FILE="backend/social_poster/.env"
+if ! [[ -f "$ENV_FILE" ]]; then
+  echo "No $ENV_FILE yet — skipping (create it, then re-run)."
+elif gcloud secrets describe "$BUFFER_SECRET_ID" --project="$GOOGLE_CLOUD_PROJECT" >/dev/null 2>&1; then
+  echo "Secret $BUFFER_SECRET_ID already exists, skipping create."
+else
+  buffer_key="$(grep -m1 "^BUFFER_API_KEY=" "$ENV_FILE" | cut -d= -f2- | tr -d "\r\n\"'" || true)"
+  if [[ -z "$buffer_key" ]]; then
+    echo "BUFFER_API_KEY not set in $ENV_FILE — skipping."
+  else
+    printf %s "$buffer_key" | gcloud secrets create "$BUFFER_SECRET_ID" \
+      --project="$GOOGLE_CLOUD_PROJECT" --data-file=- >/dev/null
+    echo "Created secret $BUFFER_SECRET_ID."
+  fi
+  unset buffer_key
+fi
+
+# The grant goes to the platform-managed Agent Engine service agent, NOT the
+# Agent Identity principal — the deploy fails with "Grant the runtime service
+# account" otherwise, and the identity principal doesn't exist until after a
+# successful deploy anyway (a real chicken-and-egg).
+if gcloud secrets describe "$BUFFER_SECRET_ID" --project="$GOOGLE_CLOUD_PROJECT" >/dev/null 2>&1; then
+  PROJECT_NUMBER="$(gcloud projects describe "$GOOGLE_CLOUD_PROJECT" --format='value(projectNumber)')"
+  gcloud secrets add-iam-policy-binding "$BUFFER_SECRET_ID" \
+    --project="$GOOGLE_CLOUD_PROJECT" \
+    --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform-re.iam.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor" >/dev/null
+  echo "Granted secretAccessor to the Agent Engine service agent."
+  echo "Deploy the agent with:  --secrets BUFFER_API_KEY=$BUFFER_SECRET_ID:latest"
+fi
+echo
+
+# === Step 6: (add the next one-time manual GCP step here) ==================
 
 echo "Done."

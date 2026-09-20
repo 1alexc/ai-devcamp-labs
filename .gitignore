@@ -4,6 +4,8 @@ __pycache__/
 .venv/
 gallery/
 social_spark.db
+# agents-cli deploy state — points at one specific engine in one project
+deployment_metadata.json
 .adk/
 node_modules/
 .next/

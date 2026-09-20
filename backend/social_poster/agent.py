@@ -31,7 +31,7 @@ from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.skills import load_skill_from_dir
-from google.adk.tools import google_search
+from google.adk.tools import google_search, load_memory
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.mcp_tool import McpToolset
@@ -44,7 +44,7 @@ from google.adk.tools.tool_context import ToolContext
 from google.genai import types as genai_types
 from mcp import StdioServerParameters
 
-from . import db, guardrails
+from . import config, db, guardrails
 from .tools import (
     OUTPUTS_DIR,
     check_text_length,
@@ -330,6 +330,16 @@ if MEMORY_AGENT_CARD_URL:
         agent_card=MEMORY_AGENT_CARD_URL,
     )
 
+# Memory Bank is the managed alternative to the A2A memory_agent above: same
+# job (recall what this user tends to post about), but backed by the Agent
+# Engine rather than a separately deployed RAG service, and populated
+# automatically from finished conversations rather than needing its own
+# ingestion pipeline. It only exists when deployed — backend/main.py wires
+# VertexAiMemoryBankService when Agent Runtime's APP_URL is present — so
+# locally this stays off and memory_agent remains the only memory path.
+# The two can run side by side; that contrast is the point for the lab.
+use_memory_bank = config.resolve_agent_engine() is not None
+
 # --- Posting toolsets -----------------------------------------------------
 def _linkedin_connection() -> StdioConnectionParams:
     return StdioConnectionParams(
@@ -360,7 +370,7 @@ linkedin_post_toolset = McpToolset(
     require_confirmation=True,
 )
 
-BUFFER_API_KEY = os.environ.get("BUFFER_API_KEY", "")
+BUFFER_API_KEY = config.resolve_buffer_key()
 # POST_VIA overrides the LLM's own routing (see _BUFFER_ROUTING below):
 # "buffer" forces Buffer-only (drops the LinkedIn tool entirely), "linkedin"
 # forces LinkedIn-only (drops Buffer even if a key is configured). Blank
@@ -405,7 +415,19 @@ if BUFFER_API_KEY:
         require_confirmation=True,
     )
 elif POST_VIA == "buffer":
-    raise RuntimeError("POST_VIA=buffer requires BUFFER_API_KEY to be set.")
+    # Deliberately not a raise. This runs at import, so raising kills the
+    # container before it can log why — on Agent Runtime that surfaces only as
+    # "The Reasoning Engine failed to be updated", with no build output and no
+    # container logs to debug from. Degrading to LinkedIn keeps the agent
+    # serving and, crucially, keeps the logs readable.
+    log.error(
+        "POST_VIA=buffer but no Buffer key resolved "
+        "(BUFFER_API_KEY unset and BUFFER_API_KEY_SECRET=%r did not yield one) "
+        "— falling back to LinkedIn-only. Buffer-specific platforms such as X "
+        "will NOT be reachable.",
+        os.environ.get("BUFFER_API_KEY_SECRET", ""),
+    )
+    POST_VIA = "linkedin"
 
 use_linkedin = POST_VIA != "buffer"
 use_buffer = bool(BUFFER_API_KEY) and POST_VIA != "linkedin"
@@ -451,6 +473,7 @@ _TOOL_STAGES = {
     research_agent.name: "researching",
     draft_agent.name: "drafting",
     "memory_agent": "consulting_memory",
+    "load_memory": "consulting_memory",
 }
 
 
@@ -495,18 +518,43 @@ def _track_stage(
     return None  # never modify the tool result
 
 
-def _stage_after_agent(callback_context: CallbackContext) -> None:
+async def _stage_after_agent(callback_context: CallbackContext) -> None:
     # A turn that ends mid-pipeline is waiting on the user (draft approval).
     if callback_context.state.get("pipeline_stage") in ("researching", "drafting"):
         callback_context.state["pipeline_stage"] = "awaiting_approval"
+        return
+
+    # A published post is a natural memory boundary: the conversation is done,
+    # and what the user asked for and approved is exactly what's worth recalling
+    # next time. Ingest it explicitly rather than relying on ag_ui_adk's
+    # automatic ingestion, which only runs when a session is *cleaned up*
+    # (default: 20 minutes idle, swept every 5) — an in-process timer that a
+    # scale-to-zero deployment kills before it ever fires. See LEARNINGS.
+    if use_memory_bank and callback_context.state.get("pipeline_stage") == "posted":
+        if callback_context.state.get("memory_ingested"):
+            return  # one ingestion per conversation, not one per turn
+        try:
+            # async: ADK awaits callbacks that return awaitables. Calling this
+            # without await silently creates a coroutine that never runs.
+            await callback_context.add_session_to_memory()
+            callback_context.state["memory_ingested"] = True
+            log.info("Session added to Memory Bank after publishing")
+        except Exception:  # noqa: BLE001 — memory is an enhancement, not a gate
+            log.exception("Could not add session to Memory Bank")
 
 
 # --- Orchestrator -------------------------------------------------------------
-_MEMORY_ROUTING = """
-0. FIRST, before researching or drafting, ask memory_agent what the user has
-   posted about before and how they phrase things; weave that into the draft
-   brief so the new post sounds like them and doesn't repeat old topics.
-""" if memory_agent else ""
+_MEMORY_SOURCES = " and ".join(
+    filter(None, ["memory_agent" if memory_agent else "", "load_memory" if use_memory_bank else ""])
+)
+_MEMORY_ROUTING = f"""
+0. FIRST, before researching or drafting, call {_MEMORY_SOURCES} to find out
+   what the user has posted about before, how they phrase things, and any
+   preferences they have stated (preferred platform, tone, topics to avoid).
+   Weave that into the draft brief so the new post sounds like them and
+   doesn't repeat old topics. If nothing comes back, say so briefly and carry
+   on — an empty memory is normal on a first conversation.
+""" if _MEMORY_SOURCES else ""
 
 if use_buffer and use_gcs:
     _BUFFER_IMAGE_NOTE = """
@@ -600,6 +648,7 @@ Posting rules (strict):
 """,
     tools=[
         *([AgentTool(agent=memory_agent)] if memory_agent else []),
+        *([load_memory] if use_memory_bank else []),
         AgentTool(agent=research_agent),
         AgentTool(agent=draft_agent),
         guardrails.redact_pii_text,

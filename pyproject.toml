@@ -13,4 +13,5 @@ dependencies = [
     "ag-ui-adk==0.7.0",
     "fastapi==0.139.0",
     "uvicorn==0.51.0",
+    "google-cloud-secret-manager>=2.30.0",
 ]

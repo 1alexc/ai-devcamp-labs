@@ -44,7 +44,7 @@ from google.adk.tools.tool_context import ToolContext
 from google.genai import types as genai_types
 from mcp import StdioServerParameters
 
-from . import db, guardrails
+from . import config, db, guardrails
 from .tools import (
     OUTPUTS_DIR,
     check_text_length,
@@ -360,7 +360,7 @@ linkedin_post_toolset = McpToolset(
     require_confirmation=True,
 )
 
-BUFFER_API_KEY = os.environ.get("BUFFER_API_KEY", "")
+BUFFER_API_KEY = config.resolve_buffer_key()
 # POST_VIA overrides the LLM's own routing (see _BUFFER_ROUTING below):
 # "buffer" forces Buffer-only (drops the LinkedIn tool entirely), "linkedin"
 # forces LinkedIn-only (drops Buffer even if a key is configured). Blank
@@ -405,7 +405,19 @@ if BUFFER_API_KEY:
         require_confirmation=True,
     )
 elif POST_VIA == "buffer":
-    raise RuntimeError("POST_VIA=buffer requires BUFFER_API_KEY to be set.")
+    # Deliberately not a raise. This runs at import, so raising kills the
+    # container before it can log why — on Agent Runtime that surfaces only as
+    # "The Reasoning Engine failed to be updated", with no build output and no
+    # container logs to debug from. Degrading to LinkedIn keeps the agent
+    # serving and, crucially, keeps the logs readable.
+    log.error(
+        "POST_VIA=buffer but no Buffer key resolved "
+        "(BUFFER_API_KEY unset and BUFFER_API_KEY_SECRET=%r did not yield one) "
+        "— falling back to LinkedIn-only. Buffer-specific platforms such as X "
+        "will NOT be reachable.",
+        os.environ.get("BUFFER_API_KEY_SECRET", ""),
+    )
+    POST_VIA = "linkedin"
 
 use_linkedin = POST_VIA != "buffer"
 use_buffer = bool(BUFFER_API_KEY) and POST_VIA != "linkedin"

@@ -17,3 +17,4 @@ ai_devcamp_docs/
 # Coding Agents
 .agents/
 .claude/
+deployment_metadata.json

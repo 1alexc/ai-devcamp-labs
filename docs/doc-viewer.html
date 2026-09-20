@@ -52,6 +52,23 @@
   }
   blockquote p:last-child { margin-bottom: 0; }
   blockquote code { background: rgba(0,0,0,0.08); }
+  .alert {
+    margin: 18px 0; padding: 14px 18px; border-radius: 8px; border-left: 4px solid;
+    font-size: 14.8px; line-height: 1.6;
+  }
+  .alert p:first-child { margin-top: 0; }
+  .alert p:last-child { margin-bottom: 0; }
+  .alert-title { font-weight: 700; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .alert-note { background: rgba(26, 115, 232, 0.08); border-color: #1a73e8; color: var(--text); }
+  .alert-note .alert-title { color: #1a73e8; }
+  .alert-important { background: rgba(142, 36, 170, 0.08); border-color: #8e24aa; color: var(--text); }
+  .alert-important .alert-title { color: #8e24aa; }
+  .alert-tip { background: rgba(24, 134, 75, 0.08); border-color: #1b7340; color: var(--text); }
+  .alert-tip .alert-title { color: #1b7340; }
+  .alert-warning { background: rgba(234, 134, 0, 0.09); border-color: #ea8600; color: var(--text); }
+  .alert-warning .alert-title { color: #ea8600; }
+  .alert-caution { background: rgba(217, 48, 37, 0.09); border-color: #d93025; color: var(--text); }
+  .alert-caution .alert-title { color: #d93025; }
   .code-block { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; border: 1px solid var(--code-border); }
   .code-head { background: #1a1f27; padding: 7px 12px; font-size: 11px; color: var(--code-comment); font-family: var(--font-mono); border-bottom: 1px solid var(--code-border); }
   pre { margin: 0; background: var(--bg-code); padding: 14px 16px; overflow-x: auto; }
@@ -61,6 +78,14 @@
   th, td { text-align: left; padding: 8px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { background: var(--bg-panel); font-weight: 700; color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; }
   tr:last-child td { border-bottom: none; }
+  img { max-width: 520px; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); display: block; margin: 14px 0; }
+  .img-row { display: flex; gap: 12px; margin: 14px 0; align-items: flex-start; max-width: 680px; }
+  .img-row img { flex: 1 1 0; min-width: 0; width: 50%; max-width: 100%; margin: 0; }
+  @media (max-width: 640px) {
+    img { max-width: 100%; }
+    .img-row { flex-direction: column; }
+    .img-row img { width: 100%; }
+  }
   .state { color: var(--text-faint); padding: 60px 24px; text-align: center; font-size: 14px; }
 </style>
 </head>
@@ -80,16 +105,28 @@
     const codes = [];
     text = text.replace(/`([^`]+)`/g, (m, c) => {
       codes.push(escapeHtml(c));
-      return "\u0000" + (codes.length - 1) + "\u0000";
+      return "\u0000code" + (codes.length - 1) + "\u0000";
+    });
+    const rawImgs = [];
+    text = text.replace(/<img\b[^>]*\/?>/gi, (m) => {
+      rawImgs.push(m);
+      return "\u0000img" + (rawImgs.length - 1) + "\u0000";
     });
     text = escapeHtml(text);
+    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
+      return `<img src="${url}" alt="${alt}">`;
+    });
+    text = text.replace(/\u0000img(\d+)\u0000/g, (m, i) => rawImgs[+i]);
+    text = text.replace(/((?:<img\b[^>]*>\s*){2,})/g, (m) => {
+      return `<div class="img-row">${m}</div>`;
+    });
     text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t, url) => {
       const ext = /^https?:/.test(url) ? ' target="_blank" rel="noopener"' : "";
       return `<a href="${url}"${ext}>${t}</a>`;
     });
     text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-    text = text.replace(/\u0000(\d+)\u0000/g, (m, i) => `<code>${codes[+i]}</code>`);
+    text = text.replace(/\u0000code(\d+)\u0000/g, (m, i) => `<code>${codes[+i]}</code>`);
     return text;
   }
 
@@ -103,14 +140,26 @@
     while (i < lines.length) {
       const line = lines[i];
 
-      const fence = line.match(/^```(\S*)\s*$/);
+      // Leading whitespace is allowed: a fence indented to sit inside a list
+      // item is still a fence. Without this it falls through to the paragraph
+      // branch below, which joins lines with spaces — turning a shell block
+      // into one unreadable line.
+      const fence = line.match(/^(\s*)```(\S*)\s*$/);
       if (fence) {
         closeList();
-        const lang = fence[1] || "text";
+        const indent = fence[1];
+        const lang = fence[2] || "text";
         const code = [];
         i++;
-        while (i < lines.length && !/^```\s*$/.test(lines[i])) { code.push(lines[i]); i++; }
+        while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) { code.push(lines[i]); i++; }
         i++;
+        // Strip the fence's own indentation from the body, so code indented
+        // for the list doesn't render with phantom left padding.
+        if (indent) {
+          for (let k = 0; k < code.length; k++) {
+            code[k] = code[k].startsWith(indent) ? code[k].slice(indent.length) : code[k].replace(/^\s+/, "");
+          }
+        }
         html += `<div class="code-block"><div class="code-head">${escapeHtml(lang)}</div><pre><code>${escapeHtml(code.join("\n"))}</code></pre></div>\n`;
         continue;
       }
@@ -128,7 +177,22 @@
         while (i < lines.length && /^>/.test(lines[i])) {
           quote.push(lines[i].replace(/^>\s?/, "")); i++;
         }
-        html += `<blockquote>${renderMarkdown(quote.join("\n"))}</blockquote>\n`;
+        const firstLine = quote[0] ? quote[0].trim() : "";
+        const alertMatch = firstLine.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/i);
+        if (alertMatch) {
+          const type = alertMatch[1].toUpperCase();
+          quote.shift(); // remove the [!ALERT] marker
+          const icons = {
+            NOTE: "ℹ️",
+            TIP: "💡",
+            IMPORTANT: "⚡",
+            WARNING: "⚠️",
+            CAUTION: "🛑"
+          };
+          html += `<div class="alert alert-${type.toLowerCase()}"><div class="alert-title">${icons[type] || ""} ${type}</div>${renderMarkdown(quote.join("\n"))}</div>\n`;
+        } else {
+          html += `<blockquote>${renderMarkdown(quote.join("\n"))}</blockquote>\n`;
+        }
         continue;
       }
 
@@ -155,22 +219,30 @@
         i++; continue;
       }
 
-      const ol = line.match(/^\d+\.\s+(.*)$/);
+      const ol = line.match(/^(\d+)\.\s+(.*)$/);
       if (ol) {
-        if (inList !== "ol") { closeList(); html += "<ol>\n"; inList = "ol"; }
-        html += `<li>${renderInline(ol[1])}</li>\n`;
+        // Start from the source's own number. A blank line or an embedded code
+        // block closes the list, and reopening plain <ol> would restart at 1 —
+        // so a numbered walkthrough with commands in it renumbers itself.
+        if (inList !== "ol") { closeList(); html += `<ol start="${parseInt(ol[1], 10) || 1}">\n`; inList = "ol"; }
+        html += `<li>${renderInline(ol[2])}</li>\n`;
         i++; continue;
       }
 
       closeList();
       const para = [line];
       i++;
-      while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^```/.test(lines[i]) && !/^#{1,6}\s/.test(lines[i]) &&
+      while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^\s*```/.test(lines[i]) && !/^#{1,6}\s/.test(lines[i]) &&
              !/^>/.test(lines[i]) && !/^[-*]\s/.test(lines[i]) && !/^\d+\.\s/.test(lines[i]) && !/^\|/.test(lines[i]) &&
              !/^(-{3,}|\*{3,}|_{3,})\s*$/.test(lines[i])) {
         para.push(lines[i]); i++;
       }
-      html += `<p>${renderInline(para.join(" "))}</p>\n`;
+      const rendered = renderInline(para.join(" "));
+      if (/^\s*<div class="img-row">[\s\S]*<\/div>\s*$/.test(rendered)) {
+        html += `${rendered}\n`;
+      } else {
+        html += `<p>${rendered}</p>\n`;
+      }
     }
     closeList();
     return html;

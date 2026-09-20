@@ -9,7 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-PERSONAL_EMAIL="sonika.janagill@gmail.com"  # <-- change to your own Google account
+PERSONAL_EMAIL="<user.name>@gmail.com"  # <-- change to your own Google account
 
 # === Step 0: gcloud auth ====================================================
 echo "=== Step 0: gcloud auth ==="

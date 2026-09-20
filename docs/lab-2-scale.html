@@ -291,7 +291,32 @@
     .content-col { padding: 28px 20px 32px; }
     .step-title { font-size: 23px; }
   }
+
+  /* ---------- theme toggle ---------- */
+  .theme-toggle {
+    position: fixed; top: 14px; right: 14px; z-index: 999;
+    width: 34px; height: 34px; padding: 0; border-radius: 10px;
+    display: grid; place-items: center; cursor: pointer;
+    background: var(--panel, var(--bg-panel, #fff));
+    border: 1px solid var(--border); color: var(--muted, var(--text-muted, #666));
+    font-size: 15px; line-height: 1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.10);
+  }
+  .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media print { .theme-toggle { display: none; } }
 </style>
+
+<script>
+  // Runs before the page paints: reading localStorage here avoids the flash of
+  // the OS theme before the reader's own choice is applied.
+  try {
+    var t = localStorage.getItem("social-spark-theme");
+    if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  } catch (e) { /* private mode — fall back to the OS preference */ }
+</script>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch between light and dark" title="Switch theme">🌗</button>
 
 <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
 
@@ -837,4 +862,34 @@ gcloud run services delete social-spark-frontend \
   }
 
   goTo(0);
+</script>
+
+<script>
+  // Three states, not two: no stored value means "follow the OS", which holds
+  // until the reader expresses a preference. The toggle then pins the opposite
+  // of whatever is currently showing.
+  (function () {
+    var KEY = "social-spark-theme";
+    var root = document.documentElement;
+    var btn = document.getElementById("themeToggle");
+    function showing() {
+      return root.dataset.theme
+        || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    }
+    function paint() {
+      var s = showing();
+      btn.textContent = s === "dark" ? "☀️" : "🌙";
+      btn.title = s === "dark" ? "Switch to light" : "Switch to dark";
+    }
+    btn.addEventListener("click", function () {
+      var next = showing() === "dark" ? "light" : "dark";
+      root.dataset.theme = next;
+      try { localStorage.setItem(KEY, next); } catch (e) { /* not fatal */ }
+      paint();
+    });
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+      if (!root.dataset.theme) paint();
+    });
+    paint();
+  })();
 </script>

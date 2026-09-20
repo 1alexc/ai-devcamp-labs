@@ -87,9 +87,9 @@
   }
   h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; color: var(--text); margin: 0; }
   a { color: var(--accent); }
-  p { margin: 0 0 14px; max-width: 68ch; }
+  p { margin: 0 0 14px; max-width: 100%; }
   ul, ol { margin: 0 0 14px; padding-left: 1.3em; }
-  li { margin-bottom: 6px; max-width: 64ch; }
+  li { margin-bottom: 6px; max-width: 100%; }
   code { font-family: var(--font-mono); font-size: 0.87em; background: var(--accent-soft); color: var(--accent-hover); padding: 0.1em 0.4em; border-radius: 4px; }
 
   /* ---------- progress bar ---------- */
@@ -107,7 +107,7 @@
 
   /* ---------- sidebar ---------- */
   .sidebar {
-    width: 292px; flex: none; background: var(--bg-sidebar);
+    width: 20%; flex: none; background: var(--bg-sidebar);
     border-right: 1px solid var(--border); padding: 22px 14px 18px;
     position: sticky; top: 3px; align-self: flex-start; height: calc(100vh - 3px);
     overflow-y: auto;
@@ -128,7 +128,7 @@
     display: flex; align-items: center; gap: 10px;
     padding: 8px 10px; border-radius: 8px; cursor: pointer;
     border-left: 3px solid transparent;
-    color: var(--text-muted); font-size: 13.6px;
+    color: var(--text-muted); font-size: 15.5px;
   }
   .step-nav-item:hover { background: var(--bg-sidebar-hover); color: var(--text); }
   .step-nav-item.active { background: var(--accent-soft); color: var(--accent-hover); border-left-color: var(--accent); font-weight: 600; }
@@ -141,7 +141,7 @@
   .step-nav-item.active .step-dot { border-color: var(--accent); color: var(--accent-hover); }
   .step-label-group { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
   .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .step-dur { font-size: 10.8px; color: var(--text-faint); }
+  .step-dur { font-size: 12px; color: var(--text-faint); }
   .step-nav-item.optional .step-label::after {
     content: "optional"; margin-left: 6px; font-size: 9.5px; text-transform: uppercase;
     letter-spacing: 0.04em; color: var(--yellow); border: 1px solid var(--yellow); border-radius: 4px;
@@ -156,7 +156,7 @@
 
   /* ---------- main ---------- */
   .main { flex: 1; min-width: 0; display: flex; justify-content: center; }
-  .content-col { width: 100%; max-width: 760px; padding: 48px 40px 40px; }
+  .content-col { width: 100%; max-width: 60%; padding: 48px 40px 40px; }
 
   .step-panel { display: none; }
   .step-panel.active { display: block; animation: fade-in 0.25s ease; }
@@ -184,8 +184,8 @@
 
   /* ---------- callouts ---------- */
   .callout {
-    border-left: 3px solid var(--accent); background: var(--accent-soft);
-    border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 16px 0;
+    /* border-left: 3px solid var(--accent); background: var(--accent-soft); */
+    border-radius: 8px 8px 8px 8px; padding: 12px 16px; margin: 16px 0;
   }
   .callout p:last-child { margin-bottom: 0; }
   .callout-label {
@@ -257,6 +257,7 @@
   /* ---------- figure / svg diagrams ---------- */
   figure.diagram { margin: 20px 0 24px; padding: 18px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
   figure.diagram svg { width: 100%; height: auto; display: block; color: var(--text); }
+  figure.diagram img { width: 80%; max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 8px; }
   figure.diagram figcaption { margin-top: 10px; font-size: 12.5px; color: var(--text-faint); text-align: center; }
   .accent-fill { fill: var(--accent); }
   .accent-stroke { stroke: var(--accent); }
@@ -290,8 +291,34 @@
     .mobile-topnav button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
     .content-col { padding: 28px 20px 32px; }
     .step-title { font-size: 23px; }
+    figure.diagram img { width: 100%; }
   }
+
+  /* ---------- theme toggle ---------- */
+  .theme-toggle {
+    position: fixed; top: 14px; right: 14px; z-index: 999;
+    width: 34px; height: 34px; padding: 0; border-radius: 10px;
+    display: grid; place-items: center; cursor: pointer;
+    background: var(--panel, var(--bg-panel, #fff));
+    border: 1px solid var(--border); color: var(--muted, var(--text-muted, #666));
+    font-size: 15px; line-height: 1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.10);
+  }
+  .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media print { .theme-toggle { display: none; } }
 </style>
+
+<script>
+  // Runs before the page paints: reading localStorage here avoids the flash of
+  // the OS theme before the reader's own choice is applied.
+  try {
+    var t = localStorage.getItem("social-spark-theme");
+    if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  } catch (e) { /* private mode — fall back to the OS preference */ }
+</script>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch between light and dark" title="Switch theme">🌗</button>
 
 <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
 
@@ -326,6 +353,8 @@
           <p>Google Cloud's <a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/overview" target="_blank" rel="noopener">Gemini Enterprise Agent Platform</a> groups agent work into four pillars: <strong>Build, Scale, Govern, Optimise</strong>. This lab is Build — designing and composing an agent: the <strong>Agent Development Kit (ADK)</strong> itself, <strong>Model Garden</strong> (the Gemini models your agents call), function tools, Agent Skills, and MCP toolsets. Multi-agent decomposition (an orchestrator routing to specialist sub-agents) and connecting an <strong>Agent Garden</strong> template or a <strong>RAG Engine</strong>-backed memory agent are Build-pillar concepts too — you'll see the fuller version of that in the tagged reference (below). None of what you build today is about <em>where it runs</em> (that's Scale), <em>who's allowed to do what</em> (that's Govern), or <em>whether it's any good</em> (that's Optimise) — those are Labs 2–4 in this series.</p>
         </div>
 
+        <figure class="diagram"><img src="https://docs.cloud.google.com/static/gemini-enterprise-agent-platform/images/gemini-enterprise-agent-platform.svg" alt="Agent Platform is organized around four pillars: Build, Scale, Govern, and Optimize."></figure>
+
         <div class="callout agent">
           <span class="callout-label">How this lab works</span>
           <p>Every step has three parts: the <strong>concept</strong>, a <strong>prompt</strong> you can give your coding agent (Antigravity, Claude Code or Gemini CLI — the starter repo's <code>AGENTS.md</code> tells it the project conventions), and a <strong>checkpoint</strong> that proves the step worked. The code blocks are there to read and compare against, or to type by hand if you prefer; the checkpoint is what counts, not matching the code. Review your agent's plan before accepting it. One step, marked clearly, is designed to fail the first time.</p>
@@ -341,9 +370,9 @@
               </marker>
             </defs>
             <!-- idea -->
-            <text x="34" y="70" font-size="12.5" fill="currentColor">💡 You</text>
-            <line x1="30" y1="80" x2="30" y2="118" stroke="currentColor" stroke-width="1.4" marker-end="url(#ov-arrow)"/>
-            <text x="40" y="105" font-size="10.5" fill="currentColor" opacity="0.65">idea</text>
+            <text x="55" y="70" font-size="12.5" fill="currentColor">💡 You</text>
+            <line x1="85" y1="80" x2="85" y2="118" stroke="currentColor" stroke-width="1.4" marker-end="url(#ov-arrow)"/>
+            <text x="50" y="105" font-size="10.5" fill="currentColor" opacity="0.65">idea</text>
 
             <!-- orchestrator box -->
             <rect x="10" y="118" width="150" height="52" rx="10" class="accent-stroke" fill="none" stroke-width="1.6"/>
@@ -436,7 +465,7 @@
 
         <div class="callout">
           <span class="callout-label">If you fall behind</span>
-          <p>Ask in your buddy group or Discord first — someone next to you has usually just solved it. The reference checkpoint for this lab, the <code>pillar-build</code> tag on the <code>social-spark</code> repo, is published the day <em>after</em> the session, on purpose: it's the answer key for catching up before Lab 2, not something to copy from during the workshop. It deliberately contains no Govern-pillar code yet.</p>
+          <p>Ask in your buddy group or Discord first — someone might have already solved it. The reference checkpoint for this lab, the <code>pillar-build</code> tag on the <code>social-spark-labs</code> repo, is published the day <em>after</em> the session, on purpose: it's the answer key for catching up before Lab 2, not something to copy from during the workshop. It deliberately contains no Govern-pillar code yet.</p>
         </div>
 
         <div class="step-footer">
@@ -458,8 +487,8 @@
 
         <div class="code-block">
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-          <pre><code>git clone &lt;STARTER_REPO_URL&gt; social-spark
-cd social-spark
+          <pre><code>git clone &lt;STARTER_REPO_URL&gt; social-spark-labs
+cd social-spark-labs
 cp .env.example backend/social_poster/.env
 uv sync</code></pre>
         </div>
@@ -467,7 +496,7 @@ uv sync</code></pre>
         <p>Edit <code>backend/social_poster/.env</code>: set <code>GOOGLE_CLOUD_PROJECT</code> to your DevCamp project id (no service-account key file needed anywhere — <code>gcloud auth application-default login</code> from Step 2 of the setup guide is enough). Leave everything else; you'll fill in <code>BUFFER_API_KEY</code> in Step 6.</p>
 
         <h4>You should now have</h4>
-        <div class="tree">social-spark/
+        <div class="tree">social-spark-labs/
 ├── AGENTS.md              (given — read by your coding agent)
 ├── pyproject.toml
 ├── .env.example
@@ -1217,7 +1246,7 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
 
         <div class="callout">
           <span class="callout-label">If you got stuck anywhere today</span>
-          <p>The <code>pillar-build</code> tag on the <code>social-spark</code> repo is published the day after the session: the finished version of everything above, and the exact starting point Lab 2 assumes. Use it to catch up before next Saturday, not as a substitute for the build.</p>
+          <p>The <code>pillar-build</code> tag on the <code>social-spark-labs</code> repo is published the day after the session: the finished version of everything above, and the exact starting point Lab 2 assumes. Use it to catch up before next Saturday, not as a substitute for the build.</p>
         </div>
 
         <h3>Assignment</h3>
@@ -1317,4 +1346,34 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
   }
 
   goTo(0);
+</script>
+
+<script>
+  // Three states, not two: no stored value means "follow the OS", which holds
+  // until the reader expresses a preference. The toggle then pins the opposite
+  // of whatever is currently showing.
+  (function () {
+    var KEY = "social-spark-theme";
+    var root = document.documentElement;
+    var btn = document.getElementById("themeToggle");
+    function showing() {
+      return root.dataset.theme
+        || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    }
+    function paint() {
+      var s = showing();
+      btn.textContent = s === "dark" ? "☀️" : "🌙";
+      btn.title = s === "dark" ? "Switch to light" : "Switch to dark";
+    }
+    btn.addEventListener("click", function () {
+      var next = showing() === "dark" ? "light" : "dark";
+      root.dataset.theme = next;
+      try { localStorage.setItem(KEY, next); } catch (e) { /* not fatal */ }
+      paint();
+    });
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+      if (!root.dataset.theme) paint();
+    });
+    paint();
+  })();
 </script>

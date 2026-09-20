@@ -14,11 +14,16 @@
     --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg: #14171c; --bg-panel: #1a1e24; --border: #2a2f37; --text: #e7e9ec;
       --text-muted: #a7adb6; --text-faint: #767c86; --accent: #8ab4f8; --accent-hover: #aecbfa;
       --accent-soft: rgba(138,180,248,.14);
     }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171c; --bg-panel: #1a1e24; --border: #2a2f37; --text: #e7e9ec;
+    --text-muted: #a7adb6; --text-faint: #767c86; --accent: #8ab4f8; --accent-hover: #aecbfa;
+    --accent-soft: rgba(138,180,248,.14);
   }
   * { box-sizing: border-box; }
   body {
@@ -27,13 +32,13 @@
   }
   .topbar {
     position: sticky; top: 0; display: flex; align-items: center; gap: 14px;
-    background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 24px; z-index: 10;
+    background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 64px 12px 24px; z-index: 10;
   }
   .topbar a.back { color: var(--text-muted); text-decoration: none; font-size: 13.5px; display: flex; align-items: center; gap: 5px; }
   .topbar a.back:hover { color: var(--accent); }
   .topbar .fname { margin-left: auto; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); }
   .topbar .fname a { color: inherit; }
-  article { max-width: 720px; margin: 0 auto; padding: 40px 24px 80px; }
+  article { max-width: 60%; margin: 0 auto; padding: 40px 24px 80px; }
   h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
   h1 { font-size: 27px; margin: 0 0 20px; }
   h2 { font-size: 20px; margin: 34px 0 12px; padding-top: 6px; border-top: 1px solid var(--border); }
@@ -78,8 +83,8 @@
   th, td { text-align: left; padding: 8px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { background: var(--bg-panel); font-weight: 700; color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; }
   tr:last-child td { border-bottom: none; }
-  img { max-width: 520px; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); display: block; margin: 14px 0; }
-  .img-row { display: flex; gap: 12px; margin: 14px 0; align-items: flex-start; max-width: 680px; }
+  img { max-width: 520px; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); display: block; margin: 14px auto; }
+  .img-row { display: flex; gap: 12px; margin: 14px auto; align-items: flex-start; justify-content: center; max-width: 680px; }
   .img-row img { flex: 1 1 0; min-width: 0; width: 50%; max-width: 100%; margin: 0; }
   @media (max-width: 640px) {
     img { max-width: 100%; }
@@ -87,9 +92,30 @@
     .img-row img { width: 100%; }
   }
   .state { color: var(--text-faint); padding: 60px 24px; text-align: center; font-size: 14px; }
+  /* ---------- theme toggle ---------- */
+  .theme-toggle {
+    position: fixed; top: 14px; right: 14px; z-index: 999;
+    width: 34px; height: 34px; padding: 0; border-radius: 10px;
+    display: grid; place-items: center; cursor: pointer;
+    background: var(--bg-panel, #fff);
+    border: 1px solid var(--border); color: var(--text-muted, #666);
+    font-size: 15px; line-height: 1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.10);
+  }
+  .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media print { .theme-toggle { display: none; } }
 </style>
+<script>
+  try {
+    var t = localStorage.getItem("social-spark-theme");
+    if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  } catch (e) { /* private mode — fall back to the OS preference */ }
+</script>
 </head>
 <body>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch between light and dark" title="Switch theme">🌗</button>
+
   <div class="topbar">
     <a class="back" href="index.html">&larr; Docs</a>
     <span class="fname" id="fname"></span>
@@ -134,8 +160,13 @@
     const lines = src.replace(/\r\n/g, "\n").split("\n");
     let html = "";
     let i = 0;
-    let inList = null;
-    function closeList() { if (inList) { html += `</${inList}>\n`; inList = null; } }
+    let listStack = [];
+    function closeList(targetIndent = -1) {
+      while (listStack.length > 0 && (targetIndent < 0 || listStack[listStack.length - 1].indent > targetIndent)) {
+        const item = listStack.pop();
+        html += `</${item.type}>\n`;
+      }
+    }
 
     while (i < lines.length) {
       const line = lines[i];
@@ -161,6 +192,22 @@
           }
         }
         html += `<div class="code-block"><div class="code-head">${escapeHtml(lang)}</div><pre><code>${escapeHtml(code.join("\n"))}</code></pre></div>\n`;
+        continue;
+      }
+
+      // Inline <svg> passes through verbatim, so a diagram can inherit the
+      // page's CSS variables and follow the theme. Handled at block level
+      // because an svg spans blank lines, which the paragraph splitter would
+      // otherwise treat as separate paragraphs and escape.
+      if (/^\s*<svg\b/i.test(line)) {
+        closeList();
+        const svg = [];
+        while (i < lines.length) {
+          svg.push(lines[i]);
+          if (/<\/svg>/i.test(lines[i])) { i++; break; }
+          i++;
+        }
+        html += svg.join("\n") + "\n";
         continue;
       }
 
@@ -212,32 +259,54 @@
         continue;
       }
 
-      const ul = line.match(/^[-*]\s+(.*)$/);
-      if (ul) {
-        if (inList !== "ul") { closeList(); html += "<ul>\n"; inList = "ul"; }
-        html += `<li>${renderInline(ul[1])}</li>\n`;
-        i++; continue;
-      }
+      const listMatch = line.match(/^(\s*)([-*]|\d+\.)\s+(.*)$/);
+      if (listMatch) {
+        const indent = listMatch[1].length;
+        const marker = listMatch[2];
+        const isUl = marker === "-" || marker === "*";
+        const type = isUl ? "ul" : "ol";
+        const content = listMatch[3];
 
-      const ol = line.match(/^(\d+)\.\s+(.*)$/);
-      if (ol) {
-        // Start from the source's own number. A blank line or an embedded code
-        // block closes the list, and reopening plain <ol> would restart at 1 —
-        // so a numbered walkthrough with commands in it renumbers itself.
-        if (inList !== "ol") { closeList(); html += `<ol start="${parseInt(ol[1], 10) || 1}">\n`; inList = "ol"; }
-        html += `<li>${renderInline(ol[2])}</li>\n`;
-        i++; continue;
+        if (listStack.length === 0) {
+          listStack.push({ type, indent });
+          html += `<${type}${type === "ol" ? ` start="${parseInt(marker, 10) || 1}"` : ""}>\n`;
+        } else {
+          const top = listStack[listStack.length - 1];
+          if (indent > top.indent) {
+            listStack.push({ type, indent });
+            html += `<${type}${type === "ol" ? ` start="${parseInt(marker, 10) || 1}"` : ""}>\n`;
+          } else if (indent < top.indent) {
+            closeList(indent);
+            if (listStack.length === 0 || listStack[listStack.length - 1].indent < indent) {
+              listStack.push({ type, indent });
+              html += `<${type}${type === "ol" ? ` start="${parseInt(marker, 10) || 1}"` : ""}>\n`;
+            } else if (listStack[listStack.length - 1].type !== type) {
+              const popped = listStack.pop();
+              html += `</${popped.type}>\n`;
+              listStack.push({ type, indent });
+              html += `<${type}${type === "ol" ? ` start="${parseInt(marker, 10) || 1}"` : ""}>\n`;
+            }
+          } else if (top.type !== type) {
+            const popped = listStack.pop();
+            html += `</${popped.type}>\n`;
+            listStack.push({ type, indent });
+            html += `<${type}${type === "ol" ? ` start="${parseInt(marker, 10) || 1}"` : ""}>\n`;
+          }
+        }
+        html += `<li>${renderInline(content)}</li>\n`;
+        i++;
+        continue;
       }
 
       closeList();
       const para = [line];
       i++;
       while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^\s*```/.test(lines[i]) && !/^#{1,6}\s/.test(lines[i]) &&
-             !/^>/.test(lines[i]) && !/^[-*]\s/.test(lines[i]) && !/^\d+\.\s/.test(lines[i]) && !/^\|/.test(lines[i]) &&
+             !/^>/.test(lines[i]) && !/^\s*[-*]\s/.test(lines[i]) && !/^\s*\d+\.\s/.test(lines[i]) && !/^\|/.test(lines[i]) &&
              !/^(-{3,}|\*{3,}|_{3,})\s*$/.test(lines[i])) {
         para.push(lines[i]); i++;
       }
-      const rendered = renderInline(para.join(" "));
+      const rendered = renderInline(para.join(" ").trim());
       if (/^\s*<div class="img-row">[\s\S]*<\/div>\s*$/.test(rendered)) {
         html += `${rendered}\n`;
       } else {
@@ -269,6 +338,43 @@
         contentEl.innerHTML = `<p class="state">Couldn't load <code>${src}</code> (${err.message}).<br>Make sure you're viewing this through a local server (e.g. <code>python -m http.server 8080</code>), not opening the file directly.</p>`;
       });
   }
+</script>
+<script>
+  (function () {
+    var KEY = "social-spark-theme";
+    var root = document.documentElement;
+    var btn = document.getElementById("themeToggle");
+    if (!btn) return;
+    function showing() {
+      return root.dataset.theme
+        || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    }
+    function paint() {
+      var s = showing();
+      btn.textContent = s === "dark" ? "☀️" : "🌙";
+      btn.title = s === "dark" ? "Switch to light" : "Switch to dark";
+    }
+    btn.addEventListener("click", function () {
+      var next = showing() === "dark" ? "light" : "dark";
+      root.dataset.theme = next;
+      try { localStorage.setItem(KEY, next); } catch (e) { /* not fatal */ }
+      paint();
+    });
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+      if (!root.dataset.theme) paint();
+    });
+    window.addEventListener("storage", function (e) {
+      if (e.key === KEY) {
+        if (e.newValue === "light" || e.newValue === "dark") {
+          root.dataset.theme = e.newValue;
+        } else {
+          delete root.dataset.theme;
+        }
+        paint();
+      }
+    });
+    paint();
+  })();
 </script>
 </body>
 </html>

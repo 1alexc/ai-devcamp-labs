@@ -5,11 +5,104 @@ Setup takes 45 to 60 minutes across 4 guided phases. Do it early: the Discord #s
 
 
 
+### The whole journey, in one picture
+
+<svg viewBox="0 0 900 430" role="img" xmlns="http://www.w3.org/2000/svg"
+     aria-label="Four pre-camp phases feeding into Lab 1. Phase 1 Cloud and budget foundation, Phase 2 Local developer tools, Phase 3 Coding agent setup, Phase 4 Environment and buddy check. These four are done before the camp; creating the agent project and running it happen in Lab 1 on the first Saturday."
+     style="width:100%;height:auto;font-family:var(--font-body);">
+  <defs>
+    <marker id="su-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor" opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <text x="0" y="16" font-size="12.5" font-weight="700" fill="currentColor" opacity="0.55" letter-spacing="0.06em">BEFORE THE CAMP — THIS GUIDE</text>
+
+  <!-- Phase 1 -->
+  <rect x="0" y="30" width="210" height="150" rx="12" fill="#34a853" opacity="0.10"/>
+  <rect x="0" y="30" width="4" height="150" rx="2" fill="#34a853"/>
+  <circle cx="26" cy="56" r="11" fill="#34a853"/>
+  <text x="26" y="60" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">1</text>
+  <text x="46" y="54" font-size="13" font-weight="700" fill="currentColor">Cloud &amp; budget</text>
+  <text x="46" y="70" font-size="13" font-weight="700" fill="currentColor">foundation</text>
+  <text x="16" y="96" font-size="11.5" fill="currentColor" opacity="0.72">Google account</text>
+  <text x="16" y="114" font-size="11.5" fill="currentColor" opacity="0.72">GCP project + $300 credit</text>
+  <text x="16" y="132" font-size="11.5" fill="currentColor" opacity="0.72">Spend cap &amp; budget alert</text>
+  <text x="16" y="150" font-size="11.5" fill="currentColor" opacity="0.72">Enable the APIs</text>
+  <text x="16" y="170" font-size="10.5" fill="currentColor" opacity="0.45">⏱ 20 min</text>
+
+  <!-- Phase 2 -->
+  <rect x="230" y="30" width="210" height="150" rx="12" fill="#1a73e8" opacity="0.10"/>
+  <rect x="230" y="30" width="4" height="150" rx="2" fill="#1a73e8"/>
+  <circle cx="256" cy="56" r="11" fill="#1a73e8"/>
+  <text x="256" y="60" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">2</text>
+  <text x="276" y="54" font-size="13" font-weight="700" fill="currentColor">Local developer</text>
+  <text x="276" y="70" font-size="13" font-weight="700" fill="currentColor">tools</text>
+  <text x="246" y="96" font-size="11.5" fill="currentColor" opacity="0.72">Python 3.12+, uv, Node</text>
+  <text x="246" y="114" font-size="11.5" fill="currentColor" opacity="0.72">gcloud → us-central1</text>
+  <text x="246" y="132" font-size="11.5" fill="currentColor" opacity="0.72">Authenticate (ADC)</text>
+  <text x="246" y="150" font-size="11.5" fill="currentColor" opacity="0.72">Install ADK</text>
+  <text x="246" y="170" font-size="10.5" fill="currentColor" opacity="0.45">⏱ 15 min</text>
+
+  <!-- Phase 3 -->
+  <rect x="460" y="30" width="210" height="150" rx="12" fill="#a142f4" opacity="0.10"/>
+  <rect x="460" y="30" width="4" height="150" rx="2" fill="#a142f4"/>
+  <circle cx="486" cy="56" r="11" fill="#a142f4"/>
+  <text x="486" y="60" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">3</text>
+  <text x="506" y="54" font-size="13" font-weight="700" fill="currentColor">Coding agent</text>
+  <text x="506" y="70" font-size="13" font-weight="700" fill="currentColor">superpowers</text>
+  <text x="476" y="96" font-size="11.5" fill="currentColor" opacity="0.72">Antigravity (or Claude</text>
+  <text x="476" y="114" font-size="11.5" fill="currentColor" opacity="0.72">Code / Gemini CLI)</text>
+  <text x="476" y="132" font-size="11.5" fill="currentColor" opacity="0.72">Vertex AI fallback</text>
+  <text x="476" y="150" font-size="11.5" fill="currentColor" opacity="0.72">agents-cli + ADK skills</text>
+  <text x="476" y="170" font-size="10.5" fill="currentColor" opacity="0.45">⏱ 10 min</text>
+
+  <!-- Phase 4 -->
+  <rect x="690" y="30" width="210" height="150" rx="12" fill="#f9ab00" opacity="0.12"/>
+  <rect x="690" y="30" width="4" height="150" rx="2" fill="#f9ab00"/>
+  <circle cx="716" cy="56" r="11" fill="#f9ab00"/>
+  <text x="716" y="60" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">4</text>
+  <text x="736" y="54" font-size="13" font-weight="700" fill="currentColor">Environment &amp;</text>
+  <text x="736" y="70" font-size="13" font-weight="700" fill="currentColor">camp readiness</text>
+  <text x="706" y="96" font-size="11.5" fill="currentColor" opacity="0.72">Know your .env values</text>
+  <text x="706" y="114" font-size="11.5" fill="currentColor" opacity="0.72">Buddy check</text>
+  <text x="706" y="132" font-size="11.5" fill="currentColor" opacity="0.72">Buffer account</text>
+  <text x="706" y="170" font-size="10.5" fill="currentColor" opacity="0.45">⏱ 10 min</text>
+
+  <!-- connectors -->
+  <line x1="212" y1="105" x2="226" y2="105" stroke="currentColor" stroke-width="1.6" opacity="0.45" marker-end="url(#su-arrow)"/>
+  <line x1="442" y1="105" x2="456" y2="105" stroke="currentColor" stroke-width="1.6" opacity="0.45" marker-end="url(#su-arrow)"/>
+  <line x1="672" y1="105" x2="686" y2="105" stroke="currentColor" stroke-width="1.6" opacity="0.45" marker-end="url(#su-arrow)"/>
+  <path d="M450,190 L450,232" stroke="currentColor" stroke-width="1.6" opacity="0.45" fill="none" marker-end="url(#su-arrow)"/>
+
+  <text x="0" y="262" font-size="12.5" font-weight="700" fill="currentColor" opacity="0.55" letter-spacing="0.06em">FIRST SATURDAY — THE WORKSHOP</text>
+
+  <!-- Lab 1 -->
+  <rect x="0" y="276" width="900" height="140" rx="12" fill="none" stroke="currentColor" stroke-opacity="0.28" stroke-width="1.4" stroke-dasharray="5 4"/>
+  <text x="20" y="302" font-size="13" font-weight="700" fill="currentColor">Lab 1 — Build</text>
+  <text x="20" y="320" font-size="11.5" fill="currentColor" opacity="0.6">Nothing to do about these now. They are the workshop.</text>
+
+  <rect x="20" y="334" width="420" height="64" rx="10" fill="currentColor" opacity="0.055"/>
+  <text x="38" y="356" font-size="12.5" font-weight="700" fill="currentColor">Create the agent project</text>
+  <text x="38" y="376" font-size="11.5" fill="currentColor" opacity="0.72">Clone the starter repo — agent.py is deliberately empty,</text>
+  <text x="38" y="391" font-size="11.5" fill="currentColor" opacity="0.72">and everything agent-shaped is yours to write.</text>
+
+  <rect x="460" y="334" width="420" height="64" rx="10" fill="currentColor" opacity="0.055"/>
+  <text x="478" y="356" font-size="12.5" font-weight="700" fill="currentColor">Run &amp; test it locally</text>
+  <text x="478" y="376" font-size="11.5" fill="currentColor" opacity="0.72">adk web, the CopilotKit UI, a real draft, your approval,</text>
+  <text x="478" y="391" font-size="11.5" fill="currentColor" opacity="0.72">and a post that actually publishes.</text>
+</svg>
+
+**Four phases before the camp, then the workshop.** Everything in this guide is
+the four boxes on top — account, tools, coding agent, environment. Building the
+agent and running it happen on the first Saturday, in Lab 1. If you finish the
+four phases, you are ready.
+
 ### What you're setting up across 4 phases
-- 🟢 **Phase 1: Cloud & Budget Foundation** (GCP account & project, $300 credit, spend cap)
-- 🔵 **Phase 2: Local Developer Tools** (Python 3.12+, uv, gcloud configured to `us-central1`, 1-command API enablement, ADK)
-- 🟣 **Phase 3: Coding Agent Setup & ADK Superpowers** (Antigravity with Vertex AI fallback & ADK skills)
-- 🟡 **Phase 4: Environment, Buddy Check & Camp Readiness** (.env check, buddy swap, Buffer account)
+- 🟢 **Phase 1: Cloud & Budget Foundation** — *step 2️⃣* (GCP account & project, $300 credit, spend cap)
+- 🔵 **Phase 2: Local Developer Tools** — *steps 1️⃣ & 4️⃣* (Python 3.12+, uv, gcloud configured to `us-central1`, 1-command API enablement, ADK)
+- 🟣 **Phase 3: Coding Agent Setup & ADK Superpowers** — *also step 1️⃣* (Antigravity with Vertex AI fallback & ADK skills)
+- 🟡 **Phase 4: Environment, Buddy Check & Camp Readiness** — *step 5️⃣, the values* (.env check, buddy swap, Buffer account)
 
 ## Important notes before you start
 - **Cost:** the whole camp is designed to fit well inside Google's $300 free trial credit (90 days). You'll set a real spend cap (not just an email alert) in Phase 1 so nothing surprises you.
@@ -67,7 +160,8 @@ Install, in order:
      cloudresourcemanager.googleapis.com \
      apphub.googleapis.com
    ```
-   > **Why us-central1?** In Google Cloud, regions are selected when deploying individual services, not when creating the project. All workshops in this camp deploy resources to `us-central1`. The Semantic Governance Policy Engine (used in Session 3, Govern) currently exists **only in us-central1** (verified directly: `global` and `europe-west2` both return *"The Semantic Governance Policy Engine service is not available in location X"*). Furthermore, a Governance Policy binds to an Agent Registry entry in whatever region the engine was deployed to. Setting `us-central1` here ensures your agent deployments will be able to attach governance policies in Session 3 without redeploying.
+> [!NOTE]
+> **Why us-central1?** In Google Cloud, regions are selected when deploying individual services, not when creating the project. All workshops in this camp deploy resources to `us-central1`. The Semantic Governance Policy Engine (used in Session 3, Govern) currently exists **only in us-central1** (verified directly: `global` and `europe-west2` both return *"The Semantic Governance Policy Engine service is not available in location X"*). Furthermore, a Governance Policy binds to an Agent Registry entry in whatever region the engine was deployed to. Setting `us-central1` here ensures your agent deployments will be able to attach governance policies in Session 3 without redeploying.
 
 5. **ADK**: `uv tool install google-adk` (or `pip install google-adk`)
 6. **Git** + a **GitHub account**. In Lab 1 you'll clone the starter repo: the web frontend, the LinkedIn MCP server and the Agent Skills come prebuilt; you build the agent backend.
@@ -130,7 +224,16 @@ Install, in order:
 *Goal: Confirm your environment variables, verify setup with your buddy, and prep social tools.*
 
 ### 1. Environment variables
-Create a `.env` you'll reuse all camp:
+
+> [!NOTE]
+> **You can't create this file yet, and you don't need to.** It lives at
+> `backend/social_poster/.env` inside the repo you clone in Lab 1, so the folder
+> doesn't exist until the workshop starts. Lab 1 Step 1 walks you through
+> copying `.env.example` into place. What matters *now* is knowing these four
+> values and why they're what they are — especially `GOOGLE_CLOUD_LOCATION`,
+> which is the single most common cause of a 404 on the first model call.
+
+These are the values you'll put in it (this is step 5️⃣ of the diagram above):
 ```
 GOOGLE_GENAI_USE_VERTEXAI=TRUE
 GOOGLE_CLOUD_PROJECT=ai-devcamp-<yourname>

@@ -82,6 +82,7 @@
   .span-6 { grid-column: span 6; }
   .span-7 { grid-column: span 7; }
   .span-8 { grid-column: span 8; }
+  .span-9 { grid-column: span 9; }
   .span-12 { grid-column: span 12; }
 
   /* A pillar tile wears its colour: tinted wash, and a bar down the edge. */
@@ -104,9 +105,8 @@
   /* The platform diagram, as its own wide tile. */
   .diagram-tile { padding: 18px 20px 16px; }
   .diagram-tile img {
-    width: 100%; height: auto; max-height: 340px; object-fit: contain;
-    display: block; margin: 10px 0 6px;
-    border-radius: 10px; background: #fff; padding: 12px;
+    width: 100%; height: auto; object-fit: contain;
+    display: block; border-radius: 10px; padding: 12px;
   }
   .diagram-tile a.zoom { display: block; }
   /* Google publishes light and dark artwork. Mirror the palette's three states
@@ -184,9 +184,8 @@
 
   <h2 class="section">GDG DevCamp — the four pillars</h2>
   <div class="bento">
-    <div class="tile span-8 diagram-tile">
+    <div class="tile span-9 diagram-tile">
       <div class="kicker">The platform</div>
-      <div class="title">Gemini Enterprise Agent Platform</div>
       <a class="zoom" href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/overview" target="_blank" rel="noopener"
          title="Open the official overview on Google Cloud">
         <img class="art-light"
@@ -198,7 +197,7 @@
       </a>
       <div class="cap">Diagram from Google Cloud — <a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/overview" target="_blank" rel="noopener">read the official overview ↗</a></div>
     </div>
-    <div class="tile span-4">
+    <div class="tile span-3">
       <div class="kicker">How the labs work</div>
       <div class="title">One pillar at a time</div>
       <div class="desc">Each lab takes a single pillar and applies it to this agent: <strong>Theory</strong> (the general concept), a hands-on <strong>Workshop</strong>, and a self-directed <strong>Assignment</strong> you do on your own agent afterwards.</div>

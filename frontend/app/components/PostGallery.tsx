@@ -13,7 +13,13 @@
 import { useEffect, useState } from "react";
 import { useCopilotChatInternal } from "@copilotkit/react-core";
 
-const BACKEND_ORIGIN = process.env.NEXT_PUBLIC_BACKEND_ORIGIN || "http://localhost:8000";
+// Same-origin by default: /api/posts and /outputs/* are proxied by this app's
+// own route handlers (app/api/posts, app/outputs/[...path]), which add the
+// bearer token when the backend is a deployed Agent Runtime engine. The
+// browser must not call the backend directly — it has no safe way to hold
+// that token. Set NEXT_PUBLIC_BACKEND_ORIGIN only to bypass the proxy and
+// point straight at a local backend.
+const BACKEND_ORIGIN = process.env.NEXT_PUBLIC_BACKEND_ORIGIN ?? "";
 
 type PostEntry = {
   id: string;

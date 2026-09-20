@@ -85,9 +85,28 @@ DRAFT_MODEL=gemini-flash-latest
 ### Deploy + observability (console/CLI guides)
 
 ```
-docs/cloud-run-deploy.md    Dockerfile/cloudbuild.yaml → IAM → deploy → eval-gated CI/CD → the one real post
-docs/observability.md       Cloud Trace slowest-span · BigQuery analytics agent
+docs/agent-runtime-deploy.md  Agent Runtime deploy → /api passthrough → sessions/memory → frontend on Cloud Run
+docs/cloud-run-deploy.md      Dockerfile/cloudbuild.yaml → IAM → deploy → eval-gated CI/CD → the one real post
+docs/observability.md         Cloud Trace slowest-span · BigQuery analytics agent
 ```
+
+**What's deployed right now?** An Agent Runtime engine scales to zero when
+idle, so "nothing running" in the console does not mean "nothing deployed" —
+and the console view is region-scoped, which is the other reason a deployment
+looks missing when it isn't. Ask the CLI instead:
+
+```bash
+uvx google-agents-cli deploy --list -d agent_runtime --project adk-devcamp-poc --region us-central1 --no-confirm-project
+```
+
+```bash
+gcloud run services list --project adk-devcamp-poc --region us-central1
+```
+
+`-d agent_runtime` is required on `--list` and `--status` for the same reason
+it is on `deploy`: this project has no `agents-cli-manifest.yaml`. Without it
+you get "No agents-cli-manifest.yaml found", which reads like a deploy failure
+and isn't one.
 
 ## Verify the model parity claim yourself
 

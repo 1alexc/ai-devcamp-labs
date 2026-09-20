@@ -8,6 +8,7 @@ import "@copilotkit/react-ui/styles.css";
 import { ActivityFeed } from "./components/ActivityFeed";
 import { AuthProvider, GoogleSignInButton, useAuth } from "./components/auth";
 import { ChatResizeHandle } from "./components/ChatResizeHandle";
+import { ThreadPersistence } from "./components/ThreadPersistence";
 import { ConfirmAction } from "./components/ConfirmAction";
 import { GoogleDots, Logo } from "./components/Logo";
 import { PostGallery } from "./components/PostGallery";
@@ -104,6 +105,7 @@ function Dashboard() {
 
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" agent="social_poster" showDevConsole={false}>
+      <ThreadPersistence />
       <ChatResizeHandle visible={chatOpen} />
       <CopilotSidebar
         defaultOpen

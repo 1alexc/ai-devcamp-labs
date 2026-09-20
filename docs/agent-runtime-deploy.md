@@ -193,7 +193,22 @@ to. Buffer active lists many (Instagram, Facebook, Twitter, LinkedIn, …); if i
 says only LinkedIn, the key did not resolve and it fell back — the container
 logs will say so explicitly rather than crashing.
 
-## 7. Teardown
+## 7. What's deployed right now?
+
+An engine scales to zero when idle, so an empty-looking console does not mean
+nothing is deployed — and the console's Agent Engine view is region-scoped,
+which is the other common reason a deployment appears to have vanished. Ask
+the CLI:
+
+```bash
+uvx google-agents-cli deploy --list -d agent_runtime --project adk-devcamp-poc --region us-central1 --no-confirm-project
+```
+
+```bash
+gcloud run services list --project adk-devcamp-poc --region us-central1
+```
+
+## 8. Teardown
 
 Agent Runtime is the weekly teardown item. It scales to zero, so an idle engine
 costs approximately nothing, but delete it when finished with:

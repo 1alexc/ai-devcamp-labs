@@ -8,36 +8,111 @@
   :root {
     --bg: #fafbfc; --panel: #fff; --border: #dde1e6; --text: #1f2430;
     --muted: #5f6672; --accent: #1a73e8; --accent-soft: #e8f0fe;
+    --shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.05);
+    --shadow-lift: 0 2px 4px rgba(16,24,40,.06), 0 12px 28px rgba(16,24,40,.10);
+
+    /* One hue per pillar, so a lab is recognisable before you read its name.
+       Google's own four-colour palette, in pillar order. */
+    --build: #1a73e8;    --build-soft: rgba(26,115,232,.10);
+    --scale: #12a150;    --scale-soft: rgba(18,161,80,.10);
+    --govern: #e8710a;   --govern-soft: rgba(232,113,10,.10);
+    --optimise: #a142f4; --optimise-soft: rgba(161,66,244,.10);
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#14171c; --panel:#1a1e24; --border:#2a2f37; --text:#e7e9ec; --muted:#a7adb6; --accent:#8ab4f8; --accent-soft:rgba(138,180,248,.14); }
+    :root {
+      --bg:#14171c; --panel:#1a1e24; --border:#2a2f37; --text:#e7e9ec;
+      --muted:#a7adb6; --accent:#8ab4f8; --accent-soft:rgba(138,180,248,.14);
+      --shadow: 0 1px 2px rgba(0,0,0,.30), 0 4px 14px rgba(0,0,0,.28);
+      --shadow-lift: 0 2px 6px rgba(0,0,0,.38), 0 14px 32px rgba(0,0,0,.40);
+      --build:#8ab4f8;    --build-soft: rgba(138,180,248,.14);
+      --scale:#5bd98a;    --scale-soft: rgba(91,217,138,.14);
+      --govern:#fcad70;   --govern-soft: rgba(252,173,112,.14);
+      --optimise:#d7a8ff; --optimise-soft: rgba(215,168,255,.14);
+    }
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
     font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    display: flex; align-items: center; justify-content: center; padding: 40px 20px;
+    padding: 40px 28px 56px;
   }
-  main { width: 100%; max-width: 560px; }
-  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
-  .mark { width: 32px; height: 32px; border-radius: 9px; background: conic-gradient(from 200deg,#1a73e8,#34a853,#fbbc04,#ea4335,#1a73e8); }
-  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
-  h2.section { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 26px 0 10px; }
-  p.sub { color: var(--muted); margin: 4px 0 28px; font-size: 14px; }
-  ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-  a.card {
-    display: block; padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px;
+  main { width: 100%; max-width: 1180px; margin: 0 auto; }
+
+  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 6px; }
+  .mark { width: 34px; height: 34px; border-radius: 10px; background: conic-gradient(from 200deg,#1a73e8,#34a853,#fbbc04,#ea4335,#1a73e8); }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -0.015em; }
+  p.sub { color: var(--muted); margin: 0 0 26px; font-size: 14.5px; max-width: 68ch; }
+  h2.section { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 34px 0 12px; font-weight: 700; }
+
+  /* ---------- bento ---------- */
+  /* A 12-column bed. Tiles claim different spans, so the eye lands on the
+     important things first instead of reading a list top to bottom. */
+  .bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+  .tile {
+    grid-column: span 3;
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 18px 20px; border: 1px solid var(--border); border-radius: 16px;
     background: var(--panel); text-decoration: none; color: var(--text);
+    box-shadow: var(--shadow);
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    position: relative; overflow: hidden;
   }
-  a.card:hover { border-color: var(--accent); }
-  a.card .kicker { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--accent); }
-  a.card .title { font-size: 16px; font-weight: 600; margin-top: 4px; }
-  a.card .desc { font-size: 13px; color: var(--muted); margin-top: 4px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .grid a.card .title { font-size: 14px; }
-  .grid a.card .desc { font-size: 12px; }
-  footer { margin-top: 28px; font-size: 12px; color: var(--muted); }
+  a.tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); border-color: var(--tint, var(--accent)); }
+  a.tile:focus-visible { outline: 2px solid var(--tint, var(--accent)); outline-offset: 2px; }
+  .tile .kicker { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--tint, var(--accent)); }
+  .tile .title { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+  .tile .desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .tile .meta { font-size: 11.5px; color: var(--muted); margin-top: auto; padding-top: 10px; }
+
+  .span-4 { grid-column: span 4; }
+  .span-5 { grid-column: span 5; }
+  .span-6 { grid-column: span 6; }
+  .span-7 { grid-column: span 7; }
+  .span-8 { grid-column: span 8; }
+  .span-12 { grid-column: span 12; }
+
+  /* A pillar tile wears its colour: tinted wash, and a bar down the edge. */
+  .pillar { background: linear-gradient(180deg, var(--tint-soft) 0%, transparent 62%), var(--panel); }
+  .pillar::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--tint); }
+  .pillar .title { font-size: 19px; }
+  .p-build    { --tint: var(--build);    --tint-soft: var(--build-soft); }
+  .p-scale    { --tint: var(--scale);    --tint-soft: var(--scale-soft); }
+  .p-govern   { --tint: var(--govern);   --tint-soft: var(--govern-soft); }
+  .p-optimise { --tint: var(--optimise); --tint-soft: var(--optimise-soft); }
+
+  .locked { opacity: .62; cursor: default; box-shadow: none; }
+  .locked:hover { transform: none; box-shadow: none; border-color: var(--border); }
+  .badge {
+    display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; padding: 2px 7px; border-radius: 999px;
+    background: var(--tint-soft); color: var(--tint); border: 1px solid var(--tint-soft);
+  }
+
+  /* The platform diagram, as its own wide tile. */
+  .diagram-tile { padding: 18px 20px 16px; }
+  .diagram-tile img {
+    width: 100%; height: auto; max-height: 340px; object-fit: contain;
+    display: block; margin: 10px 0 6px;
+    border-radius: 10px; background: #fff; padding: 12px;
+  }
+  .diagram-tile a.zoom { display: block; }
+  .diagram-tile .cap { font-size: 12.5px; color: var(--muted); }
+  .diagram-tile a { color: var(--accent); }
+
+  .start-here { --tint: var(--accent); --tint-soft: var(--accent-soft); }
+  .start-here::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--accent); }
+
+  footer { margin-top: 34px; font-size: 12.5px; color: var(--muted); }
   code { background: var(--accent-soft); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+  @media (max-width: 1000px) {
+    .tile, .span-4, .span-5, .span-6, .span-7, .span-8 { grid-column: span 6; }
+    .span-12, .diagram-tile { grid-column: span 12; }
+  }
+  @media (max-width: 620px) {
+    body { padding: 28px 16px 40px; }
+    .tile, .span-4, .span-5, .span-6, .span-7, .span-8, .span-12 { grid-column: span 12; }
+  }
 </style>
 </head>
 <body>
@@ -45,64 +120,102 @@
   <div class="brand"><div class="mark"></div><h1>Social Spark — Docs</h1></div>
   <p class="sub">The finished, governed reference implementation. Served straight from this repo — no build step, just point a static server at this folder.</p>
 
-  <ul>
-    <li><a class="card" href="doc-viewer.html?src=devcamp-attendee-setup-guide.md">
-      <div class="kicker">Pre-camp</div>
+  <h2 class="section">Start here</h2>
+  <div class="bento">
+    <a class="tile span-7 start-here" href="doc-viewer.html?src=devcamp-attendee-setup-guide.md">
+      <div class="kicker">Pre-camp · do this first</div>
       <div class="title">Attendee setup guide</div>
-      <div class="desc">GCP project, spend cap, local tools, Antigravity with the Vertex AI fallback, buddy check — finish before Saturday 26 September.</div>
-    </a></li>
-  </ul>
-
-  <h2 class="section">GDG DevCamp — the four pillars</h2>
-  <p class="sub" style="margin:4px 0 14px;">Google's Gemini Enterprise Agent Platform, one pillar at a time, applied to this agent. Each lab is Theory + Workshop + a self-directed Assignment.</p>
-  <ul>
-    <li><a class="card" href="lab-1-build.html">
-      <div class="kicker">Lab 1</div>
-      <div class="title">Build</div>
-      <div class="desc">ADK, Model Garden, Agent Skills, tools, MCP toolsets — design and compose the agent.</div>
-    </a></li>
-    <li><a class="card" href="lab-2-scale.html">
-      <div class="kicker">Lab 2</div>
-      <div class="title">Scale</div>
-      <div class="desc">Agent Runtime, Agent Identity, Sessions, Memory Bank — run the agent on the managed runtime.</div>
-    </a></li>
-    <li><a class="card" aria-disabled="true" style="opacity:.55;cursor:default">
-      <div class="kicker">Lab 3 · after Session 3</div>
-      <div class="title">Govern</div>
-      <div class="desc">Model Armor, Cloud DLP, Governance Policies, Agent Registry, Agent Gateway — control what the agent may do.</div>
-    </a></li>
-    <li><a class="card" aria-disabled="true" style="opacity:.55;cursor:default">
-      <div class="kicker">Lab 4 · after Session 4</div>
-      <div class="title">Optimise</div>
-      <div class="desc">Golden evals, BigQuery Agent Analytics, traces, eval-gated deploys — measure and improve it.</div>
-    </a></li>
-  </ul>
-
-  <h2 class="section">Reference — how this repo's production setup works</h2>
-  <div class="grid">
-    <a class="card" href="doc-viewer.html?src=cloud-run-deploy.md">
-      <div class="title">Cloud Run deploy</div>
-      <div class="desc">IAM, Dockerfile, eval-gated CI/CD</div>
+      <div class="desc">GCP project, spend cap, local tools, Antigravity with the Vertex AI fallback, buddy check — everything to finish before the first Saturday.</div>
+      <div class="meta">4 phases · 45–60 min · screenshots included</div>
     </a>
-    <a class="card" href="doc-viewer.html?src=observability.md">
-      <div class="title">Observability</div>
-      <div class="desc">Cloud Trace, BigQuery analytics</div>
-    </a>
-    <a class="card" href="doc-viewer.html?src=model-armor-setup.md">
-      <div class="title">Model Armor setup</div>
-      <div class="desc">Guardrail template + regions</div>
-    </a>
-    <a class="card" href="doc-viewer.html?src=injection-attack-table.md">
-      <div class="title">Injection attack table</div>
-      <div class="desc">What's blocked vs. not</div>
-    </a>
-    <a class="card" href="doc-viewer.html?src=agent-engine-rag-setup.md">
-      <div class="title">Agent Engine RAG</div>
-      <div class="desc">Memory agent deploy</div>
+    <a class="tile span-5" href="lab-1-build.html">
+      <div class="kicker">Jump straight in</div>
+      <div class="title">Lab 1 — Build →</div>
+      <div class="desc">The first workshop. Write a real ADK agent, end to end.</div>
+      <div class="meta">11 steps · ~2 hours</div>
     </a>
   </div>
 
-  <footer>Running locally: <code>cd docs && python -m http.server 8080</code>, then open <code>localhost:8080</code>.</footer>
+  <h2 class="section">GDG DevCamp — the four pillars</h2>
+  <div class="bento">
+    <div class="tile span-8 diagram-tile">
+      <div class="kicker">The platform</div>
+      <div class="title">Gemini Enterprise Agent Platform</div>
+      <a class="zoom" href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/overview" target="_blank" rel="noopener"
+         title="Open the official overview on Google Cloud">
+        <img src="https://storage.googleapis.com/gweb-cloudblog-publish/images/1_gemini_enterprise_agent_platform_7Yj4NjK.max-2200x2200.jpg"
+             alt="The Gemini Enterprise Agent Platform: the Build, Scale, Govern and Optimise pillars and the services within each.">
+      </a>
+      <div class="cap">Diagram from Google Cloud — <a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/overview" target="_blank" rel="noopener">read the official overview ↗</a></div>
+    </div>
+    <div class="tile span-4">
+      <div class="kicker">How the labs work</div>
+      <div class="title">One pillar at a time</div>
+      <div class="desc">Each lab takes a single pillar and applies it to this agent: <strong>Theory</strong> (the general concept), a hands-on <strong>Workshop</strong>, and a self-directed <strong>Assignment</strong> you do on your own agent afterwards.</div>
+      <div class="desc">Every lab names one deliberate error up front — a real constraint you will hit — rather than quietly routing around it.</div>
+      <div class="meta">Four sessions · Sept–Oct</div>
+    </div>
+
+    <a class="tile span-6 pillar p-build" href="lab-1-build.html">
+      <div class="kicker">Lab 1 · available</div>
+      <div class="title">Build</div>
+      <div class="desc">ADK, Model Garden, Agent Skills, tools, MCP toolsets — design and compose the agent.</div>
+      <div class="meta">Session 1 · catch up with <code>pillar-build</code></div>
+    </a>
+    <a class="tile span-6 pillar p-scale" href="lab-2-scale.html">
+      <div class="kicker">Lab 2 · available</div>
+      <div class="title">Scale</div>
+      <div class="desc">Agent Runtime, Agent Identity, Sessions, Memory Bank — run the agent on managed infrastructure, and keep what matters when it scales to zero.</div>
+      <div class="meta">Session 2 · catch up with <code>pillar-scale</code></div>
+    </a>
+    <div class="tile span-6 pillar p-govern locked">
+      <div class="kicker">Lab 3 <span class="badge">after Session 3</span></div>
+      <div class="title">Govern</div>
+      <div class="desc">Model Armor, Cloud DLP, Governance Policies, Agent Registry, Agent Gateway — control what the agent may do.</div>
+      <div class="meta">Session 3 · 8 &amp; 10 Oct</div>
+    </div>
+    <div class="tile span-6 pillar p-optimise locked">
+      <div class="kicker">Lab 4 <span class="badge">after Session 4</span></div>
+      <div class="title">Optimise</div>
+      <div class="desc">Golden evals, BigQuery Agent Analytics, traces, eval-gated deploys — measure it, then make it better and cheaper.</div>
+      <div class="meta">Session 4 · 15 &amp; 17 Oct</div>
+    </div>
+  </div>
+
+  <h2 class="section">Reference — how this repo's production setup works</h2>
+  <div class="bento">
+    <a class="tile span-4" href="doc-viewer.html?src=agent-runtime-deploy.md">
+      <div class="title">Agent Runtime deploy</div>
+      <div class="desc">One command, the <code>/api</code> passthrough, sessions &amp; memory, frontend on Cloud Run</div>
+    </a>
+    <a class="tile span-4" href="doc-viewer.html?src=cloud-run-deploy.md">
+      <div class="title">Cloud Run deploy</div>
+      <div class="desc">IAM, Dockerfile, eval-gated CI/CD</div>
+    </a>
+    <a class="tile span-4" href="doc-viewer.html?src=observability.md">
+      <div class="title">Observability</div>
+      <div class="desc">Cloud Trace, BigQuery analytics</div>
+    </a>
+    <a class="tile span-4" href="doc-viewer.html?src=model-armor-setup.md">
+      <div class="title">Model Armor setup</div>
+      <div class="desc">Guardrail template + regions</div>
+    </a>
+    <a class="tile span-4" href="doc-viewer.html?src=injection-attack-table.md">
+      <div class="title">Injection attack table</div>
+      <div class="desc">What's blocked vs. not</div>
+    </a>
+    <a class="tile span-4" href="doc-viewer.html?src=agent-engine-rag-setup.md">
+      <div class="title">Agent Engine RAG</div>
+      <div class="desc">Memory agent deploy</div>
+    </a>
+    <a class="tile span-12" href="doc-viewer.html?src=LEARNINGS.md">
+      <div class="kicker">Worth reading before you deploy anything</div>
+      <div class="title">Learnings</div>
+      <div class="desc">Every gotcha hit while building this, dated and explained — what happened, why, and what it means for your own agent. Most of them cost hours.</div>
+    </a>
+  </div>
+
+  <footer>Running locally: <code>cd docs &amp;&amp; python -m http.server 8080</code>, then open <code>localhost:8080</code>.</footer>
 </main>
 </body>
 </html>

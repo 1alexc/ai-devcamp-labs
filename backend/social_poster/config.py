@@ -13,6 +13,10 @@ log = logging.getLogger(__name__)
 # Agent Runtime injects the engine's own resource name here; it is the most
 # reliable source of the project when deployed (see resolve_project).
 _APP_URL_PROJECT_RE = re.compile(r"/projects/([^/]+)/")
+_APP_URL_FULL_RE = re.compile(
+    r"/projects/(?P<project>[^/]+)/locations/(?P<location>[^/]+)"
+    r"/reasoningEngines/(?P<engine>\d+)"
+)
 
 
 def resolve_project() -> str:
@@ -80,3 +84,28 @@ def resolve_buffer_key() -> str:
     except Exception:  # noqa: BLE001 — never let a secret lookup break startup
         log.exception("Could not read secret %r; Buffer will be unavailable", secret_id)
         return ""
+
+
+def resolve_agent_engine() -> dict[str, str] | None:
+    """Project, location and engine id when running on Agent Runtime, else None.
+
+    Agent Runtime injects `APP_URL` carrying the engine's own resource name, so
+    a deployed agent can discover which engine it is without being told. Both
+    the managed session service and Memory Bank are keyed on that engine.
+
+    Deliberately NOT using GOOGLE_CLOUD_LOCATION for the location: agents-cli
+    sets that to `global` for model resolution, while sessions and memories
+    live in the engine's own region. APP_URL is the reliable source.
+    """
+    engine = os.environ.get("AGENT_ENGINE_ID", "").strip()
+    match = _APP_URL_FULL_RE.search(os.environ.get("APP_URL", ""))
+    if not engine and not match:
+        return None  # not deployed — local dev
+
+    resolved = {
+        "project": resolve_project(),
+        "location": os.environ.get("AGENT_ENGINE_LOCATION")
+        or (match.group("location") if match else ""),
+        "engine": engine or (match.group("engine") if match else ""),
+    }
+    return resolved if all(resolved.values()) else None

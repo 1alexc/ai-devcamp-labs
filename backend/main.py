@@ -4,22 +4,21 @@ Run from the repo root:  uv run uvicorn backend.main:app --port 8000
 """
 
 import logging
-import os
 import pathlib
-import re
 
 from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from google.adk.memory import VertexAiMemoryBankService
 from google.adk.sessions import VertexAiSessionService
 
 log = logging.getLogger(__name__)
 
 load_dotenv(pathlib.Path(__file__).parent / "social_poster" / ".env")
 
-from backend.social_poster import db  # noqa: E402  (needs .env first)
+from backend.social_poster import config, db  # noqa: E402  (needs .env first)
 from backend.social_poster.agent import root_agent  # noqa: E402  (needs .env first)
 
 app = FastAPI(title="social-agent AG-UI backend")
@@ -31,59 +30,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Session durability ------------------------------------------------------
-# ag_ui_adk defaults to InMemorySessionService, which is fine locally but loses
-# every conversation when the container goes away — and on Agent Runtime with
-# min_instances=0 that happens on every scale-to-zero, not just a redeploy.
-# Deployed, we use Agent Engine's managed sessions instead.
+# --- Managed session + memory services ----------------------------------------
+# ag_ui_adk defaults to InMemorySessionService and InMemoryMemoryService, which
+# are fine locally but lose everything when the container goes away — and on
+# Agent Runtime with min_instances=0 that happens on every scale-to-zero, not
+# just a redeploy. Deployed, both are backed by the Agent Engine instead.
 #
-# Agent Runtime injects APP_URL with the engine's own resource name in it, so
-# the engine can discover its own id without being told. Everything is
-# overridable by env var, and locally none of it is set — so `uv run uvicorn`
-# keeps the in-memory default and behaves exactly as before.
-_APP_URL_RE = re.compile(
-    r"/projects/(?P<project>[^/]+)/locations/(?P<location>[^/]+)"
-    r"/reasoningEngines/(?P<engine>\d+)"
-)
+# The engine discovers its own identity from the APP_URL that Agent Runtime
+# injects (see config.resolve_agent_engine), so nothing needs configuring by
+# hand. Locally there is no APP_URL, so both fall back and `uv run uvicorn`
+# behaves exactly as it did before.
+_engine = config.resolve_agent_engine()
 
-
-def _agent_engine_context() -> dict[str, str] | None:
-    """Project, location and engine id when running on Agent Runtime."""
-    engine = os.environ.get("AGENT_ENGINE_ID", "").strip()
-    match = _APP_URL_RE.search(os.environ.get("APP_URL", ""))
-    if not engine and not match:
-        return None  # not deployed — local dev
-    return {
-        "project": os.environ.get("GOOGLE_CLOUD_PROJECT")
-        or (match.group("project") if match else ""),
-        # Deliberately NOT GOOGLE_CLOUD_LOCATION: agents-cli sets that to
-        # `global` for model resolution, but sessions live in the engine's own
-        # region, which APP_URL is the reliable source for.
-        "location": os.environ.get("AGENT_ENGINE_LOCATION")
-        or (match.group("location") if match else ""),
-        "engine": engine or (match.group("engine") if match else ""),
-    }
-
-
-_engine = _agent_engine_context()
-if _engine and all(_engine.values()):
+if _engine:
+    # Passing agent_engine_id explicitly means app_name stays a readable name
+    # rather than having to be the numeric engine id.
     session_service = VertexAiSessionService(
         project=_engine["project"],
         location=_engine["location"],
-        # Passing this explicitly means app_name stays a readable name rather
-        # than having to be the numeric engine id.
         agent_engine_id=_engine["engine"],
     )
-    log.info("Using managed Agent Engine sessions (engine %s)", _engine["engine"])
+    # Memory Bank: the managed alternative to this project's hand-rolled
+    # memory_agent (a RemoteA2aAgent over a separate RAG service — see
+    # docs/agent-engine-rag-setup.md). Passing a memory service also turns on
+    # ag_ui_adk's automatic session ingestion, so finished conversations become
+    # searchable memory without an explicit add_session_to_memory call.
+    memory_service = VertexAiMemoryBankService(
+        project=_engine["project"],
+        location=_engine["location"],
+        agent_engine_id=_engine["engine"],
+    )
+    log.info("Managed sessions + Memory Bank on engine %s", _engine["engine"])
 else:
-    session_service = None  # ag_ui_adk falls back to InMemorySessionService
-    log.info("Using in-memory sessions — conversations will not survive a restart")
+    session_service = None  # ag_ui_adk falls back to its in-memory services
+    memory_service = None
+    log.info("In-memory sessions and memory — neither survives a restart")
 
 adk_agent = ADKAgent(
     adk_agent=root_agent,
     app_name="social_poster",
     user_id="devcamp-user",  # single-user POC; extract from auth in real apps
     session_service=session_service,
+    memory_service=memory_service,
 )
 
 add_adk_fastapi_endpoint(app, adk_agent, path="/api/adk")
@@ -103,7 +91,9 @@ def healthz() -> dict:
 
 @app.get("/api/posts")
 def posts() -> dict:
-    """Published posts (with whatever image they used), read from the local
-    SQLite store — durable across reloads/restarts, unlike ADK session state
-    or the browser's own chat history."""
+    """Published posts, with whatever image they used.
+
+    Durable storage, unlike ADK session state or the browser's own chat
+    history: SQLite locally, one object per post in GCS when deployed (a
+    container filesystem does not survive a scale-to-zero). See db.py."""
     return {"posts": db.list_posts()}

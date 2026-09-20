@@ -12,6 +12,57 @@ terminology sweep.)
 
 <!-- Add entries below, newest first. -->
 
+**2026-09-20 — Scale — Memory Bank works, but ADK's "automatic session memory"
+does not fire on a scale-to-zero deployment, and the fix has an async trap in
+it.** Wiring `VertexAiMemoryBankService` is the easy part: same constructor
+shape as `VertexAiSessionService` (project/location/agent_engine_id, all
+derivable from the `APP_URL` Agent Runtime injects), passed to `ADKAgent`
+alongside the session service, plus ADK's `load_memory` tool on the
+orchestrator so the model can actually search it. Two non-obvious things then
+cost an hour.
+
+**1. "Automatic session memory" means "on session cleanup", not "as you go".**
+`ag_ui_adk`'s docstring says passing a memory service "also enables automatic
+session memory", which reads as continuous. It isn't: `add_session_to_memory`
+is called in exactly one place — `session_manager.py`, immediately before a
+session is *deleted* during cleanup. Cleanup runs on a timer:
+`session_timeout_seconds=1200` (20 minutes idle) swept every
+`cleanup_interval_seconds=300`. **On Agent Runtime with `min_instances=0` that
+is close to useless**, because the same idleness that would eventually trigger
+cleanup scales the container to zero first, killing the in-process timer that
+was going to do the ingesting. Nothing errors; memories simply never appear.
+**Fix**: ingest explicitly at a meaningful boundary instead of waiting for a
+reaper. Here that boundary is publishing — the conversation is finished, and
+what the user asked for and approved is exactly what is worth recalling. A
+`memory_ingested` state flag keeps it to once per conversation rather than once
+per turn.
+
+**2. `CallbackContext.add_session_to_memory()` is `async`, and calling it
+without `await` fails completely silently.** A sync `after_agent_callback` that
+calls it creates a coroutine, drops it, and returns cleanly — no exception, no
+warning in the logs, and the `try/except` around it never fires because nothing
+raised. The only symptom is an empty Memory Bank. ADK awaits callbacks that
+return awaitables, so the fix is just making the callback `async def` and
+awaiting the call; the method's own docstring shows exactly that pattern
+(`async def my_after_agent_callback(ctx): await ctx.add_session_to_memory()`)
+and is worth reading before assuming, as I did, that a `-> None` signature
+means synchronous.
+
+**Confirmed working end to end**: stated a preference ("I always sign off with
+'Building in public.' and never use more than two hashtags") in a conversation
+that published a post; Memory Bank distilled it into a stored fact on its own
+(`"I always sign off my posts with 'Building in public.' and never use more
+than two hashtags."`); then in a **brand new session** that never mentioned it,
+the orchestrator called `load_memory` and the draft came back ending "Building
+in public. #CoffeeLover #MorningRituals" — sign-off applied, exactly two
+hashtags. **Codelab material**: this is the Scale lab's Memory Bank segment
+almost verbatim, and the contrast with this repo's hand-rolled `memory_agent`
+(a RemoteA2aAgent over a separately deployed RAG service, with its own
+ingestion pipeline to build) makes the managed version's value obvious without
+having to argue for it. Both can be enabled at once, which is the honest way to
+show the difference. Teach the async trap too — a silent no-op is a much more
+instructive bug than a stack trace.
+
 **2026-09-19/20 — Scale — getting a Secret Manager secret into a deployed
 agent: `secretEnv` does not work, runtime retrieval does, and an import-time
 `raise` hid the whole thing.** Switching the deployed agent to Buffer (the only

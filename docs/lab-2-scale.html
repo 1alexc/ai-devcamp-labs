@@ -87,9 +87,9 @@
   }
   h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; color: var(--text); margin: 0; }
   a { color: var(--accent); }
-  p { margin: 0 0 14px; max-width: 68ch; }
+  p { margin: 0 0 14px; max-width: 100%; }
   ul, ol { margin: 0 0 14px; padding-left: 1.3em; }
-  li { margin-bottom: 6px; max-width: 64ch; }
+  li { margin-bottom: 6px; max-width: 100%; }
   code { font-family: var(--font-mono); font-size: 0.87em; background: var(--accent-soft); color: var(--accent-hover); padding: 0.1em 0.4em; border-radius: 4px; }
 
   /* ---------- progress bar ---------- */
@@ -107,7 +107,7 @@
 
   /* ---------- sidebar ---------- */
   .sidebar {
-    width: 292px; flex: none; background: var(--bg-sidebar);
+    width: 20%; flex: none; background: var(--bg-sidebar);
     border-right: 1px solid var(--border); padding: 22px 14px 18px;
     position: sticky; top: 3px; align-self: flex-start; height: calc(100vh - 3px);
     overflow-y: auto;
@@ -121,14 +121,14 @@
     font-size: 15px;
   }
   .brand-text { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; letter-spacing: -0.01em; }
-  .brand-sub { font-size: 11.5px; color: var(--text-faint); letter-spacing: 0.02em; }
+  .brand-sub { font-size: 12px; color: var(--text-faint); letter-spacing: 0.02em; }
 
   .step-nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
   .step-nav-item {
     display: flex; align-items: center; gap: 10px;
     padding: 8px 10px; border-radius: 8px; cursor: pointer;
     border-left: 3px solid transparent;
-    color: var(--text-muted); font-size: 13.6px;
+    color: var(--text-muted); font-size: 12px;
   }
   .step-nav-item:hover { background: var(--bg-sidebar-hover); color: var(--text); }
   .step-nav-item.active { background: var(--accent-soft); color: var(--accent-hover); border-left-color: var(--accent); font-weight: 600; }
@@ -136,12 +136,12 @@
   .step-dot {
     width: 20px; height: 20px; border-radius: 50%; flex: none;
     border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
-    font-size: 10.5px; font-weight: 700; color: var(--text-faint); background: var(--bg-panel);
+    font-size: 12px; font-weight: 700; color: var(--text-faint); background: var(--bg-panel);
   }
   .step-nav-item.active .step-dot { border-color: var(--accent); color: var(--accent-hover); }
-  .step-label-group { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-  .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .step-dur { font-size: 10.8px; color: var(--text-faint); }
+  .step-label-group { display: flex; flex-direction: column; gap: 1px; min-width: 0;  }
+  .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+  .step-dur { font-size: 10px; color: var(--text-faint); }
   .step-nav-item.optional .step-label::after {
     content: "optional"; margin-left: 6px; font-size: 9.5px; text-transform: uppercase;
     letter-spacing: 0.04em; color: var(--yellow); border: 1px solid var(--yellow); border-radius: 4px;
@@ -156,7 +156,7 @@
 
   /* ---------- main ---------- */
   .main { flex: 1; min-width: 0; display: flex; justify-content: center; }
-  .content-col { width: 100%; max-width: 760px; padding: 48px 40px 40px; }
+  .content-col { width: 100%; max-width: 55%; padding: 48px 40px 40px; }
 
   .step-panel { display: none; }
   .step-panel.active { display: block; animation: fade-in 0.25s ease; }
@@ -290,7 +290,7 @@
       border: 1px solid var(--border); background: var(--bg-panel); color: var(--text-muted); cursor: pointer; white-space: nowrap;
     }
     .mobile-topnav button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-    .content-col { padding: 28px 20px 32px; }
+    .content-col { max-width: 100%; padding: 28px 20px 32px; }
     .step-title { font-size: 23px; }
   }
 
@@ -509,7 +509,7 @@
 
         <div class="code-block">
           <div class="code-head"><span>terminal — replace YOUR_PROJECT</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-          <pre><code>uvx google-agents-cli deploy -d agent_runtime \
+          <pre><code>agents-cli deploy -d agent_runtime \
   --project YOUR_PROJECT --region us-central1 \
   --agent-identity \
   --service-name social-spark-poster \
@@ -535,7 +535,7 @@
           <p>Now check on your deploy the obvious way:</p>
           <div class="code-block">
             <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-            <pre><code>uvx google-agents-cli deploy --status --project YOUR_PROJECT --region us-central1</code></pre>
+            <pre><code>agents-cli deploy --status --project YOUR_PROJECT --region us-central1</code></pre>
           </div>
           <p>You'll get <code>Error: No agents-cli-manifest.yaml found in the current directory or its parents.</code> — which reads exactly like your <em>deploy</em> failed. It didn't. Only the status lookup did: <code>--status</code> needs <code>-d agent_runtime</code> too, for the same reason the deploy did. Add it and the status comes back fine.</p>
           <p>Worth sitting with for a second, because it's a pattern you'll hit again: <strong>an error about the thing you just ran is not always an error about the thing you just did.</strong> Read which command actually failed before you start undoing work.</p>
@@ -833,7 +833,7 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
         <div class="code-block">
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
           <pre><code># list what you have
-uvx google-agents-cli deploy --list -d agent_runtime \
+agents-cli deploy --list -d agent_runtime \
   --project YOUR_PROJECT --region us-central1
 
 # the frontend
@@ -1001,5 +1001,46 @@ gcloud run services delete social-spark-frontend \
       if (!root.dataset.theme) paint();
     });
     paint();
+  })();
+</script>
+
+<style>
+  .copy-btn, .prompt-copy { display: inline-flex; align-items: center; gap: 6px; }
+  .copy-btn svg, .prompt-copy svg { width: 13px; height: 13px; flex: none; }
+  .callout.agent.has-copy .callout-label { display: flex; align-items: center; gap: 10px; }
+  .prompt-copy {
+    margin-left: auto; flex: none; white-space: nowrap; font-family: var(--font-body); font-size: 12px; text-transform: none; letter-spacing: 0;
+    font-weight: 500; font-style: normal; padding: 3px 9px; border-radius: 6px; cursor: pointer; background: var(--bg-panel);
+    color: var(--text-muted); border: 1px solid var(--border);
+  }
+  .prompt-copy:hover { color: var(--text); border-color: var(--text-faint); }
+</style>
+<script>
+  // Copy icons: every code block already has a Copy button; give it an icon, and add
+  // one to each prompt for the coding agent so it can be pasted in one click.
+  (function () {
+    var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+    function copyText(text, btn) {
+      var label = btn.querySelector("span");
+      var done = function () { var old = label.textContent; label.textContent = "Copied!"; setTimeout(function () { label.textContent = old; }, 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {});
+      } else {
+        var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+        try { document.execCommand("copy"); done(); } catch (e) {} document.body.removeChild(t);
+      }
+    }
+    window.copyBlock = function (btn) { copyText(btn.closest(".code-block").querySelector("code").innerText, btn); };
+    document.querySelectorAll(".copy-btn").forEach(function (b) { b.innerHTML = ICON + "<span>Copy</span>"; });
+    document.querySelectorAll(".callout.agent").forEach(function (c) {
+      var label = c.querySelector(".callout-label");
+      if (!label || !/^(Prompt for your coding agent|Ask your coding agent|Tell it what to remember)/.test(label.textContent.trim())) return;
+      var b = document.createElement("button");
+      b.className = "prompt-copy"; b.type = "button"; b.innerHTML = ICON + "<span>Copy prompt</span>";
+      b.addEventListener("click", function () {
+        copyText(Array.prototype.map.call(c.querySelectorAll("p"), function (p) { return p.innerText.trim(); }).join("\n\n"), b);
+      });
+      c.classList.add("has-copy"); label.appendChild(b);
+    });
   })();
 </script>

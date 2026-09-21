@@ -665,7 +665,7 @@ Everything below was hit for real.
    floor settings / a template on the model call. The Console's engine Security tab says the same: violations only
    populate with Agent Gateway + MCP servers + tracing.
 2. **Inline route** = `GenerateContentConfig(model_armor_config=ModelArmorConfig(prompt_template_name,
-   response_template_name))`. Vertex calls Model Armor with ITS OWN service agent, so
+   response_template_name))`. Agent Platform calls Model Armor with ITS OWN service agent, so
    `service-<NUM>@gcp-sa-aiplatform.iam.gserviceaccount.com` needs `roles/modelarmor.user` (first call returned
    `403 ... useToSanitizeUserPrompt denied` until granted). A block surfaces in ADK as
    `LlmResponse.error_code == "MODEL_ARMOR"` with no content; `friendly_block` turns it into a refusal.
@@ -749,7 +749,7 @@ Everything below was hit for real.
    templates use MEDIUM); it grants tool permissions to the agent's SPECIFIC principal copied from Agent Registry (tighter
    than our project-wide principalSet); it hardens the system prompt (Lab 3 has no such step).
 16. **PII BOUNDARY: done and verified, with a bug worth remembering.** `PII_REDACTION=on` adds a pure-ASGI middleware
-   (`_RedactUserMessages` in main.py) that runs each user message through DLP before the agent, the model, the session store
+   (`RedactUserMessages` in `backend/pii_middleware.py`) that runs each user message through DLP before the agent, the model, the session store
    or Memory Bank see it (emails, phones, person names; NOT locations, which would mangle "our London event"). Verified on
    the deployed engine: the stored user message reads `Contact [PERSON_NAME] at [EMAIL_ADDRESS] or [PHONE_NUMBER]`, no raw
    value in the session. It fails closed (503) if DLP is down. `redact_before_post` is now decoupled from the Model Armor
@@ -772,14 +772,14 @@ Everything below was hit for real.
    gateway whose `when:` matches only `:generateContent` / `:streamGenerateContent` and excludes gRPC (without the gRPC
    exclusion the agent fails at startup). Start with `sgpEnforcementMode: DRY_RUN` (allow everything, log verdict + rationale
    to the `semantic-governance-policy` log). APIs: aiplatform, agentregistry, networkservices, networksecurity, compute, dns,
-   cloudtrace (+ roles/cloudtrace.agent on the Vertex service agent). Policies: `gcloud beta ai semantic-governance-policies
+   cloudtrace (+ roles/cloudtrace.agent on the Agent Platform service agent). Policies: `gcloud beta ai semantic-governance-policies
    create ... --agent=ID --natural-language-constraint=...`. SUPPORTED LOCATIONS (Google's list): us-central1, us-east1,
    us-east4, us-west1, europe-southwest1, europe-west1, europe-west4, europe-west8 (so europe-west1/4 may work for a London
    camp; only us-central1 tested). LLM-judged, probabilistic; no VPC-SC; keep secrets out of constraints.
 19. **AUDIT of a from-scratch setup**: script enabled too few APIs (added modelarmor, dlp, networkservices, networksecurity;
    Step 9 adds compute, dns, cloudtrace + roles/cloudtrace.agent). Setup guide Phase 2 list was missing secretmanager,
    artifactregistry, agentregistry, networkservices, networksecurity (fixed). On a fresh project the Reasoning Engine and
-   Vertex service agents do not exist until the first Agent Runtime deploy, so the grant steps must be re-run after Lab 2.
+   Agent Platform service agents do not exist until the first Agent Runtime deploy, so the grant steps must be re-run after Lab 2.
    Lab 3 gaps still open: Step 3's coding-agent prompt names `guardrails.content_config()` etc. that attendees on the
    pillar-scale tag do not have (needs a self-contained prompt or a checkout of the reference file); Lab 3 teardown commands
    are untested; the Cloud Run frontend was not re-tested against the gateway-bound engine.
@@ -802,7 +802,7 @@ Everything below was hit for real.
    renders fine in a no-org project. My earlier claim that the tab "works with SCC Standard" came from docs, not from
    looking. Agent topology is Gemini-Enterprise-only and is deliberately not mentioned in the labs.
 **Codelab material**: this is a far better Govern lesson than a working demo would have been. Two identities
-(your agent vs. Vertex's service agent), a "guardrail" that authenticates locally and 401s deployed, and a check
+(your agent vs. Agent Platform's service agent), a "guardrail" that authenticates locally and 401s deployed, and a check
 that only counts if you can see our refusal message and not just any refusal.
 
 ### Two "eval failures" that were three different problems, and one of them was a real approval-gate bug

@@ -121,14 +121,14 @@
     font-size: 15px;
   }
   .brand-text { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; letter-spacing: -0.01em; }
-  .brand-sub { font-size: 11.5px; color: var(--text-faint); letter-spacing: 0.02em; }
+  .brand-sub { font-size: 12px; color: var(--text-faint); letter-spacing: 0.02em; }
 
   .step-nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
   .step-nav-item {
     display: flex; align-items: center; gap: 10px;
     padding: 8px 10px; border-radius: 8px; cursor: pointer;
     border-left: 3px solid transparent;
-    color: var(--text-muted); font-size: 15.5px;
+    color: var(--text-muted); font-size: 12px;
   }
   .step-nav-item:hover { background: var(--bg-sidebar-hover); color: var(--text); }
   .step-nav-item.active { background: var(--accent-soft); color: var(--accent-hover); border-left-color: var(--accent); font-weight: 600; }
@@ -136,12 +136,12 @@
   .step-dot {
     width: 20px; height: 20px; border-radius: 50%; flex: none;
     border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
-    font-size: 10.5px; font-weight: 700; color: var(--text-faint); background: var(--bg-panel);
+    font-size: 12px; font-weight: 700; color: var(--text-faint); background: var(--bg-panel);
   }
   .step-nav-item.active .step-dot { border-color: var(--accent); color: var(--accent-hover); }
   .step-label-group { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-  .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .step-dur { font-size: 12px; color: var(--text-faint); }
+  .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+  .step-dur { font-size: 10px; color: var(--text-faint); }
   .step-nav-item.optional .step-label::after {
     content: "optional"; margin-left: 6px; font-size: 9.5px; text-transform: uppercase;
     letter-spacing: 0.04em; color: var(--yellow); border: 1px solid var(--yellow); border-radius: 4px;
@@ -156,7 +156,7 @@
 
   /* ---------- main ---------- */
   .main { flex: 1; min-width: 0; display: flex; justify-content: center; }
-  .content-col { width: 100%; max-width: 60%; padding: 48px 40px 40px; }
+  .content-col { width: 100%; max-width: 55%; padding: 48px 40px 40px; }
 
   .step-panel { display: none; }
   .step-panel.active { display: block; animation: fade-in 0.25s ease; }
@@ -287,7 +287,7 @@
       border: 1px solid var(--border); background: var(--bg-panel); color: var(--text-muted); cursor: pointer; white-space: nowrap;
     }
     .mobile-topnav button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-    .content-col { padding: 28px 20px 32px; }
+    .content-col { max-width: 100%; padding: 28px 20px 32px; }
     .step-title { font-size: 23px; }
     figure.diagram img { width: 100%; }
   }
@@ -503,7 +503,7 @@
             <text x="450" y="438" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.72">the adk web Trace tab from Step 3; the full story in Lab 4</text>
             <rect x="10" y="452" width="880" height="36" rx="8" class="accent-stroke fill-accent" stroke-width="1.8"/>
             <text x="450" y="468" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">Models</text>
-            <text x="450" y="482" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.72">Gemini on Vertex AI · Steps 1–2</text>
+            <text x="450" y="482" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.72">Gemini on Agent Platform · Steps 1–2</text>
             <rect x="10" y="506" width="16" height="12" rx="3" class="accent-stroke fill-accent" stroke-width="1.6"/>
             <text x="32" y="516.5" font-size="10.5" text-anchor="start" fill="currentColor">Build · Lab 1 (this lab)</text>
             <rect x="240" y="506" width="16" height="12" rx="3" class="green-stroke fill-green" stroke-width="1.6"/>
@@ -636,7 +636,7 @@
       <section class="step-panel" data-step="1">
         <div class="eyebrow"><span class="pill">Step 1 of 9</span><span class="dur">⏱ 5 min</span></div>
         <h1 class="step-title">Set up your workspace</h1>
-        <p class="lede">Clone the starter repo, which holds the plumbing that isn't the point of today, and get your environment talking to Vertex AI.</p>
+        <p class="lede">Clone the starter repo, which holds the plumbing that isn't the point of today, and get your environment talking to Agent Platform.</p>
 
         <div class="callout tip">
           <span class="callout-label">Starter, not solution</span>
@@ -932,7 +932,7 @@ Workflow:
       <section class="step-panel" data-step="5">
         <div class="eyebrow"><span class="pill">Step 5 of 9</span><span class="dur">⏱ 10 min</span></div>
         <h1 class="step-title">Add web research (and a real ADK constraint)</h1>
-        <p class="lede">Add <code>google_search</code>, a built-in tool, so the agent can ground drafts in real facts. <strong>This step is designed to fail first.</strong> You'll hit a real Vertex AI constraint, read the error, and fix it the idiomatic ADK way.</p>
+        <p class="lede">Add <code>google_search</code>, a built-in tool, so the agent can ground drafts in real facts. <strong>This step is designed to fail first.</strong> You'll hit a real Agent Platform constraint, read the error, and fix it the idiomatic ADK way.</p>
 
         <div class="callout agent">
           <span class="callout-label">Ask your coding agent</span>
@@ -953,7 +953,7 @@ root_agent = Agent(
 
         <div class="callout warn">
           <span class="callout-label">What you'll see, and why</span>
-          <p>Vertex AI rejects a single model call that mixes <code>google_search</code> with your own function tools: <em>"Multiple tools are supported only when they are all search tools."</em> The model is not broken and neither is your code; the platform enforces that built-in search runs alone. The fix: isolate search in its own agent, and expose that agent to the root agent as a tool via <code>AgentTool</code>. This is the idiomatic ADK pattern for "a tool that needs tools of its own", and it is your first multi-agent split.</p>
+          <p>Agent Platform rejects a single model call that mixes <code>google_search</code> with your own function tools: <em>"Multiple tools are supported only when they are all search tools."</em> The model is not broken and neither is your code; the platform enforces that built-in search runs alone. The fix: isolate search in its own agent, and expose that agent to the root agent as a tool via <code>AgentTool</code>. This is the idiomatic ADK pattern for "a tool that needs tools of its own", and it is your first multi-agent split.</p>
         </div>
 
         <h3>Part 2: the fix</h3>
@@ -1451,7 +1451,7 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
         <ul class="checklist">
           <li>An <code>Agent</code> with an instruction and a hand-written function tool</li>
           <li>Agent Skills — progressive disclosure via <code>SkillToolset</code> + <code>load_skill_from_dir</code>, including one you wrote yourself</li>
-          <li><code>AgentTool</code> to isolate <code>google_search</code> — a real Vertex AI constraint, not an arbitrary pattern</li>
+          <li><code>AgentTool</code> to isolate <code>google_search</code> — a real Agent Platform constraint, not an arbitrary pattern</li>
           <li><code>McpToolset</code> against Buffer's remote server, gated by <code>require_confirmation=True</code> — a framework-level human-in-the-loop, independent of the model's own judgement</li>
           <li>Optionally, a second publisher (LinkedIn) with request-level routing between the two</li>
           <li>The AG-UI bridge that exposes that exact agent to a real web app, plus the two frontend files that make ADK's confirmation gate and shared state visible</li>
@@ -1600,5 +1600,46 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
       if (!root.dataset.theme) paint();
     });
     paint();
+  })();
+</script>
+
+<style>
+  .copy-btn, .prompt-copy { display: inline-flex; align-items: center; gap: 6px; }
+  .copy-btn svg, .prompt-copy svg { width: 13px; height: 13px; flex: none; }
+  .callout.agent.has-copy .callout-label { display: flex; align-items: center; gap: 10px; }
+  .prompt-copy {
+    margin-left: auto; flex: none; white-space: nowrap; font-family: var(--font-body); font-size: 12px; text-transform: none; letter-spacing: 0;
+    font-weight: 500; font-style: normal; padding: 3px 9px; border-radius: 6px; cursor: pointer; background: var(--bg-panel);
+    color: var(--text-muted); border: 1px solid var(--border);
+  }
+  .prompt-copy:hover { color: var(--text); border-color: var(--text-faint); }
+</style>
+<script>
+  // Copy icons: every code block already has a Copy button; give it an icon, and add
+  // one to each prompt for the coding agent so it can be pasted in one click.
+  (function () {
+    var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+    function copyText(text, btn) {
+      var label = btn.querySelector("span");
+      var done = function () { var old = label.textContent; label.textContent = "Copied!"; setTimeout(function () { label.textContent = old; }, 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {});
+      } else {
+        var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+        try { document.execCommand("copy"); done(); } catch (e) {} document.body.removeChild(t);
+      }
+    }
+    window.copyBlock = function (btn) { copyText(btn.closest(".code-block").querySelector("code").innerText, btn); };
+    document.querySelectorAll(".copy-btn").forEach(function (b) { b.innerHTML = ICON + "<span>Copy</span>"; });
+    document.querySelectorAll(".callout.agent").forEach(function (c) {
+      var label = c.querySelector(".callout-label");
+      if (!label || !/^(Prompt for your coding agent|Ask your coding agent|Tell it what to remember)/.test(label.textContent.trim())) return;
+      var b = document.createElement("button");
+      b.className = "prompt-copy"; b.type = "button"; b.innerHTML = ICON + "<span>Copy prompt</span>";
+      b.addEventListener("click", function () {
+        copyText(Array.prototype.map.call(c.querySelectorAll("p"), function (p) { return p.innerText.trim(); }).join("\n\n"), b);
+      });
+      c.classList.add("has-copy"); label.appendChild(b);
+    });
   })();
 </script>

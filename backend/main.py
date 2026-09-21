@@ -23,64 +23,7 @@ load_dotenv(pathlib.Path(__file__).parent / "social_poster" / ".env")
 from backend.social_poster import config, db  # noqa: E402  (needs .env first)
 from backend.social_poster.agent import root_agent  # noqa: E402  (needs .env first)
 from backend.social_poster import guardrails  # noqa: E402
-
-class _RedactUserMessages:
-    """Pure-ASGI middleware: DLP-redact every user message in an AG-UI request BEFORE the
-    agent sees it. Without this the raw text (a phone number, an email) goes to Gemini and
-    is written to the session store exactly as typed, and the only redaction is a tool the
-    model is merely *asked* to call. Fails closed: if DLP errors, the request is refused."""
-
-    def __init__(self, app, path: str):
-        self.app, self.path = app, path
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or scope["method"] != "POST" or scope["path"] != self.path:
-            return await self.app(scope, receive, send)
-        body = b""
-        while True:
-            msg = await receive()
-            body += msg.get("body", b"")
-            if not msg.get("more_body"):
-                break
-        try:
-            data = json.loads(body)
-            for m in data.get("messages", []):
-                if m.get("role") != "user":
-                    continue
-                c = m.get("content")
-                if isinstance(c, str):
-                    m["content"] = guardrails.redact_boundary(c)
-                elif isinstance(c, list):
-                    for part in c:
-                        if isinstance(part, dict) and isinstance(part.get("text"), str):
-                            part["text"] = guardrails.redact_boundary(part["text"])
-            body = json.dumps(data).encode()
-        except json.JSONDecodeError:
-            pass  # not JSON: let the endpoint reject it as it normally would
-        except Exception:  # noqa: BLE001  (DLP unavailable: fail closed, never pass raw text)
-            log.exception("PII redaction failed; refusing the request")
-            await send({"type": "http.response.start", "status": 503,
-                        "headers": [(b"content-type", b"application/json")]})
-            await send({"type": "http.response.body",
-                        "body": b'{"error":"PII redaction is unavailable, so the request was refused."}'})
-            return
-
-        delivered = False
-
-        async def replay():
-            # Hand over the (rewritten) body ONCE, then defer to the real channel. A
-            # streaming (SSE) response listens on receive() for http.disconnect; if this
-            # kept replaying the request it would spin and the stream would hang.
-            nonlocal delivered
-            if not delivered:
-                delivered = True
-                return {"type": "http.request", "body": body, "more_body": False}
-            return await receive()
-
-        headers = [(k, v) for k, v in scope["headers"] if k.lower() != b"content-length"]
-        headers.append((b"content-length", str(len(body)).encode()))
-        await self.app({**scope, "headers": headers}, replay, send)
-
+from backend.pii_middleware import RedactUserMessages  # noqa: E402  (imports guardrails)
 
 app = FastAPI(title="social-agent AG-UI backend")
 
@@ -156,8 +99,76 @@ if guardrails.MA_TEMPLATE:
 add_adk_fastapi_endpoint(app, adk_agent, path="/api/adk")
 
 if guardrails.PII_REDACTION:
-    app.add_middleware(_RedactUserMessages, path="/api/adk")
+    app.add_middleware(RedactUserMessages, path="/api/adk")
     log.info("PII redaction on: user messages are de-identified before they reach the agent")
+
+# The console Playground and `reasoningEngines:streamQuery` call the runtime contract's
+# native streaming route, which a container has to serve itself (the AG-UI route above is
+# a different protocol). Request: {"class_method": "stream_query", "input": {"message",
+# "user_id", "session_id"}}. Response: one JSON object per line, {"output": <ADK event>}.
+# https://docs.cloud.google.com/gemini-enterprise-agent-platform/scale/runtime/runtime-contract
+_native_runner = None
+
+
+def _get_native_runner():
+    global _native_runner
+    if _native_runner is None:
+        from google.adk.memory import InMemoryMemoryService
+        from google.adk.runners import Runner
+        from google.adk.sessions import InMemorySessionService
+
+        _native_runner = Runner(
+            app_name="social_poster",
+            agent=root_agent,
+            session_service=session_service or InMemorySessionService(),
+            memory_service=memory_service or InMemoryMemoryService(),
+        )
+    return _native_runner
+
+
+@app.post("/api/stream_reasoning_engine")
+async def stream_reasoning_engine(payload: dict):
+    from fastapi.responses import JSONResponse, StreamingResponse
+    from google.adk.agents.run_config import RunConfig, StreamingMode
+    from google.genai import types
+
+    args = payload.get("input") or {}
+    message = args.get("message")
+    if not isinstance(message, str) or not message.strip():
+        return JSONResponse({"error": "input.message is required"}, status_code=400)
+    if guardrails.PII_REDACTION:
+        try:
+            message = guardrails.redact_boundary(message)
+        except Exception:  # noqa: BLE001  (fail closed, as the AG-UI middleware does)
+            log.exception("PII redaction failed; refusing the request")
+            return JSONResponse({"error": "PII redaction is unavailable, so the request was refused."},
+                                status_code=503)
+
+    runner = _get_native_runner()
+    user_id = args.get("user_id") or "devcamp-user"
+    session = None
+    if args.get("session_id"):
+        session = await runner.session_service.get_session(
+            app_name="social_poster", user_id=user_id, session_id=args["session_id"])
+    if session is None:
+        session = await runner.session_service.create_session(app_name="social_poster", user_id=user_id)
+
+    # Same reason as the AG-UI route: streamed Gemini calls skip Model Armor.
+    cfg = RunConfig(streaming_mode=StreamingMode.NONE if guardrails.MA_TEMPLATE else StreamingMode.SSE)
+
+    async def lines():
+        try:
+            async for event in runner.run_async(
+                user_id=user_id, session_id=session.id, run_config=cfg,
+                new_message=types.Content(role="user", parts=[types.Part(text=message)]),
+            ):
+                yield json.dumps({"output": event.model_dump(mode="json", exclude_none=True)}) + "\n"
+        except Exception as e:  # noqa: BLE001
+            log.exception("stream_reasoning_engine failed")
+            yield json.dumps({"error": str(e)[:300]}) + "\n"
+
+    return StreamingResponse(lines(), media_type="application/x-ndjson")
+
 
 # Serve generate_image's output files so the frontend's image gallery
 # (PostGallery.tsx) can render them — tools.py writes local file paths, which

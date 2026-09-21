@@ -87,9 +87,9 @@
   }
   h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; color: var(--text); margin: 0; }
   a { color: var(--accent); }
-  p { margin: 0 0 14px; max-width: 68ch; }
+  p { margin: 0 0 14px; max-width: 100%; }
   ul, ol { margin: 0 0 14px; padding-left: 1.3em; }
-  li { margin-bottom: 6px; max-width: 64ch; }
+  li { margin-bottom: 6px; max-width: 100%; }
   code { font-family: var(--font-mono); font-size: 0.87em; background: var(--accent-soft); color: var(--accent-hover); padding: 0.1em 0.4em; border-radius: 4px; }
 
   /* ---------- progress bar ---------- */
@@ -107,7 +107,7 @@
 
   /* ---------- sidebar ---------- */
   .sidebar {
-    width: 292px; flex: none; background: var(--bg-sidebar);
+    width: 20%; flex: none; background: var(--bg-sidebar);
     border-right: 1px solid var(--border); padding: 22px 14px 18px;
     position: sticky; top: 3px; align-self: flex-start; height: calc(100vh - 3px);
     overflow-y: auto;
@@ -121,14 +121,14 @@
     font-size: 15px;
   }
   .brand-text { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; letter-spacing: -0.01em; }
-  .brand-sub { font-size: 11.5px; color: var(--text-faint); letter-spacing: 0.02em; }
+  .brand-sub { font-size: 12px; color: var(--text-faint); letter-spacing: 0.02em; }
 
   .step-nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
   .step-nav-item {
     display: flex; align-items: center; gap: 10px;
     padding: 8px 10px; border-radius: 8px; cursor: pointer;
     border-left: 3px solid transparent;
-    color: var(--text-muted); font-size: 13.6px;
+    color: var(--text-muted); font-size: 12px;
   }
   .step-nav-item:hover { background: var(--bg-sidebar-hover); color: var(--text); }
   .step-nav-item.active { background: var(--accent-soft); color: var(--accent-hover); border-left-color: var(--accent); font-weight: 600; }
@@ -136,12 +136,12 @@
   .step-dot {
     width: 20px; height: 20px; border-radius: 50%; flex: none;
     border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
-    font-size: 10.5px; font-weight: 700; color: var(--text-faint); background: var(--bg-panel);
+    font-size: 12px; font-weight: 700; color: var(--text-faint); background: var(--bg-panel);
   }
   .step-nav-item.active .step-dot { border-color: var(--accent); color: var(--accent-hover); }
   .step-label-group { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-  .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .step-dur { font-size: 10.8px; color: var(--text-faint); }
+  .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+  .step-dur { font-size: 10px; color: var(--text-faint); }
   .step-nav-item.optional .step-label::after {
     content: "optional"; margin-left: 6px; font-size: 9.5px; text-transform: uppercase;
     letter-spacing: 0.04em; color: var(--yellow); border: 1px solid var(--yellow); border-radius: 4px;
@@ -156,7 +156,7 @@
 
   /* ---------- main ---------- */
   .main { flex: 1; min-width: 0; display: flex; justify-content: center; }
-  .content-col { width: 100%; max-width: 760px; padding: 48px 40px 40px; }
+  .content-col { width: 100%; max-width: 55%; padding: 48px 40px 40px; }
 
   .step-panel { display: none; }
   .step-panel.active { display: block; animation: fade-in 0.25s ease; }
@@ -294,7 +294,7 @@
       border: 1px solid var(--border); background: var(--bg-panel); color: var(--text-muted); cursor: pointer; white-space: nowrap;
     }
     .mobile-topnav button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-    .content-col { padding: 28px 20px 32px; }
+    .content-col { max-width: 100%; padding: 28px 20px 32px; }
     .step-title { font-size: 23px; }
   }
 
@@ -406,7 +406,7 @@
             <text x="486" y="60.5" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle">3</text>
             <text x="506" y="54" font-size="13" font-weight="700" fill="currentColor">Coding agent</text>
             <text x="506" y="70" font-size="13" font-weight="700" fill="currentColor">superpowers</text>
-            <text x="476" y="96" font-size="11.5" fill="currentColor" opacity="0.75">Antigravity (or Claude</text><text x="476" y="114" font-size="11.5" fill="currentColor" opacity="0.75">Code / Gemini CLI)</text><text x="476" y="132" font-size="11.5" fill="currentColor" opacity="0.75">Vertex AI fallback</text><text x="476" y="150" font-size="11.5" fill="currentColor" opacity="0.75">agents-cli + ADK skills</text>
+            <text x="476" y="96" font-size="11.5" fill="currentColor" opacity="0.75">Antigravity (or Claude</text><text x="476" y="114" font-size="11.5" fill="currentColor" opacity="0.75">Code / Gemini CLI)</text><text x="476" y="132" font-size="11.5" fill="currentColor" opacity="0.75">Agent Platform fallback</text><text x="476" y="150" font-size="11.5" fill="currentColor" opacity="0.75">agents-cli + ADK skills</text>
             <text x="476" y="170" font-size="10.5" fill="currentColor" opacity="0.55">⏱ 10 min</text>
             <rect x="690" y="30" width="210" height="150" rx="12" class="yellow-stroke fill-yellow" stroke-width="2"/>
             <circle cx="716" cy="56" r="12" class="dot-yellow"/>
@@ -451,8 +451,8 @@
         </div>
 
         <div class="callout warn">
-          <span class="callout-label">The $300 credit covers Vertex AI, not AI Studio billing</span>
-          <p>All model calls in this camp, including image generation, go through <strong>Vertex AI inside your GCP project</strong>, so they're covered. If you ever grab a standalone API key from aistudio.google.com, that's a different account with its own billing (Google is moving it to a mandatory prepaid balance from September 2026). Don't put a card on that one.</p>
+          <span class="callout-label">The $300 credit covers Agent Platform, not AI Studio billing</span>
+          <p>All model calls in this camp, including image generation, go through <strong>Agent Platform inside your GCP project</strong>, so they're covered. If you ever grab a standalone API key from aistudio.google.com, that's a different account with its own billing (Google is moving it to a mandatory prepaid balance from September 2026). Don't put a card on that one.</p>
         </div>
 
         <div class="callout">
@@ -486,19 +486,19 @@
             <div style="margin:12px 0"><div class="shots"><figure><img src="img/gcp-project-id.png" alt="Creating the project and finding its Project ID" width="500"><figcaption>Creating the project and finding its Project ID</figcaption></figure></div></div></li>
           <li>Verify your billing account is linked to your new project (console → <strong>Billing → My Projects</strong>).
             <div style="margin:12px 0"><div class="shots"><figure><img src="img/gcp-billing-linked.png" alt="Billing account linked to the project" width="500"><figcaption>Billing account linked to the project</figcaption></figure></div></div></li>
-          <li>Enable the required APIs: Vertex AI, Cloud Run, Cloud Build, Sensitive Data Protection, Model Armor, Discovery Engine, Cloud Resource Manager and App Hub. Search for them under <strong>APIs &amp; Services → Enable APIs and Services</strong>, or run the one-line <code>gcloud</code> command in Phase 2 right after installing <code>gcloud</code>.</li>
-          <li><strong>Set a spend cap</strong> (console → <strong>Billing → Budgets &amp; alerts</strong>). Create a budget scoped to your <code>ai-devcamp-&lt;yourname&gt;</code> project with alert thresholds at 50, 80 and 100%, <strong>and</strong> turn on the spend-cap option scoped to the Vertex AI / Gemini API service (currently in preview).
+          <li>Enable the required APIs: Agent Platform, Cloud Run, Cloud Build, Sensitive Data Protection, Model Armor, Discovery Engine, Cloud Resource Manager and App Hub. Search for them under <strong>APIs &amp; Services → Enable APIs and Services</strong>, or run the one-line <code>gcloud</code> command in Phase 2 right after installing <code>gcloud</code>.</li>
+          <li><strong>Set a spend cap</strong> (console → <strong>Billing → Budgets &amp; alerts</strong>). Create a budget scoped to your <code>ai-devcamp-&lt;yourname&gt;</code> project with alert thresholds at 50, 80 and 100%, <strong>and</strong> turn on the spend-cap option scoped to the Agent Platform / Gemini API service (currently in preview).
             <div style="margin:12px 0"><div class="shots"><figure><img src="img/gcp-budget-spend-cap.png" alt="The spend-cap option" width="280"><figcaption>The spend-cap option</figcaption></figure><figure><img src="img/gcp-budget-amount.png" alt="The budget amount" width="280"><figcaption>The budget amount</figcaption></figure></div></div></li>
         </ol>
 
         <div class="callout warn">
           <span class="callout-label">An alert is not a cap</span>
-          <p>A plain email alert doesn't stop anything. The spend cap actually pauses further Vertex AI usage once you hit 100%. That is the one you want.</p>
+          <p>A plain email alert doesn't stop anything. The spend cap actually pauses further Agent Platform usage once you hit 100%. That is the one you want.</p>
         </div>
 
         <div class="callout check">
           <span class="callout-label">Phase 1 checkpoint</span>
-          <p>The Vertex AI page in the console loads without an "enable API" prompt, and <strong>Budgets &amp; alerts</strong> shows your budget with the spend cap enabled.</p>
+          <p>The Agent Platform page in the console loads without an "enable API" prompt, and <strong>Budgets &amp; alerts</strong> shows your budget with the spend cap enabled.</p>
         </div>
 
         <div class="step-footer">
@@ -598,17 +598,17 @@ gcloud services enable \
       <section class="step-panel" data-step="3">
         <div class="eyebrow"><span class="pill">Phase 3 of 4</span><span class="dur">⏱ 10 min</span></div>
         <h1 class="step-title">Coding agent setup &amp; ADK superpowers</h1>
-        <p class="lede"><span class="goal">Set up Google Antigravity with your Google Cloud Vertex AI project budget and install ADK skills.</span></p>
+        <p class="lede"><span class="goal">Set up Google Antigravity with your Google Cloud Agent Platform project budget and install ADK skills.</span></p>
 
         <figure class="diagram">
-          <svg viewBox="0 0 720 210" role="img" aria-label="Three ways to keep a coding agent working. First, Antigravity billed to your own GCP project through Vertex AI, using your 300 dollar credit. Second, a free AI Studio key as a rate-limited backup, separate from the credit. Third, another coding agent such as Claude Code or Gemini CLI, each with its own account and quota.">
+          <svg viewBox="0 0 720 210" role="img" aria-label="Three ways to keep a coding agent working. First, Antigravity billed to your own GCP project through Agent Platform, using your 300 dollar credit. Second, a free AI Studio key as a rate-limited backup, separate from the credit. Third, another coding agent such as Claude Code or Gemini CLI, each with its own account and quota.">
             <defs><marker id="ld-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
             <rect x="4" y="30" width="216" height="130" rx="12" class="accent-stroke fill-accent" stroke-width="2"/>
             <circle cx="28" cy="54" r="12" class="dot-blue"/>
             <text x="28" y="58.5" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle">1</text>
             <text x="48" y="59" font-size="13" font-weight="700" fill="currentColor">Antigravity</text>
             <text x="20" y="94" font-size="11" fill="currentColor" opacity="0.8">Billed to your own GCP project</text>
-            <text x="20" y="111" font-size="11" fill="currentColor" opacity="0.8">through Vertex AI</text>
+            <text x="20" y="111" font-size="11" fill="currentColor" opacity="0.8">through Agent Platform</text>
             <text x="20" y="134" font-size="10.5" fill="currentColor" opacity="0.6">Uses your $300 credit</text>
             <rect x="252" y="30" width="216" height="130" rx="12" class="yellow-stroke fill-yellow" stroke-width="2"/>
             <circle cx="276" cy="54" r="12" class="dot-yellow"/>
@@ -639,7 +639,7 @@ gcloud services enable \
               <li><strong>Authenticate.</strong> Even though it says "Business", your browser opens Google's standard sign-in. Use your personal Gmail, or whichever account owns your <code>ai-devcamp-&lt;yourname&gt;</code> project.</li>
               <li><strong>Link your project and budget.</strong> The extension asks for:
                 <ul>
-                  <li><strong>Google Cloud Project ID:</strong> <code>ai-devcamp-&lt;yourname&gt;</code>, the project holding your Vertex AI budget.</li>
+                  <li><strong>Google Cloud Project ID:</strong> <code>ai-devcamp-&lt;yourname&gt;</code>, the project holding your Agent Platform budget.</li>
                   <li><strong>Location:</strong> <code>Global</code>.</li>
                   <li><strong>Select License / Agent Platform:</strong> if you see <em>"No license available for this project and location"</em>, click <strong>"Use Agent Platform instead — Pay as you go provisioned for your Google Cloud project"</strong>.</li>
                 </ul>
@@ -651,10 +651,10 @@ gcloud services enable \
         </ol>
 
         <div class="callout warn">
-          <span class="callout-label">Troubleshooting: Agent Platform / Vertex AI API error</span>
+          <span class="callout-label">Troubleshooting: Agent Platform API error</span>
           <p>If Antigravity says <em>"Agent Platform API has not been used in project ai-devcamp-&lt;yourname&gt; before or it is disabled"</em>:</p>
-          <p><strong>Fix:</strong> click the link in the error message to enable the Vertex AI / Agent Platform API (<code>aiplatform.googleapis.com</code>), or run <code>gcloud services enable aiplatform.googleapis.com</code>. Wait 2 to 3 minutes for it to propagate, then retry.</p>
-          <p><strong>IAM permissions:</strong> your Google account needs <strong>Vertex AI User</strong> (<code>roles/aiplatform.user</code>), <strong>Owner</strong> or <strong>Editor</strong> on your GCP project.</p>
+          <p><strong>Fix:</strong> click the link in the error message to enable the Agent Platform API (<code>aiplatform.googleapis.com</code>), or run <code>gcloud services enable aiplatform.googleapis.com</code>. Wait 2 to 3 minutes for it to propagate, then retry.</p>
+          <p><strong>IAM permissions:</strong> your Google account needs <strong>Agent Platform User</strong> (<code>roles/aiplatform.user</code>), <strong>Owner</strong> or <strong>Editor</strong> on your GCP project.</p>
         </div>
 
         <ol start="3">
@@ -666,7 +666,7 @@ gcloud services enable \
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
           <pre><code>uvx google-agents-cli setup</code></pre>
         </div>
-        <p>This installs Google's <code>agents-cli</code> <strong>and</strong> detects which coding agents you have (Antigravity, Claude Code, Cursor, Windsurf…), then installs a set of ADK development skills into each one. Every lab works by you prompting your coding agent to build something, and this is what makes its answers match current ADK instead of whatever its training data remembers. Add <code>--dry-run</code> first to see what it would change, or <code>--workspace</code> to install into the project folder rather than globally.</p>
+        <p>This installs Google's <code>agents-cli</code> (so from here on the labs run plain <code>agents-cli ...</code>, not <code>uvx</code>) <strong>and</strong> detects which coding agents you have (Antigravity, Claude Code, Cursor, Windsurf…), then installs a set of ADK development skills into each one. Every lab works by you prompting your coding agent to build something, and this is what makes its answers match current ADK instead of whatever its training data remembers. Add <code>--dry-run</code> first to see what it would change, or <code>--workspace</code> to install into the project folder rather than globally.</p>
 
         <div class="callout agent">
           <span class="callout-label">Two different kinds of skills</span>
@@ -706,7 +706,7 @@ DRY_RUN=true</code></pre>
 
         <div class="callout warn">
           <span class="callout-label">Use global, not a regional endpoint</span>
-          <p><code>gemini-flash-latest</code> returns a 404 <em>"Publisher model not found"</em> in <code>europe-west1</code> and in <code>europe-west2</code>. Regional Vertex AI endpoints can lag behind <code>global</code> for the newest flash models, and <code>global</code> is the one location confirmed to serve it. This was confirmed by direct testing, not assumed.</p>
+          <p><code>gemini-flash-latest</code> returns a 404 <em>"Publisher model not found"</em> in <code>europe-west1</code> and in <code>europe-west2</code>. Regional Agent Platform endpoints can lag behind <code>global</code> for the newest flash models, and <code>global</code> is the one location confirmed to serve it. This was confirmed by direct testing, not assumed.</p>
           <p>It is unrelated to Phase 2's <code>us-central1</code> (Agent Runtime and Governance Policies) and to Model Armor's region in Session 3. Those settings are independent. See the diagram in Phase 2.</p>
         </div>
 
@@ -720,6 +720,7 @@ DRY_RUN=true</code></pre>
           <li><strong>GCS image hosting for Buffer</strong> (optional and advanced, not part of Lab 1's taught steps, which keep Buffer text-only by design). Only relevant if you want Buffer posts to carry an image like the reference build does. It needs a one-time IAM setup outside the app's own reach: a dedicated service account with signing rights via impersonation, not a downloaded key. Set <code>GOOGLE_CLOUD_PROJECT</code> and <code>GCS_BUCKET_NAME</code> in your <code>.env</code>, then run <code>./gcs-setup.sh</code> from the repo root. Skip this unless you're specifically extending past Lab 1.</li>
           <li>Join the <strong>GDG London Discord</strong> (<a href="https://discord.gg/952SuUXME" target="_blank" rel="noopener">discord.gg/952SuUXME</a>) and say hi in <code>#introductions</code>. Channels: <code>#setup-help</code>, <code>#session-1</code> to <code>#session-4</code>, <code>#show-your-use-case</code>.</li>
           <li>Think of <strong>one use case of your own</strong>: an agent you'd like to exist. You'll declare it in Lab 1 and build it alongside ours as each lab's Assignment.</li>
+          <li><strong>Optional: see Google's own scaffold.</strong> Curious what <code>agents-cli</code> generates? In a scratch folder (not the workshop repo), run <code>agents-cli create my-agent --prototype --yes</code>. The labs use our own project, so treat this as a look around.</li>
         </ul>
 
         <div class="callout check">
@@ -866,5 +867,46 @@ DRY_RUN=true</code></pre>
       if (!root.dataset.theme) paint();
     });
     paint();
+  })();
+</script>
+
+<style>
+  .copy-btn, .prompt-copy { display: inline-flex; align-items: center; gap: 6px; }
+  .copy-btn svg, .prompt-copy svg { width: 13px; height: 13px; flex: none; }
+  .callout.agent.has-copy .callout-label { display: flex; align-items: center; gap: 10px; }
+  .prompt-copy {
+    margin-left: auto; flex: none; white-space: nowrap; font-family: var(--font-body); font-size: 12px; text-transform: none; letter-spacing: 0;
+    font-weight: 500; font-style: normal; padding: 3px 9px; border-radius: 6px; cursor: pointer; background: var(--bg-panel);
+    color: var(--text-muted); border: 1px solid var(--border);
+  }
+  .prompt-copy:hover { color: var(--text); border-color: var(--text-faint); }
+</style>
+<script>
+  // Copy icons: every code block already has a Copy button; give it an icon, and add
+  // one to each prompt for the coding agent so it can be pasted in one click.
+  (function () {
+    var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+    function copyText(text, btn) {
+      var label = btn.querySelector("span");
+      var done = function () { var old = label.textContent; label.textContent = "Copied!"; setTimeout(function () { label.textContent = old; }, 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {});
+      } else {
+        var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+        try { document.execCommand("copy"); done(); } catch (e) {} document.body.removeChild(t);
+      }
+    }
+    window.copyBlock = function (btn) { copyText(btn.closest(".code-block").querySelector("code").innerText, btn); };
+    document.querySelectorAll(".copy-btn").forEach(function (b) { b.innerHTML = ICON + "<span>Copy</span>"; });
+    document.querySelectorAll(".callout.agent").forEach(function (c) {
+      var label = c.querySelector(".callout-label");
+      if (!label || !/^(Prompt for your coding agent|Ask your coding agent|Tell it what to remember)/.test(label.textContent.trim())) return;
+      var b = document.createElement("button");
+      b.className = "prompt-copy"; b.type = "button"; b.innerHTML = ICON + "<span>Copy prompt</span>";
+      b.addEventListener("click", function () {
+        copyText(Array.prototype.map.call(c.querySelectorAll("p"), function (p) { return p.innerText.trim(); }).join("\n\n"), b);
+      });
+      c.classList.add("has-copy"); label.appendChild(b);
+    });
   })();
 </script>

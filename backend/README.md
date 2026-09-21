@@ -10,7 +10,7 @@ at `/api/adk`.
 
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/)
-- A GCP project with the Vertex AI API enabled, and
+- A GCP project with the Agent Platform API enabled, and
   `gcloud auth application-default login` run once. No service-account key
   file is used anywhere in this project — the optional GCS image-hosting
   feature (see below) signs URLs via service-account *impersonation*

@@ -107,7 +107,7 @@
 
   /* ---------- sidebar ---------- */
   .sidebar {
-    width: 292px; flex: none; background: var(--bg-sidebar);
+    width: 20%; flex: none; background: var(--bg-sidebar);
     border-right: 1px solid var(--border); padding: 22px 14px 18px;
     position: sticky; top: 3px; align-self: flex-start; height: calc(100vh - 3px);
     overflow-y: auto;
@@ -140,8 +140,8 @@
   }
   .step-nav-item.active .step-dot { border-color: var(--accent); color: var(--accent-hover); }
   .step-label-group { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-  .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .step-dur { font-size: 10.8px; color: var(--text-faint); }
+  .step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+  .step-dur { font-size: 12px; color: var(--text-faint); }
   .step-nav-item.optional .step-label::after {
     content: "optional"; margin-left: 6px; font-size: 9.5px; text-transform: uppercase;
     letter-spacing: 0.04em; color: var(--yellow); border: 1px solid var(--yellow); border-radius: 4px;
@@ -156,7 +156,7 @@
 
   /* ---------- main ---------- */
   .main { flex: 1; min-width: 0; display: flex; justify-content: center; }
-  .content-col { width: 100%; max-width: 760px; padding: 48px 40px 40px; }
+  .content-col { width: 100%; max-width: 55%; padding: 48px 40px 40px; }
 
   .step-panel { display: none; }
   .step-panel.active { display: block; animation: fade-in 0.25s ease; }
@@ -381,7 +381,7 @@
 
         <div class="callout check">
           <span class="callout-label">Everything hands-on today runs in a personal project</span>
-          <p>No Google Cloud <strong>organisation</strong> and no <strong>Gemini Enterprise</strong> subscription. We built and tested every hands-on step in a personal project with no organisation above it, in one project. Google's documentation does not say either way, so this is what we observed, not a guarantee. What <em>is</em> gated is listed in Step 1.</p>
+          <p>No Google Cloud <strong>organisation</strong> and no <strong>Gemini Enterprise</strong> subscription. We built and tested every hands-on step in a personal project with no organisation above it, in one project.</p>
         </div>
         <figure class="diagram">
           <svg viewBox="0 0 720 300" role="img" aria-label="Govern has eight parts: Agent Gateway, Agent Identity, Agent Registry, Agent Anomaly Detection, Model Armor, Agent Policy, Agent Security and Agent Compliance. This lab works hands-on with Model Armor, Agent Gateway, Agent Registry and Agent Policy, recaps Agent Identity from Lab 2, works hands-on with Agent Gateway, and treats Agent Anomaly Detection, Agent Security and Agent Compliance as outside today's scope, because they need approval, an organisation, or a paid Security Command Center tier.">
@@ -505,7 +505,7 @@
 
         <div class="callout check">
           <span class="callout-label">You need</span>
-          <ol><li>Your Lab 2 agent, deployed in <code>us-central1</code> with <code>--agent-identity</code>.</li><li>Run <code>./gcs-setup.sh</code> from the repo root. Its Govern steps enable the APIs, create the Model Armor templates and make the grants below.</li><li><strong>Run it in this order:</strong> the two service agents in the table only exist after Vertex AI has been used and after your <em>first Agent Runtime deploy</em>. On a brand-new project the grant steps will report "does not exist yet". Deploy in Lab 2, then run <code>./gcs-setup.sh</code> again.</li></ol>
+          <ol><li>Your Lab 2 agent, deployed in <code>us-central1</code> with <code>--agent-identity</code>.</li><li>Run <code>./gcs-setup.sh</code> from the repo root. Its Govern steps enable the APIs, create the Model Armor templates and make the grants below.</li><li><strong>Run it in this order:</strong> the two service agents in the table only exist after Agent Platform has been used and after your <em>first Agent Runtime deploy</em>. On a brand-new project the grant steps will report "does not exist yet". Deploy in Lab 2, then run <code>./gcs-setup.sh</code> again.</li></ol>
         </div>
         <h2>What you need, and what is gated</h2>
         <div class="tbl-wrap"><table>
@@ -522,7 +522,7 @@
         <div class="tbl-wrap"><table>
 <thead><tr><th>What</th><th>Who / where</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td><code>roles/modelarmor.user</code></td><td><strong>Vertex AI's own service agent</strong><br><code>service-&lt;PROJECT_NUMBER&gt;@gcp-sa-aiplatform.iam.gserviceaccount.com</code></td><td>Vertex applies Model Armor inline on each Gemini call, so <em>it</em> needs the role. Without it every guarded call returns <code>403 ... useToSanitizeUserPrompt denied</code>.</td></tr>
+<tr><td><code>roles/modelarmor.user</code></td><td><strong>Agent Platform's own service agent</strong><br><code>service-&lt;PROJECT_NUMBER&gt;@gcp-sa-aiplatform.iam.gserviceaccount.com</code></td><td>Agent Platform applies Model Armor inline on each Gemini call, so <em>it</em> needs the role. Without it every guarded call returns <code>403 ... useToSanitizeUserPrompt denied</code>.</td></tr>
 <tr><td><code>roles/modelarmor.calloutUser</code> and <code>roles/modelarmor.user</code></td><td><strong>The Reasoning Engine service agent</strong> (a different one from the row above)<br><code>service-&lt;PROJECT_NUMBER&gt;@gcp-sa-aiplatform-re.iam.gserviceaccount.com</code></td><td>Agent Gateway calls Model Armor with this identity on ingress traffic, so it needs both roles. Only for the Agent Gateway route in Step 7. Egress traffic uses the Service Extensions service agent instead.</td></tr>
 <tr><td><code>roles/dlp.user</code></td><td><strong>Your agent's identity</strong>, as the project-wide <code>principalSet://agents.global.proj-&lt;NUMBER&gt;.system.id.goog/attribute.platformContainer/aiplatform/projects/&lt;NUMBER&gt;</code></td><td>The agent calls Cloud DLP itself to redact personal data. The specific principal only exists after a deploy, so grant the project-wide set.</td></tr>
 <tr><td>APIs</td><td><code>modelarmor</code>, <code>dlp</code>, <code>agentregistry</code>, <code>networkservices</code>, <code>networksecurity</code>. For Step 6 also <code>compute</code>, <code>dns</code>, <code>cloudtrace</code></td><td>Model Armor, DLP, the Agent Registry catalogue, and the gateway, extension and policy in Step 7 (their <code>gcloud</code> imports fail without the two network APIs). <code>gcs-setup.sh</code> enables them.</td></tr>
@@ -531,7 +531,7 @@
 </tbody></table></div>
         <div class="callout warn">
           <span class="callout-label">Two identities: who calls Model Armor</span>
-          <p>Model Armor is applied <strong>inline</strong>: Vertex calls it with its own service agent, so <code>modelarmor.user</code> goes to the <strong>Vertex service agent</strong>, not to your agent. Do not call the Model Armor sanitize API from code inside your agent: Google's auth library blocks "agent token sharing", so the call returns <code>401 Unauthorized</code>. Leave that protection on.</p>
+          <p>Model Armor is applied <strong>inline</strong>: Agent Platform calls it with its own service agent, so <code>modelarmor.user</code> goes to the <strong>Agent Platform service agent</strong>, not to your agent. Do not call the Model Armor sanitize API from code inside your agent: Google's auth library blocks "agent token sharing", so the call returns <code>401 Unauthorized</code>. Leave that protection on.</p>
         </div>
         <div class="callout">
           <span class="callout-label">Why us-central1</span>
@@ -547,15 +547,15 @@
       <section class="step-panel" data-step="2">
         <div class="eyebrow"><span class="pill">Step 2 of 9</span><span class="dur">⏱ 25 min</span></div>
         <h1 class="step-title">Model Armor: screen every call</h1>
-        <p class="lede">Model Armor is applied by Vertex on each Gemini call, with a template you name. Your code does not call it.</p>
+        <p class="lede">Model Armor is applied by Agent Platform on each Gemini call, with a template you name. Your code does not call it.</p>
 
         <div class="callout">
           <span class="callout-label">Theory</span>
-          <p>A <strong>template</strong> says which filters run: responsible-AI categories (hate, harassment, sexual, dangerous) and prompt-injection and jailbreak detection. You attach templates to the model call, and Vertex screens the prompt going in and the reply coming out. A blocked call comes back as an error with code <code>MODEL_ARMOR</code>, which <code>guardrails.friendly_block</code> turns into a readable refusal.</p>
+          <p>A <strong>template</strong> says which filters run: responsible-AI categories (hate, harassment, sexual, dangerous) and prompt-injection and jailbreak detection. You attach templates to the model call, and Agent Platform screens the prompt going in and the reply coming out. A blocked call comes back as an error with code <code>MODEL_ARMOR</code>, which <code>guardrails.friendly_block</code> turns into a readable refusal.</p>
           <p>We use <strong>two templates</strong>. The input one has the injection filter. The output one does not, because that filter fires on a model reply that merely <em>discusses</em> injection.</p>
         </div>
         <figure class="diagram">
-          <svg viewBox="0 0 900 340" role="img" aria-label="A user message reaches root_agent, which makes a Gemini call. Vertex screens that one call: the input template checks the prompt for injection and harm, then Gemini runs in a region, then the output template checks the reply for harm. A blocked call comes back as an error with code MODEL_ARMOR and no content, and friendly_block turns it into a readable refusal. Streamed calls are not screened, and template lookups are retried.">
+          <svg viewBox="0 0 900 340" role="img" aria-label="A user message reaches root_agent, which makes a Gemini call. Agent Platform screens that one call: the input template checks the prompt for injection and harm, then Gemini runs in a region, then the output template checks the reply for harm. A blocked call comes back as an error with code MODEL_ARMOR and no content, and friendly_block turns it into a readable refusal. Streamed calls are not screened, and template lookups are retried.">
             <defs><marker id="ma-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
             <rect x="10" y="120" width="120" height="60" rx="10" class="muted-stroke soft-fill" stroke-width="1.8"/>
             <text x="70" y="146" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">User message</text>
@@ -566,8 +566,8 @@
             <text x="245" y="163" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">makes the Gemini call</text>
             <line x1="320" y1="150" x2="362" y2="150" stroke="currentColor" stroke-width="1.5" marker-end="url(#ma-arrow)"/>
             <rect x="360" y="44" width="410" height="246" rx="10" class="red-stroke fill-red" stroke-width="1.8"/>
-            <text x="565" y="68" font-size="13.5" font-weight="700" text-anchor="middle" fill="currentColor">One Gemini call, screened by Vertex</text>
-            <text x="565" y="84" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">applied by Vertex with its own service agent, not by your code</text>
+            <text x="565" y="68" font-size="13.5" font-weight="700" text-anchor="middle" fill="currentColor">One Gemini call, screened by Agent Platform</text>
+            <text x="565" y="84" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">applied by Agent Platform with its own service agent, not by your code</text>
             <rect x="378" y="108" width="112" height="84" rx="8" class="red-stroke fill-red" stroke-width="1.4"/>
             <text x="434" y="132" font-size="11.5" font-weight="700" text-anchor="middle" fill="currentColor">Input template</text>
             <text x="434" y="148" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.75">devcamp-guardrails</text>
@@ -600,7 +600,7 @@
             <text x="10" y="314" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Streamed Gemini calls are not screened, so guarded mode turns streaming off and replies arrive whole.</text>
             <text x="10" y="330" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Template lookup can fail at random ("template not found"), so the model object retries up to 8 times.</text>
           </svg>
-          <figcaption>What happens to one message. The screening is done by Vertex around the Gemini call, so it works on any route into the agent that makes a non-streamed call.</figcaption>
+          <figcaption>What happens to one message. The screening is done by Agent Platform around the Gemini call, so it works on any route into the agent that makes a non-streamed call.</figcaption>
         </figure>
 
         <div class="callout agent">
@@ -624,7 +624,7 @@
         </div>
         <div class="callout tip">
           <span class="callout-label">Random "template not found": retry</span>
-          <p>Vertex's template lookup can fail at random with <code>The template named ... was not found</code>, for templates that exist. A retry succeeds. Set the retry on the <strong>ADK model object</strong> (<code>Gemini(model=..., retry_options=...)</code>), which <code>guardrails.model()</code> does for you. The same retry covers <code>429 RESOURCE_EXHAUSTED</code> from the Gemini call, which means the regional model is busy. Every guarded turn makes several model calls and a retry is another, so space your tests out.</p>
+          <p>Agent Platform's template lookup can fail at random with <code>The template named ... was not found</code>, for templates that exist. A retry succeeds. Set the retry on the <strong>ADK model object</strong> (<code>Gemini(model=..., retry_options=...)</code>), which <code>guardrails.model()</code> does for you. The same retry covers <code>429 RESOURCE_EXHAUSTED</code> from the Gemini call, which means the regional model is busy. Every guarded turn makes several model calls and a retry is another, so space your tests out.</p>
         </div>
         <div class="callout">
           <span class="callout-label">Why HIGH, not MEDIUM</span>
@@ -651,7 +651,7 @@
 
       <section class="step-panel" data-step="3">
         <div class="eyebrow"><span class="pill">Step 3 of 9</span><span class="dur">⏱ 20 min</span></div>
-        <h1 class="step-title">Wire it in and prove it on the deployed agent</h1>
+        <h1 class="step-title">Wire it to the deployed agent</h1>
         <p class="lede">Attach the templates to the agents, redeploy, and check a real refusal on the deployed engine.</p>
 
         <div class="callout agent">
@@ -691,7 +691,7 @@ adk_agent._run_config_factory = no_stream</code></pre>
         </div>
         <div class="code-block">
           <div class="code-head"><span>terminal — redeploy, guarded</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-          <pre><code>uvx google-agents-cli deploy -d agent_runtime \
+          <pre><code>agents-cli deploy -d agent_runtime \
   --project YOUR_PROJECT --region us-central1 --agent-identity \
   --service-name social-spark-poster \
   --update-env-vars "GOOGLE_CLOUD_LOCATION=us-central1,MODEL_ARMOR_TEMPLATE_ID=devcamp-guardrails,MODEL_ARMOR_REGION=us-central1,PROJECT_ID=YOUR_PROJECT,PII_REDACTION=on" \
@@ -702,7 +702,7 @@ adk_agent._run_config_factory = no_stream</code></pre>
           <p>Redeploy with <code>MODEL_ARMOR_TEMPLATE_ID=off</code>. A deployed engine rejects an empty value, so <code>off</code> is the switch. Do this to compare the agent with and without guardrails, or if guarded turns keep failing with <em>template not found</em> (see Step 2).</p>
           <div class="code-block">
             <div class="code-head"><span>terminal — replace YOUR_PROJECT</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-            <pre><code>uvx google-agents-cli deploy -d agent_runtime \
+            <pre><code>agents-cli deploy -d agent_runtime \
   --project YOUR_PROJECT --region us-central1 --agent-identity \
   --service-name social-spark-poster \
   --update-env-vars "MODEL_ARMOR_TEMPLATE_ID=off" \
@@ -791,7 +791,7 @@ adk_agent._run_config_factory = no_stream</code></pre>
 
         <div class="callout agent">
           <span class="callout-label">Prompt for your coding agent: build the boundary layer</span>
-          <p>In <code>main.py</code>, add a <strong>pure ASGI middleware</strong> (not <code>BaseHTTPMiddleware</code>) for <code>POST /api/adk</code>. It reads the whole JSON body, runs every message with <code>role == "user"</code> through Cloud DLP (<code>EMAIL_ADDRESS</code> and <code>PHONE_NUMBER</code> at <code>POSSIBLE</code>, <code>PERSON_NAME</code> at <code>LIKELY</code>, not locations), and hands the rewritten body to the app. Handle both string and list-of-parts content. If DLP fails, return <code>503</code> and never pass the raw text on. Switch it on with <code>PII_REDACTION=on</code>. Make <code>redact_before_post</code> use that same switch, not the Model Armor one.</p>
+          <p>In a new file <code>backend/pii_middleware.py</code>, write a <strong>pure ASGI middleware</strong> class <code>RedactUserMessages</code> (not <code>BaseHTTPMiddleware</code>) for <code>POST /api/adk</code>. It reads the whole JSON body, runs every message with <code>role == "user"</code> through Cloud DLP (<code>EMAIL_ADDRESS</code> and <code>PHONE_NUMBER</code> at <code>POSSIBLE</code>, <code>PERSON_NAME</code> at <code>LIKELY</code>, not locations), and hands the rewritten body to the app. Handle both string and list-of-parts content. If DLP fails, return <code>503</code> and never pass the raw text on. Register it in <code>main.py</code> with <code>app.add_middleware</code> when <code>PII_REDACTION=on</code>. Make <code>redact_before_post</code> use that same switch, not the Model Armor one.</p>
           <p><strong>The trap:</strong> after you replay the body, your <code>receive()</code> replacement must hand it over <em>once</em> and then <code>return await receive()</code> from the real channel. If it keeps replaying the request, a streaming response (which listens on <code>receive()</code> for a disconnect) spins and every chat request hangs. It works on a plain endpoint, so a simple test will not catch it: test against a real streaming server.</p>
         </div>
 <div class="callout warn">
@@ -800,7 +800,7 @@ adk_agent._run_config_factory = no_stream</code></pre>
         </div>
         <div class="callout">
           <span class="callout-label">Why there is a boundary layer</span>
-          <p>Without it the raw message goes to the model and is written to the session store exactly as typed. Layer 2 is only a tool the model is <em>asked</em> to call. So a small piece of middleware in <code>main.py</code> runs each user message through DLP <strong>before the agent sees it</strong>, so the stored message reads <code>Contact [PERSON_NAME] at [EMAIL_ADDRESS] or [PHONE_NUMBER]</code>.</p>
+          <p>Without it the raw message goes to the model and is written to the session store exactly as typed. Layer 2 is only a tool the model is <em>asked</em> to call. So a small piece of middleware (<code>backend/pii_middleware.py</code>) runs each user message through DLP <strong>before the agent sees it</strong>, so the stored message reads <code>Contact [PERSON_NAME] at [EMAIL_ADDRESS] or [PHONE_NUMBER]</code>.</p>
           <p>The costs: about two seconds on the first message (DLP is a network call), and it leaves places alone on purpose. Turn it on with <code>PII_REDACTION=on</code>; it is independent of Model Armor. It fails closed.</p>
         </div>
 
@@ -963,7 +963,7 @@ gcloud beta network-security authz-policies import agw-social-spark-authz-policy
         <h2>Bind your agent to it</h2>
         <div class="code-block">
           <div class="code-head"><span>terminal — replace YOUR_PROJECT</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-          <pre><code>uvx google-agents-cli deploy -d agent_runtime \
+          <pre><code>agents-cli deploy -d agent_runtime \
   --project YOUR_PROJECT --region us-central1 --agent-identity \
   --service-name social-spark-poster \
   --agent-gateway-ingress projects/YOUR_PROJECT/locations/us-central1/agentGateways/agw-social-spark \
@@ -1194,5 +1194,46 @@ gcloud network-services agent-gateways delete agw-social-spark --location us-cen
       if (!root.dataset.theme) paint();
     });
     paint();
+  })();
+</script>
+
+<style>
+  .copy-btn, .prompt-copy { display: inline-flex; align-items: center; gap: 6px; }
+  .copy-btn svg, .prompt-copy svg { width: 13px; height: 13px; flex: none; }
+  .callout.agent.has-copy .callout-label { display: flex; align-items: center; gap: 10px; }
+  .prompt-copy {
+    margin-left: auto; flex: none; white-space: nowrap; font-family: var(--font-body); font-size: 12px; text-transform: none; letter-spacing: 0;
+    font-weight: 500; font-style: normal; padding: 3px 9px; border-radius: 6px; cursor: pointer; background: var(--bg-panel);
+    color: var(--text-muted); border: 1px solid var(--border);
+  }
+  .prompt-copy:hover { color: var(--text); border-color: var(--text-faint); }
+</style>
+<script>
+  // Copy icons: every code block already has a Copy button; give it an icon, and add
+  // one to each prompt for the coding agent so it can be pasted in one click.
+  (function () {
+    var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+    function copyText(text, btn) {
+      var label = btn.querySelector("span");
+      var done = function () { var old = label.textContent; label.textContent = "Copied!"; setTimeout(function () { label.textContent = old; }, 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {});
+      } else {
+        var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+        try { document.execCommand("copy"); done(); } catch (e) {} document.body.removeChild(t);
+      }
+    }
+    window.copyBlock = function (btn) { copyText(btn.closest(".code-block").querySelector("code").innerText, btn); };
+    document.querySelectorAll(".copy-btn").forEach(function (b) { b.innerHTML = ICON + "<span>Copy</span>"; });
+    document.querySelectorAll(".callout.agent").forEach(function (c) {
+      var label = c.querySelector(".callout-label");
+      if (!label || !/^(Prompt for your coding agent|Ask your coding agent|Tell it what to remember)/.test(label.textContent.trim())) return;
+      var b = document.createElement("button");
+      b.className = "prompt-copy"; b.type = "button"; b.innerHTML = ICON + "<span>Copy prompt</span>";
+      b.addEventListener("click", function () {
+        copyText(Array.prototype.map.call(c.querySelectorAll("p"), function (p) { return p.innerText.trim(); }).join("\n\n"), b);
+      });
+      c.classList.add("has-copy"); label.appendChild(b);
+    });
   })();
 </script>

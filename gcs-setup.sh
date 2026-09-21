@@ -212,7 +212,7 @@ echo
 # * Two templates: one for the user's INPUT (injection + harm filters) and an
 #   OUTPUT one with the harm filters only. The prompt-injection filter fires on a
 #   model reply that merely DISCUSSES injection.
-# * Vertex's template lookup fails at random ("The template named ... was not
+# * Agent Platform's template lookup fails at random ("The template named ... was not
 #   found"). The app retries on the ADK model object, which fixes it (15/15 deployed
 #   checks). Test with:  uv run python backend/probe_deployed.py
 echo "=== Step 6: Model Armor templates (us-central1) ==="
@@ -259,7 +259,7 @@ echo
 # === Step 7: the permissions Lab 3 needs (every grant, in one place) ========
 # Three different identities are involved, and mixing them up is the usual mistake:
 #
-#  A. VERTEX AI'S OWN SERVICE AGENT applies Model Armor inline on each Gemini call,
+#  A. THE GEMINI ENTERPRISE SERVICE AGENT applies Model Armor inline on each Gemini call,
 #     so IT needs roles/modelarmor.user. Without it every guarded call returns
 #     403 "Permission 'modelarmor.templates.useToSanitizeUserPrompt' denied".
 #     This is the grant that matters most.
@@ -272,8 +272,8 @@ VERTEX_SA="service-$PROJECT_NUMBER@gcp-sa-aiplatform.iam.gserviceaccount.com"
 AGENT_PRINCIPALS="principalSet://agents.global.proj-$PROJECT_NUMBER.system.id.goog/attribute.platformContainer/aiplatform/projects/$PROJECT_NUMBER"
 gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
   --member="serviceAccount:$VERTEX_SA" --role="roles/modelarmor.user" --condition=None >/dev/null \
-  && echo "A. Granted roles/modelarmor.user to the Vertex AI service agent." \
-  || echo "A. FAILED: $VERTEX_SA does not exist yet. It appears once Vertex AI has been used; re-run this script then."
+  && echo "A. Granted roles/modelarmor.user to the Gemini Enterprise service agent." \
+  || echo "A. FAILED: $VERTEX_SA does not exist yet. It appears once Agent Platform has been used; re-run this script then."
 gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
   --member="$AGENT_PRINCIPALS" --role="roles/dlp.user" --condition=None >/dev/null \
   && echo "B. Granted roles/dlp.user to deployed agents (Agent Identity)."
@@ -350,7 +350,7 @@ echo
 # === Step 9: extra prerequisites for Governance Policies (Lab 3, Step 6) =====
 # From docs.cloud.google.com/.../govern/policies/configure-semantic-governance.
 # Only needed for that step. compute + dns are for the policy engine's network
-# binding; Cloud Trace is used for its observability, and the Vertex AI service agent
+# binding; Cloud Trace is used for its observability, and the Gemini Enterprise service agent
 # needs roles/cloudtrace.agent. NOT verified end to end: the engine in our own
 # project is stuck (see docs/LEARNINGS.md), so this is from the docs.
 echo "=== Step 9: policy engine prerequisites (optional) ==="
@@ -359,7 +359,7 @@ gcloud services enable compute.googleapis.com dns.googleapis.com cloudtrace.goog
 gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
   --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform.iam.gserviceaccount.com" \
   --role="roles/cloudtrace.agent" --condition=None >/dev/null \
-  && echo "Granted roles/cloudtrace.agent to the Vertex AI service agent."
+  && echo "Granted roles/cloudtrace.agent to the Gemini Enterprise service agent."
 echo
 
 # === Step 10: (add the next one-time manual GCP step here) ==================

@@ -89,7 +89,7 @@ DRAFT_MODEL = os.environ.get("DRAFT_MODEL", "gemini-flash-latest")
 ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "gemini-flash-latest")
 
 # --- Specialist: research -----------------------------------------------------
-# google_search stays isolated in its own agent (Vertex AI rejects mixing the
+# google_search stays isolated in its own agent (Agent Platform rejects mixing the
 # built-in search tool with function tools in one model call — see LEARNINGS).
 # output_key writes the summary into session state for draft_agent to read.
 research_agent = Agent(

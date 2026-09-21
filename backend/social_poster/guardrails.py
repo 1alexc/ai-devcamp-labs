@@ -2,7 +2,7 @@
 
 Layers (LAYERS, not alternatives: different layers catch different attacks):
 
-  content_config()   Model Armor, applied INLINE by Vertex on each Gemini call
+  content_config()   Model Armor, applied INLINE by Agent Platform on each Gemini call
                      (GenerateContentConfig.model_armor_config), both directions
   friendly_block     after_model_callback: turns a Model Armor block into a
                      readable refusal instead of an empty turn
@@ -15,15 +15,15 @@ WHY INLINE, NOT A SANITIZE API CALL (verified 2026-09-21, LEARNINGS.md): calling
 the Model Armor sanitize API from agent code works locally (your user ADC) and
 returns 401 inside Agent Runtime, with plain REST AND with the client library,
 because the agent runs as its own Agent Identity. Google's guidance for that case
-is inline enforcement, which Vertex performs with ITS OWN service agent.
+is inline enforcement, which Agent Platform performs with ITS OWN service agent.
 Constraints, each learnt by hitting it:
   * the Gemini call must use a REGIONAL location (GOOGLE_CLOUD_LOCATION=us-central1).
     Against `global` the template is "not found", whichever template you use;
   * STREAMING calls are not screened at all: an injection sails through with no
     block and no error. main.py therefore turns streaming off when this is on;
   * `global` templates cannot be created; use us-central1, the gateway's region;
-  * Vertex's own service agent needs roles/modelarmor.user (gcs-setup.sh step 7);
-  * Vertex's template lookup fails at random ("The template named ... was not
+  * Agent Platform's own service agent needs roles/modelarmor.user (gcs-setup.sh step 7);
+  * Agent Platform's template lookup fails at random ("The template named ... was not
     found"). Fixed by retry options on the ADK model object (model() below): 15 of
     15 deployed checks passed with it, most failed without. The same options in
     the request config are ignored inside the deployed agent.
@@ -99,7 +99,7 @@ def _template(template_id: str) -> str:
 
 
 def content_config(screen_input: bool = True) -> Optional[genai_types.GenerateContentConfig]:
-    """GenerateContentConfig that makes Vertex screen this agent's model calls.
+    """GenerateContentConfig that makes Agent Platform screen this agent's model calls.
 
     screen_input=False for the internal sub-agents: their input is text the
     orchestrator wrote, not the user's, so only the reply is screened.
@@ -124,7 +124,7 @@ def content_config(screen_input: bool = True) -> Optional[genai_types.GenerateCo
 
 def model(name: str):
     """The model for an agent. When Model Armor is on, wrap it in ADK's Gemini class
-    with retry options: Vertex's template lookup fails at random ("template ... was
+    with retry options: Agent Platform's template lookup fails at random ("template ... was
     not found", roughly half of guarded calls in testing) and a retry usually
     succeeds. The retry must live on the ADK model object; the same options in the
     request config were ignored inside the deployed agent."""
@@ -132,7 +132,7 @@ def model(name: str):
         return name
     return Gemini(
         model=name,
-        # 400 = the random "template not found". 429 = Vertex saying the regional Gemini
+        # 400 = the random "template not found". 429 = Agent Platform saying the regional Gemini
         # model is out of (shared) capacity, seen in a burst of requests: our project had
         # no quota-exceeded events and unlimited per-minute limits. Every guarded turn makes
         # several model calls and a retry is another, so back off properly.

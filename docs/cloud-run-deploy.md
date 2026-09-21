@@ -68,7 +68,7 @@ gcloud iam service-accounts create social-poster-run \
 
 | Role | Why |
 |---|---|
-| `roles/aiplatform.user` | Gemini calls on Vertex |
+| `roles/aiplatform.user` | Gemini calls on Agent Platform |
 | `roles/modelarmor.user` | guardrail sanitize calls |
 | `roles/dlp.user` | PII redaction |
 | `roles/secretmanager.secretAccessor` | read `MODEL_ARMOR_TEMPLATE_ID` |

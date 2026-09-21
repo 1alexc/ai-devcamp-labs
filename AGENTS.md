@@ -38,7 +38,7 @@ uv run adk web backend    # chat + trace inspector, no frontend needed
 
 - Multi-agent: an orchestrator (`root_agent`) routes to specialist sub-agents
   via `AgentTool`, and never drafts or researches itself.
-- `google_search` (a built-in tool) stays isolated in its own agent — Vertex
+- `google_search` (a built-in tool) stays isolated in its own agent — Agent Platform
   AI rejects mixing it with function tools in one model call.
 - Any tool with a real side effect (posting) is gated with
   `require_confirmation=True` — don't rely on instruction text alone for

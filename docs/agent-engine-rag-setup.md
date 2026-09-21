@@ -7,7 +7,7 @@ deploy and note any IAM friction** — both numbers go in the codelab.
 
 ## 1. Deploy the RAG sample from Agent Garden
 
-1. Console → **Vertex AI → Agent Garden** (`console.cloud.google.com/vertex-ai/agents/agent-garden`).
+1. Console → **Agent Platform → Agents → Agent Garden** (`console.cloud.google.com/vertex-ai/agents/agent-garden`).
 2. Find the **RAG sample** (retrieval-augmented generation over a datastore).
 3. **Deploy to Agent Engine**, project `adk-devcamp-poc`, region `europe-west2`
    (same region as everything else; Agent Engine availability was implicitly
@@ -62,5 +62,5 @@ screenshot is Week 2 slide material.
 
 Agent Engine bills while deployed. When done for the day either **delete the
 deployment** or set **min instances 0**, and 📊 **record what the day cost**
-(billing report, filtered to Vertex AI Agent Engine) — that number goes in the
+(billing report, filtered to Agent Runtime) — that number goes in the
 decisions doc.

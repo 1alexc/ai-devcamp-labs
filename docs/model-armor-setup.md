@@ -7,7 +7,7 @@
 
 | Layer | What it does | Where it runs | Switch |
 |---|---|---|---|
-| Model Armor on the Gemini call | Screens the prompt and the reply | Vertex applies it around each Gemini call | `MODEL_ARMOR_TEMPLATE_ID` |
+| Model Armor on the Gemini call | Screens the prompt and the reply | Agent Platform applies it around each Gemini call | `MODEL_ARMOR_TEMPLATE_ID` |
 | Agent Gateway + Model Armor | Screens native traffic before the agent runs | The gateway, in front of the agent | Bind with `--agent-gateway-ingress` |
 | DLP at the boundary | De-identifies each user message before the agent, model, session or Memory Bank see it | Middleware in `backend/main.py` | `PII_REDACTION=on` |
 | DLP tool and pre-post pass | Cleans text the model shows you, and the post itself | Inside the agent | `PII_REDACTION=on` (pre-post) |
@@ -20,7 +20,7 @@
 
 - **Templates:** `devcamp-guardrails` (input: injection + harm) and `devcamp-guardrails-output`
   (harm only), both in `us-central1`, both `INSPECT_AND_BLOCK`, both at **HIGH** confidence.
-- **Permissions:** Vertex's own service agent needs `roles/modelarmor.user`. The Reasoning Engine
+- **Permissions:** Agent Platform's own service agent needs `roles/modelarmor.user`. The Reasoning Engine
   service agent needs `roles/modelarmor.calloutUser` and `roles/modelarmor.user` for the gateway.
   Your agent's identity needs `roles/dlp.user`. All in Lab 3, Step 1.
 - **Deploy settings:** `GOOGLE_CLOUD_LOCATION=us-central1` (Gemini must be in a region),
@@ -30,7 +30,7 @@
 ## Turn guardrails off on a deployed agent
 
 ```bash
-uvx google-agents-cli deploy -d agent_runtime \
+agents-cli deploy -d agent_runtime \
   --project YOUR_PROJECT --region us-central1 --agent-identity \
   --service-name social-spark-poster \
   --update-env-vars "MODEL_ARMOR_TEMPLATE_ID=off" \
@@ -57,6 +57,6 @@ Gemini refuses an obvious injection unaided, so "it was refused" proves nothing.
 - **`INSPECT_ONLY` returns no verdict.** Nothing blocks and nothing errors.
 - **A 401 from Model Armor inside your deployed agent** is google-auth's "prevent agent token
   sharing" default, not IAM. Do not switch it off; use the inline route.
-- **Vertex's template lookup fails at random** ("template ... not found"). The model object retries.
+- **Agent Platform's template lookup fails at random** ("template ... not found"). The model object retries.
 - **DLP rejects the project number** Agent Runtime provides. Pass the ID as `PROJECT_ID`.
 - **The gateway does not inspect our custom `/api/adk` route.** In-agent screening covers it.

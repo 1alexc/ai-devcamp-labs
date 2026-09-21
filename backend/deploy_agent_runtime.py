@@ -1,4 +1,4 @@
-"""Deploy social_poster's `root_agent` to Vertex AI Agent Runtime (Agent Engine).
+"""Deploy social_poster's `root_agent` to Agent Runtime.
 
 This is the Scale pillar's baseline deploy. It uses the Python SDK path
 (`vertexai.Client().agent_engines.create(agent=AdkApp(...), ...)`), which is one

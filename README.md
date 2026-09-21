@@ -1,143 +1,87 @@
-# Social Spark — End-to-End Implementation
+# Social Spark
 
-**This is a reference, not a starting point.** [Workshop 1](https://sonikajanagill.com/social-spark/agentic-devcamp-workshop-1.html) has you build a
-smaller version of this agent yourself, step by step, in the
-[Lab 1: Build codelab](docs/lab-1-build.html) — an orchestrator that
-researches, drafts with Agent Skills, generates an image, and publishes
-through Buffer or LinkedIn behind a human-approval gate, with a CopilotKit
-web UI on top.
+An AI agent that turns an idea into a finished social post. It researches the web, drafts in your brand voice, generates an image, **waits for your approval**, and then publishes through Buffer or LinkedIn. It is the running project for the GDG London **Agentic DevCamp**: you build it in Lab 1, run it for real in Lab 2, and lock it down in Lab 3.
 
-Consult this repo if you get stuck or want to see the fully governed,
-production-tuned version further down the DevCamp road: guardrails
-(Model Armor + DLP), a multi-agent split (research/draft/orchestrator),
-per-agent model pinning, evals, and a Cloud Run deploy pipeline. It's the
-finish line, not step 1 — don't `git clone` and run this instead of doing the
-codelab.
+> **Start here:** [Setup guide](docs/setup-guide.html) (do this before Saturday) → [Lab 1: Build](docs/lab-1-build.html). All docs are listed in [docs/index.html](docs/index.html).
+>
+> This repo is the finished reference, not step 1. In Lab 1 you build a smaller version of it yourself. Use this repo when you get stuck or want to see where the labs end up.
 
-## Running it
+## How it works
 
-Two halves, run in separate terminals:
+<img src="docs/img/architecture-build.png" alt="The social_poster orchestrator takes your idea, uses skills, an image tool and a research sub-agent, shows a draft, and only publishes through Buffer or LinkedIn after you approve" width="800">
 
-- **[backend/README.md](backend/README.md)** — the ADK agent (setup, env vars, `adk web`, evals, optional LinkedIn/Buffer/GCS/memory/guardrails pieces)
-- **[frontend/README.md](frontend/README.md)** — the CopilotKit UI
+You give the **orchestrator** (`social_poster`) an idea. It loads **Agent Skills** for your brand voice, calls a **research sub-agent** for facts and an **image tool** for a picture, then shows you the draft. Nothing is published until you press approve. The approval gate is enforced by the framework, not by a polite instruction the model could ignore.
 
-## What's in here
+## Tech stack
 
-**Per-agent model pinning, Cloud Run deployment with eval-gated CI/CD, and
-observability** — tuned for production. This snapshot corresponds to the end
-of the DevCamp series (Week 4 / "Optimise").
+| Layer | What we use | Why |
+|---|---|---|
+| Agent framework | [Google ADK](https://google.github.io/adk-docs/) (Python) | Agents, tools, sub-agents, sessions, evals |
+| Models | Gemini (`gemini-flash-latest`, Gemini image model) | Reasoning, drafting, image generation |
+| Agent knowledge | Agent Skills (`skills/`) | Brand voice as a reviewable markdown folder |
+| Publishing | MCP servers: Buffer (remote), LinkedIn (optional, stdio) | Real posts behind a human approval gate |
+| Agent-to-agent | A2A (`memory_agent`, optional) | A separate memory service the orchestrator can ask |
+| Backend | FastAPI + [`ag-ui-adk`](https://github.com/ag-ui-protocol/ag-ui) | Serves the agent to the UI over AG-UI at `/api/adk` |
+| Frontend | Next.js 16, React 19, [CopilotKit](https://copilotkit.ai) | Chat, draft preview and the approve button |
+| Data | SQLite (local), Cloud Storage (optional images) | Post history and hosted images |
+| Cloud | Google Cloud: Agent Runtime, Cloud Run, Cloud Build, Secret Manager | Lab 2 deploy and CI/CD |
+| Governance | Model Armor, Cloud DLP, Agent Gateway, Agent Registry | Lab 3 |
+| Tooling | `uv`, `agents-cli`, `adk eval`, `gcloud` | Install, deploy, quality gate |
 
-```mermaid
-flowchart LR
-    subgraph dev["Local / CI"]
-        CODE["governed multi-agent app\n(per-agent models via env)"]
-        EVAL["adk eval golden.json\n5/5 quality gate"]
-    end
-    subgraph gcp["Google Cloud"]
-        CB["Cloud Build trigger\neval → deploy"]
-        CR["Cloud Run\nsocial_poster :8000"]
-        SM["Secret Manager\ntokens · template id"]
-        OBS["Cloud Trace ·\nBigQuery Analytics"]
-    end
-    FE["frontend\n(Cloud Run URL)"]
+## What you build, lab by lab
 
-    CODE --> EVAL --> CB
-    CB -->|eval passes| CR
-    SM -.-> CR
-    CR --> OBS
-    FE --> CR
-
-    classDef blue fill:#e8f0fe,stroke:#1a73e8,stroke-width:1.5px,color:#1a73e8;
-    classDef green fill:#e6f4ea,stroke:#137333,stroke-width:1.5px,color:#137333;
-    classDef yellow fill:#fef7e0,stroke:#a15c00,stroke-width:1.5px,color:#a15c00;
-    classDef red fill:#fce8e6,stroke:#c5221f,stroke-width:1.5px,color:#c5221f;
-    class CODE,CR,FE blue;
-    class EVAL,OBS green;
-    class CB yellow;
-    class SM red;
-    style dev fill:#f1f3f4,stroke:#dadce0,color:#3c4043;
-    style gcp fill:#f1f3f4,stroke:#dadce0,color:#3c4043;
-```
-
-## What's new
-
-### Per-agent model pinning (in code, live-verified)
-
-Each agent's model is env-driven (`RESEARCH_MODEL`, `DRAFT_MODEL`,
-`ORCHESTRATOR_MODEL`), defaulting to flash. The Week 4 experiment — drop
-research + orchestrator to `flash-lite`, keep drafting on `flash` — runs
-through the Week 3 eval set to check quality parity. **Update 2026-08-14: it
-does not reliably hold** — two repeat runs on unchanged code scored 2/5 and
-4/5, both times failing `on_brand_draft` (the drafted text itself, not the
-tool-use process, misses the semantic bar). The all-flash baseline passes
-clean 5/5 every time. See the 2026-08-14 LEARNINGS.md entry. That's still the
-point of running evals instead of trusting vibes — just the opposite
-conclusion from the original 2026-07-17 result: this cheaper mix costs real
-quality, don't ship it without a fix.
+| Session | Lab | You add | Tag to check out if you fall behind |
+|---|---|---|---|
+| Setup | [Setup guide](docs/setup-guide.html) | Google Cloud project, tools, coding agent | `starter` |
+| 1. Build | [Lab 1](docs/lab-1-build.html) | The agent, skills, tools, approval gate, web UI | `pillar-build` |
+| 2. Scale | [Lab 2](docs/lab-2-scale.html) | Deploy to Agent Runtime, managed sessions and Memory Bank | `pillar-scale` |
+| 3. Govern | [Lab 3](docs/lab-3-govern.html) | Model Armor, Cloud DLP, gateway, registry, guardrail evals | `pillar-govern` |
 
 ```bash
-# the cost-experiment mix (also in .env.example):
-RESEARCH_MODEL=gemini-flash-lite-latest
-ORCHESTRATOR_MODEL=gemini-flash-lite-latest
-DRAFT_MODEL=gemini-flash-latest
+git checkout pillar-build   # for example: the finished result of Lab 1
 ```
 
-### Deploy + observability (console/CLI guides)
+<img src="docs/img/architecture-scale.png" alt="Scale: the web UI calls the agent on Agent Runtime, which keeps conversation state in Sessions and long-term facts in Memory Bank" width="800">
 
-```
-docs/agent-runtime-deploy.md  Agent Runtime deploy → /api passthrough → sessions/memory → frontend on Cloud Run
-docs/cloud-run-deploy.md      Dockerfile/cloudbuild.yaml → IAM → deploy → eval-gated CI/CD → the one real post
-docs/observability.md         Cloud Trace slowest-span · BigQuery analytics agent
-```
+## Run it locally
 
-**What's deployed right now?** An Agent Runtime engine scales to zero when
-idle, so "nothing running" in the console does not mean "nothing deployed" —
-and the console view is region-scoped, which is the other reason a deployment
-looks missing when it isn't. Ask the CLI instead:
+You need [uv](https://docs.astral.sh/uv/), Node.js 20+, and a Google Cloud project (see the [setup guide](docs/setup-guide.html)). From the repo root:
 
 ```bash
-uvx google-agents-cli deploy --list -d agent_runtime --project adk-devcamp-poc --region us-central1 --no-confirm-project
+cp .env.example backend/social_poster/.env   # set GOOGLE_CLOUD_PROJECT
+uv sync
+./run-backend.sh                             # terminal 1: http://localhost:8000
+./run-frontend.sh                            # terminal 2: http://localhost:3000
 ```
+
+Publishing is a dry run (`DRY_RUN=true`) until you switch it off, so nothing goes to a real account by accident. More detail: [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md).
+
+## What's where
+
+```
+backend/social_poster/   the agents, tools and guardrails (agent.py is the place to start)
+backend/main.py          FastAPI app: AG-UI route, sessions and memory when deployed
+skills/                  Agent Skills (brand voice)
+frontend/                Next.js + CopilotKit UI
+evals/                   adk eval sets (quality and governance)
+docs/                    labs, setup guide, deploy and reference docs
+gcs-setup.sh             one-time Google Cloud setup: APIs, templates, grants
+```
+
+## Deploy and reference docs
+
+| Doc | Covers |
+|---|---|
+| [agent-runtime-deploy.md](docs/agent-runtime-deploy.md) | Deploy to Agent Runtime, sessions and memory, the frontend on Cloud Run |
+| [cloud-run-deploy.md](docs/cloud-run-deploy.md) | Dockerfile, `cloudbuild.yaml`, IAM, eval-gated CI/CD |
+| [model-armor-setup.md](docs/model-armor-setup.md) | Guardrail templates, grants and switches |
+| [observability.md](docs/observability.md) | Cloud Trace and the BigQuery analytics agent |
+| [LEARNINGS.md](docs/LEARNINGS.md) | What broke and why, by pillar |
+
+**What's deployed right now?** An Agent Runtime engine scales to zero when idle, and the console only shows one region at a time, so a deployed agent can look missing. Ask the CLI:
 
 ```bash
-gcloud run services list --project adk-devcamp-poc --region us-central1
+agents-cli deploy --list -d agent_runtime --project YOUR_PROJECT --region us-central1 --no-confirm-project
 ```
 
-`-d agent_runtime` is required on `--list` and `--status` for the same reason
-it is on `deploy`: this project has no `agents-cli-manifest.yaml`. Without it
-you get "No agents-cli-manifest.yaml found", which reads like a deploy failure
-and isn't one.
-
-## Verify the model parity claim yourself
-
-```bash
-uv run python backend/mock_memory_agent.py   # separate terminal
-# set the cost-experiment models in .env, then:
-uv run adk eval backend/social_poster evals/golden.json \
-  --config_file_path evals/eval_config.json
-```
-
-**As of 2026-08-14, expect flaky results (2-4 out of 5), not 5/5** — run it
-live and show whatever it actually says; don't state parity as settled.
-
-## What to verify (Week 4 slide material)
-
-1. **Model parity**: run the eval on the cheaper mix (above) — as of
-   2026-08-14 it's flaky (2-4/5, not the clean 5/5 first reported), which is
-   itself the more honest demo: evals catching a real regression before a
-   human reviewing drafts by eye necessarily would. Note the token/cost delta
-   from the trace either way.
-2. **Deploy**: [docs/cloud-run-deploy.md](docs/cloud-run-deploy.md) — ⏱ deploy
-   time, IAM friction, prod end-to-end loop.
-3. **Quality gate**: push a change, watch Cloud Build run eval → deploy. 📸
-4. **Slowest span**: [docs/observability.md](docs/observability.md) — Cloud
-   Trace waterfall. 📸
-5. **The one real post** from prod, then flip `DRY_RUN=false → true`.
-6. 📊 **ACTUAL total POC spend** — opens the Week 4 deck (slide 2).
-
-## Notes
-
-- Nothing about the app's *behaviour* changed this week — same governed
-  multi-agent system as Week 3. Week 4 is packaging and tuning only, which is
-  exactly why the Week 3 eval set is the right parity check.
-- `DRY_RUN=true` stays the default everywhere, including deployed secrets.
+`-d agent_runtime` is needed because this project has no `agents-cli-manifest.yaml`.

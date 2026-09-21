@@ -53,7 +53,7 @@ Setup takes 45 to 60 minutes across 4 guided phases. Do it early: the Discord #s
   <text x="506" y="70" font-size="13" font-weight="700" fill="currentColor">superpowers</text>
   <text x="476" y="96" font-size="11.5" fill="currentColor" opacity="0.72">Antigravity (or Claude</text>
   <text x="476" y="114" font-size="11.5" fill="currentColor" opacity="0.72">Code / Gemini CLI)</text>
-  <text x="476" y="132" font-size="11.5" fill="currentColor" opacity="0.72">Vertex AI fallback</text>
+  <text x="476" y="132" font-size="11.5" fill="currentColor" opacity="0.72">Agent Platform fallback</text>
   <text x="476" y="150" font-size="11.5" fill="currentColor" opacity="0.72">agents-cli + ADK skills</text>
   <text x="476" y="170" font-size="10.5" fill="currentColor" opacity="0.45">⏱ 10 min</text>
 
@@ -101,13 +101,13 @@ four phases, you are ready.
 ### What you're setting up across 4 phases
 - 🟢 **Phase 1: Cloud & Budget Foundation** — *step 2️⃣* (GCP account & project, $300 credit, spend cap)
 - 🔵 **Phase 2: Local Developer Tools** — *steps 1️⃣ & 4️⃣* (Python 3.12+, uv, gcloud configured to `us-central1`, 1-command API enablement, ADK)
-- 🟣 **Phase 3: Coding Agent Setup & ADK Superpowers** — *also step 1️⃣* (Antigravity with Vertex AI fallback & ADK skills)
+- 🟣 **Phase 3: Coding Agent Setup & ADK Superpowers** — *also step 1️⃣* (Antigravity with Agent Platform fallback & ADK skills)
 - 🟡 **Phase 4: Environment, Buddy Check & Camp Readiness** — *step 5️⃣, the values* (.env check, buddy swap, Buffer account)
 
 ## Important notes before you start
 - **Cost:** the whole camp is designed to fit well inside Google's $300 free trial credit (90 days). You'll set a real spend cap (not just an email alert) in Phase 1 so nothing surprises you.
 - **Card required:** Google asks for a credit/debit card to verify identity when you start the free trial. You are not charged during the trial, and it does not auto-charge when the trial ends without you upgrading.
-- **The $300 credit covers Vertex AI, not the separate Gemini API / AI Studio billing system.** All model calls in this camp (including image generation) go through **Vertex AI inside your GCP project**, so they're covered. If you ever grab a standalone API key from aistudio.google.com, that's a different account with its own billing (Google is moving it to a mandatory prepaid balance from September 2026); don't put a card on that one.
+- **The $300 credit covers Agent Platform, not the separate Gemini API / AI Studio billing system.** All model calls in this camp (including image generation) go through **Agent Platform inside your GCP project**, so they're covered. If you ever grab a standalone API key from aistudio.google.com, that's a different account with its own billing (Google is moving it to a mandatory prepaid balance from September 2026); don't put a card on that one.
 - **Your coding agent, your account:** you'll code with Google Antigravity by default (Claude Code or Gemini CLI also work; the labs give you prompts and checkpoints, not code). Any AI IDE accounts, quotas, or subscriptions are your own responsibility; the camp only uses your GCP credit for cloud resources.
 - **Windows users:** you'll need WSL 2 (Windows Subsystem for Linux). Open PowerShell as Administrator, run `wsl --install`, restart your computer, then launch the **Ubuntu** terminal. Run all subsequent commands in this guide inside that Ubuntu terminal.
 
@@ -127,13 +127,13 @@ four phases, you are ready.
 
    <img src="img/gcp-billing-linked.png" alt="GCP Billing Account Linked" width="500">
 
-4. Enable the required APIs (Vertex AI API, Cloud Run, Cloud Build, Sensitive Data Protection, Model Armor, Discovery Engine, Cloud Resource Manager API, App Hub API). You can search for them in the console (**APIs & Services → Enable APIs and Services**), or run the one-line `gcloud` command in Phase 2 right after installing `gcloud`.
+4. Enable the required APIs (Agent Platform API, Cloud Run, Cloud Build, Sensitive Data Protection, Model Armor, Discovery Engine, Cloud Resource Manager API, App Hub API). You can search for them in the console (**APIs & Services → Enable APIs and Services**), or run the one-line `gcloud` command in Phase 2 right after installing `gcloud`.
 
-5. **Set a spend cap** (console → **Billing → Budgets & alerts**): create a budget scoped to your `ai-devcamp-<yourname>` project, alert thresholds at 50/80/100%, **and** turn on the spend-cap option scoped to the Vertex AI / Gemini API service (currently in preview). Unlike a plain alert, the spend cap actually pauses further Vertex AI usage once you hit 100%. A plain email alert doesn't stop anything.
+5. **Set a spend cap** (console → **Billing → Budgets & alerts**): create a budget scoped to your `ai-devcamp-<yourname>` project, alert thresholds at 50/80/100%, **and** turn on the spend-cap option scoped to the Agent Platform / Gemini API service (currently in preview). Unlike a plain alert, the spend cap actually pauses further Agent Platform usage once you hit 100%. A plain email alert doesn't stop anything.
 
    <img src="img/gcp-budget-spend-cap.png" alt="GCP Budget and Spend Cap" width="280"> <img src="img/gcp-budget-amount.png" alt="GCP Budget Amount" width="280">
 
-🏁 **Phase 1 Checkpoint:** The Vertex AI page in the console loads without an "enable API" prompt, and Budgets & alerts shows your budget with the spend cap enabled.
+🏁 **Phase 1 Checkpoint:** The Agent Platform page in the console loads without an "enable API" prompt, and Budgets & alerts shows your budget with the spend cap enabled.
 
 ## 🔵 Phase 2: Local Developer Tools ⏱ 15 min
 *Goal: Get your command line talking to Google Cloud, configure your default deployment region, and install ADK development tools.*
@@ -174,14 +174,14 @@ Install, in order:
 🏁 **Phase 2 Checkpoint:** `adk --version`, `node --version`, and `gcloud config get-value project` all return sensible answers.
 
 ## 🟣 Phase 3: Coding Agent Setup & ADK Superpowers ⏱ 10 min
-*Goal: Set up Google Antigravity with your Google Cloud Vertex AI project budget and install ADK skills.*
+*Goal: Set up Google Antigravity with your Google Cloud Agent Platform project budget and install ADK skills.*
 
 1. **Download & Launch Google Antigravity**.
 2. **Sign in using the Business Account (Google Cloud Project) Pathway**:
    - **Select the Business Pathway**: When logging in (or logging back in if previously signed in with a personal/Pro account), do **not** select "Continue with Google". Instead, choose **Business Account** (or click the option that says *"Use Google Cloud project instead"* or *"Continue with Google Cloud"*).
    - **Authenticate**: Even though it says "Business", your browser will open to Google's standard sign-in screen. Log in using your personal Gmail account (or whichever Google account owns your `ai-devcamp-<yourname>` Google Cloud project).
    - **Link Your Project and Budget**: After authenticating, the IDE extension will prompt you for configuration fields:
-     - **Google Cloud Project ID**: Enter `ai-devcamp-<yourname>` (the project ID where your Vertex AI budget is housed).
+     - **Google Cloud Project ID**: Enter `ai-devcamp-<yourname>` (the project ID where your Agent Platform budget is housed).
      - **Location**: Set location to `Global`.
      - **Select License / Agent Platform**: If a message appears saying *"No license available for this project and location"*, click **"Use Agent Platform instead — Pay as you go provisioned for your Google Cloud project"**.
 
@@ -192,14 +192,14 @@ Install, in order:
      <img src="img/antigravity-vertex-settings1.png" alt="Antigravity Account Settings - Agent Platform Plan" width="500">
 
 > [!WARNING]
-> **Troubleshooting — Agent Platform / Vertex AI API Error**:
+> **Troubleshooting — Agent Platform API Error**:
 > If you encounter the following error when authenticating or calling models in Antigravity:
 > ```
 > Agent Platform API has not been used in project ai-devcamp-<yourname> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/aiplatform.googleapis.com/overview?project=ai-devcamp-<yourname> then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
 > ```
-> **Fix**: Click the link provided in the error message (`https://console.developers.google.com/apis/api/aiplatform.googleapis.com/overview?project=ai-devcamp-<yourname>`) to enable the **Vertex AI / Agent Platform API** (`aiplatform.googleapis.com`), or run `gcloud services enable aiplatform.googleapis.com` in your terminal. Wait 2–3 minutes for propagation and retry.
+> **Fix**: Click the link provided in the error message (`https://console.developers.google.com/apis/api/aiplatform.googleapis.com/overview?project=ai-devcamp-<yourname>`) to enable the **Agent Platform API** (`aiplatform.googleapis.com`), or run `gcloud services enable aiplatform.googleapis.com` in your terminal. Wait 2–3 minutes for propagation and retry.
 >
-> **IAM Permissions**: Ensure your Google account has the **Vertex AI User** (`roles/aiplatform.user`), **Owner**, or **Editor** role on your GCP project.
+> **IAM Permissions**: Ensure your Google account has the **Agent Platform User** (`roles/aiplatform.user`), **Owner**, or **Editor** role on your GCP project.
 
 3. Optional second backup: a **free-tier** key from aistudio.google.com (no card, no billing setup). It's rate-limited but enough to get through a stall, and it's separate from your $300 credit. Do **not** enable Prepay/billing on that account.
 4. Prefer another coding agent (Claude Code, Gemini CLI)? Fine. The labs give you the prompt to type and the result to check, not the code, so any agent works.
@@ -207,7 +207,7 @@ Install, in order:
    ```bash
    uvx google-agents-cli setup
    ```
-   This installs Google's `agents-cli` **and** detects which coding agents you
+   This installs Google's `agents-cli` (so from here on the labs run plain `agents-cli ...`, not `uvx`) **and** detects which coding agents you
    have (Antigravity, Claude Code, Cursor, Windsurf…), then installs a set of
    ADK development skills into each one. Every lab works by you prompting your
    coding agent to build something — this is what makes its answers actually
@@ -248,9 +248,9 @@ DRY_RUN=true
 (`DRY_RUN=true` means the LinkedIn posting tool logs posts instead of publishing. Nobody posts anything by accident in this camp.)
 
 > [!NOTE]
-> **`GOOGLE_CLOUD_LOCATION=global`**: Always use `global` for your Gemini flash model calls in Vertex AI. Regional endpoints (like `europe-west1`) do not yet serve `gemini-flash-latest` and will return 404 errors.
+> **`GOOGLE_CLOUD_LOCATION=global`**: Always use `global` for your Gemini flash model calls in Agent Platform. Regional endpoints (like `europe-west1`) do not yet serve `gemini-flash-latest` and will return 404 errors.
 
-**Use `global`, not a regional endpoint, here — confirmed by direct testing, not assumption.** `gemini-flash-latest` returns a 404 "Publisher model not found" in `europe-west1` (and in `europe-west2`, hit the same way during Scale deploy testing): regional Vertex AI endpoints can lag behind `global` for the newest flash models. `global` is the one location confirmed to actually serve `gemini-flash-latest`. This is unrelated to Phase 1's project region (`us-central1` is used there for Agent Runtime and Governance Policies — that's separate from the model call's location) and to Model Armor's region in Session 3 (Model Armor specifically needs a real region, `global` doesn't work for *that* call — the two settings are independent, don't conflate them).
+**Use `global`, not a regional endpoint, here — confirmed by direct testing, not assumption.** `gemini-flash-latest` returns a 404 "Publisher model not found" in `europe-west1` (and in `europe-west2`, hit the same way during Scale deploy testing): regional Agent Platform endpoints can lag behind `global` for the newest flash models. `global` is the one location confirmed to actually serve `gemini-flash-latest`. This is unrelated to Phase 1's project region (`us-central1` is used there for Agent Runtime and Governance Policies — that's separate from the model call's location) and to Model Armor's region in Session 3 (Model Armor specifically needs a real region, `global` doesn't work for *that* call — the two settings are independent, don't conflate them).
 
 ### 2. Buddy check
 You'll be placed in a small buddy group in Discord before the first workshop. Before Saturday, post your checkpoint results from Phases 1–3 in your group thread and confirm one buddy's results in return. Broken setups get fixed in the group or on Discord, not during the workshop.
@@ -261,6 +261,7 @@ You'll be placed in a small buddy group in Discord before the first workshop. Be
 - **GCS image hosting for Buffer** (optional, advanced — not part of Lab 1's taught steps, which keep Buffer text-only by design; only relevant if you want Buffer posts to carry an image like the reference build does): needs a one-time IAM setup outside the app's own reach — a dedicated service account, granted signing rights via impersonation rather than a downloaded key. Set `GOOGLE_CLOUD_PROJECT`/`GCS_BUCKET_NAME` in your `.env`, then run `./gcs-setup.sh` from the repo root — it does the IAM setup and updates your `.env` for you (see `.env.example`'s GCS section for what it does). Skip this entirely unless you're specifically extending past Lab 1.
 - Join the **GDG London Discord** ([discord.gg/952SuUXME](https://discord.gg/952SuUXME)) and say hi in #introductions. Channels: #setup-help, #session-1 to #session-4, #show-your-use-case.
 - Think of **one use case of your own**: an agent you'd like to exist. You'll declare it in Lab 1 and build it alongside ours as each lab's Assignment.
+- **Optional: see Google's own scaffold.** Curious what `agents-cli` generates? In a scratch folder (not the workshop repo), run `agents-cli create my-agent --prototype --yes`. The labs use our own project, so treat this as a look around.
 
 🏁 **Phase 4 Checkpoint:** `uv run adk web` against any agent and send one message — a 404 "Publisher model ... was not found" means `GOOGLE_CLOUD_LOCATION` is still set to a region, not `global`.
 

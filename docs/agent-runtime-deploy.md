@@ -24,7 +24,7 @@ a step is added.
 ## 1. Deploy the agent
 
 ```bash
-uvx google-agents-cli deploy -d agent_runtime \
+agents-cli deploy -d agent_runtime \
   --project adk-devcamp-poc --region us-central1 --agent-identity \
   --service-name social-spark-poster \
   --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,RESEARCH_MODEL=gemini-2.5-flash,DRAFT_MODEL=gemini-2.5-flash,ORCHESTRATOR_MODEL=gemini-2.5-flash,GCS_BUCKET_NAME=YOUR_BUCKET" \
@@ -56,7 +56,7 @@ repo's existing root `Dockerfile`, and file selection honours `.gitignore`, so
 ### Checking on it
 
 ```bash
-uvx google-agents-cli deploy --status -d agent_runtime \
+agents-cli deploy --status -d agent_runtime \
   --project adk-devcamp-poc --region us-central1 --no-confirm-project
 ```
 
@@ -152,7 +152,7 @@ Buffer toolset is never constructed, so asking for an X post still goes to
 LinkedIn. Use Buffer to reach X and other channels:
 
 ```bash
-uvx google-agents-cli deploy -d agent_runtime ... \
+agents-cli deploy -d agent_runtime ... \
   --secrets "BUFFER_API_KEY=buffer-api-key:latest" \
   --update-env-vars "POST_VIA=buffer,BUFFER_REVIEW_DELAY_MINUTES=60,..."
 ```
@@ -179,7 +179,7 @@ gcloud secrets add-iam-policy-binding buffer-api-key \
 then deploy with the name only, no `--secrets`:
 
 ```bash
-uvx google-agents-cli deploy -d agent_runtime ... \
+agents-cli deploy -d agent_runtime ... \
   --update-env-vars "POST_VIA=buffer,BUFFER_API_KEY_SECRET=buffer-api-key,BUFFER_REVIEW_DELAY_MINUTES=60,..."
 ```
 
@@ -201,7 +201,7 @@ which is the other common reason a deployment appears to have vanished. Ask
 the CLI:
 
 ```bash
-uvx google-agents-cli deploy --list -d agent_runtime --project adk-devcamp-poc --region us-central1 --no-confirm-project
+agents-cli deploy --list -d agent_runtime --project adk-devcamp-poc --region us-central1 --no-confirm-project
 ```
 
 ```bash
@@ -214,6 +214,6 @@ Agent Runtime is the weekly teardown item. It scales to zero, so an idle engine
 costs approximately nothing, but delete it when finished with:
 
 ```bash
-uvx google-agents-cli deploy --list -d agent_runtime --project adk-devcamp-poc --region us-central1
+agents-cli deploy --list -d agent_runtime --project adk-devcamp-poc --region us-central1
 gcloud run services delete social-spark-frontend --region us-central1 --project adk-devcamp-poc
 ```

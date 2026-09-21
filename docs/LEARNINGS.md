@@ -3,20 +3,7 @@
 Every gotcha hit while building this. Each entry should become a lab step, a deliberate-error
 callout, or a slide caveat.
 
-**How this file is organised.** Entries are grouped by pillar, so each release tag ships only the
-sections attendees have reached. Each section sits between a `BEGIN` and an `END` comment: delete
-everything from one to the other (inclusive) to drop a section from a tag, or add a new entry at the
-top of its section. An entry is a `###` heading (what happened), then what to tell attendees.
-
-| Tag | Sections to keep |
-|---|---|
-| `starter`, `pillar-build` | General, Build |
-| `pillar-scale` | General, Build, Scale |
-| `pillar-govern` | General, Build, Scale, Govern |
-| `pillar-optimize`, `main` | all |
-
-Some Build and Scale entries mention Govern or Optimise ideas in passing. That is fine: the
-Govern and Optimise *sections* hold the deliberate-error spoilers.
+Entries are grouped by pillar.
 
 ---
 
@@ -1078,72 +1065,3 @@ Google's help.
 
 <!-- END: Govern -->
 
-<!-- BEGIN: Optimise -->
-## Optimise
-
-*Evaluation, simulation, observability, cost.*
-
-<!-- Add new Optimise entries here, newest first. -->
-
-### Online Evaluation is real and in v1, but creating an evaluator is gated in this project; multi-turn arrives as `sessionScope`, not as a separately-named product
-
-Two findings here, one good and one
-blocking. **Good**: there is no separate "Multi-Turn AutoRaters" API to hunt
-for — multi-turn evaluation is a *mode* of `onlineEvaluators`. The
-`cloudObservability` block takes either `traceScope` (evaluate single traces)
-or **`sessionScope`** — explicitly *"a group of traces with the same
-conversation ID"* — with an `inactivityTrigger.threshold` deciding when a
-conversation counts as finished, and rich filter predicates (`userTurns`,
-`toolCalls`, `toolCallErrors`, `modelCallErrors`, `totalTokenUsage`,
-`duration`). The data source is Cloud Trace + Cloud Logging via OpenTelemetry
-semconv ≥ `1.39.0`, which lines up directly with the tracing already
-documented in `docs/observability.md`. It samples on a fixed 10-minute
-interval. **Blocking**: every well-formed `onlineEvaluators.create` returns a
-bare `400 INVALID_ARGUMENT` — *"Request contains an invalid argument."* with
-no `details`, no field violation, nothing. Ruled out by bisection: it is not
-the metric (six predefined names, plus inline LLM-based, all identical), not
-the scope type, not the region (`us-central1`, `us-east4`, `europe-west4`,
-`global` all identical), and **not the agent** — it fails the same way
-against a real, live, identity-enabled engine as against a fabricated
-resource ID. The tell: an **empty body `{}` returns the exact same error**,
-while genuinely malformed payloads earlier produced a *different*, specific
-failure (a `500` naming the missing `inactivityTrigger.threshold`, and a
-detailed 400 for an unknown query param). So the request is parsed and then
-refused wholesale — an allowlist/preview gate surfacing as
-`INVALID_ARGUMENT` rather than `PERMISSION_DENIED`. Read paths work fine
-(`list` is `200 {}`). One more regional note: `onlineEvaluators` is **not
-supported in `europe-west2`** at all (`"Location europe-west2 is not
-supported."`) while `evaluationRuns`/`evaluationSets`/`evaluationMetrics`
-answer there. The Python SDK confirms the gap from the other direction:
-`vertexai.Client().evals` has **no online-evaluator method whatsoever**.
-**Codelab material**: take v5's stated fallback for this item and present it
-honestly — the API surface is worth showing (it's a genuinely good design),
-but don't plan a live demo on it without getting the project allowlisted
-first.
-
-### Multi-turn *simulation* works today and is the right substitute for the gated Online Evaluation demo
-
-`vertexai.Client().evals.generate_conversation_scenarios(...)` ran
-successfully against this project on the first properly-formed call and
-returned genuinely usable material for social_poster: two scenarios, each
-with a `starting_prompt`, a `test_case_title`, and a multi-turn
-`conversation_plan` — including one where the simulated user *corrects a
-figure mid-conversation and asks for an addition*, then approves the revised
-draft. That is exactly the approval-gate behaviour `evals/golden.json`
-already tries to pin down, generated automatically. **API gotcha**: the
-`UserScenarioGenerationConfig` field is **`count`**, not `user_scenario_count`
-— setting the latter gets you a backend error insisting
-`user_scenario_count cannot be None`, because the SDK never forwarded it.
-Unlike `onlineEvaluators`, this service returns detailed, field-level
-validation errors (a full `DataFoundryService.GenerateUserScenarios` message),
-which is itself a useful signal that it's genuinely enabled rather than
-gated. Also present and unexplored in the same SDK module:
-`create_evaluation_run`, `batch_evaluate`, `generate_rubrics` (rubric-based
-autoraters), `generate_loss_clusters`, and a separate `client.skills` module
-(create/get/list/update/delete/retrieve/revisions) — the Agent Skills surface,
-which matters for the `agents-cli` skills question in the plan. **Codelab
-material**: Lab 4's hands-on can be *simulation → eval run*, which works
-today, with Online Evaluation shown as the API it grows into. That's a
-stronger lab than `adk eval` alone and needs no allowlist.
-
-<!-- END: Optimise -->

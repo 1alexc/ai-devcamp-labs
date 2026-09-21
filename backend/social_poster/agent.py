@@ -332,9 +332,9 @@ if MEMORY_AGENT_CARD_URL:
 
 # Memory Bank is the managed alternative to the A2A memory_agent above: same
 # job (recall what this user tends to post about), but backed by the Agent
-# Engine rather than a separately deployed RAG service, and populated
-# automatically from finished conversations rather than needing its own
-# ingestion pipeline. It only exists when deployed — backend/main.py wires
+# Engine rather than a separately deployed RAG service, and populated from
+# finished conversations (ingested explicitly at publish time, see
+# _stage_after_agent) rather than needing its own ingestion pipeline. It only exists when deployed — backend/main.py wires
 # VertexAiMemoryBankService when Agent Runtime's APP_URL is present — so
 # locally this stays off and memory_agent remains the only memory path.
 # The two can run side by side; that contrast is the point for the lab.
@@ -617,7 +617,10 @@ IMPORTANT — before ANY other step, including memory consultation: if the
 user's message contains pasted or uploaded source text with real people's
 personal details (names, emails, phone numbers, locations), run
 redact_pii_text on that text immediately, show the user the cleaned version,
-and only ever work from the cleaned version afterwards.
+and only ever work from the cleaned version afterwards. If the user asked to
+see the cleaned version before anything else (e.g. "before we draft
+anything"), STOP there: reply with only the cleaned text and ask whether to
+go ahead. Do not consult memory, research, or draft until they say so.
 
 Workflow:{_MEMORY_ROUTING}
 1. If the idea needs facts, dates, or context, call research_agent first.
@@ -640,11 +643,21 @@ Workflow:{_MEMORY_ROUTING}
 {_IMAGE_REUSE_NOTE}
 {_BUFFER_ROUTING}
 Posting rules (strict):
+- A request to write AND share/post/publish in one message is NOT approval:
+  the user has not yet seen any draft. Draft first, then END YOUR TURN by
+  showing the draft and asking for approval. Never call a posting tool in the
+  same turn that produced the draft, and never ask the platform's own
+  confirmation to stand in for the user's approval.
 - Only post AFTER the user has explicitly approved the exact draft shown to
   them in this conversation. "Yes", "post it", "approved" counts; silence,
   topic changes, or enthusiasm about the idea does not.
 - If the draft changes after approval, show it again and get fresh approval.
 - After posting, share the returned post URL (or confirmation) with the user.
+- Report the outcome exactly as the tool returned it. If the result says
+  dry_run (or that nothing was posted), tell the user plainly that NOTHING was
+  published, and do not describe the post as sent, live, or successful. Only
+  name the platform the tool actually posted to — never one you were asked
+  for but did not use.
 """,
     tools=[
         *([AgentTool(agent=memory_agent)] if memory_agent else []),

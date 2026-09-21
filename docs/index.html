@@ -7,16 +7,16 @@
 <style>
   :root {
     --bg: #fafbfc; --panel: #fff; --border: #dde1e6; --text: #1f2430;
-    --muted: #5f6672; --accent: #1a73e8; --accent-soft: #e8f0fe;
+    --muted: #5f6672; --accent: #4285F4; --accent-soft: #e8f0fe;
     --shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.05);
     --shadow-lift: 0 2px 4px rgba(16,24,40,.06), 0 12px 28px rgba(16,24,40,.10);
 
     /* One hue per pillar, so a lab is recognisable before you read its name.
        Google's own four-colour palette, in pillar order. */
-    --build: #1a73e8;    --build-soft: rgba(26,115,232,.10);
-    --scale: #12a150;    --scale-soft: rgba(18,161,80,.10);
-    --govern: #e8710a;   --govern-soft: rgba(232,113,10,.10);
-    --optimise: #a142f4; --optimise-soft: rgba(161,66,244,.10);
+    --build: #4285F4;    --build-soft: rgba(66,133,244,.10);
+    --scale: #34A853;    --scale-soft: rgba(52,168,83,.10);
+    --govern: #FBBC05;   --govern-soft: rgba(251,188,5,.14);
+    --optimise: #EA4335; --optimise-soft: rgba(234,67,53,.10);
   }
   /* Dark by default when the OS says so, unless the reader has forced light;
      and available explicitly via [data-theme], which the toggle sets. The
@@ -28,9 +28,9 @@
       --shadow: 0 1px 2px rgba(0,0,0,.30), 0 4px 14px rgba(0,0,0,.28);
       --shadow-lift: 0 2px 6px rgba(0,0,0,.38), 0 14px 32px rgba(0,0,0,.40);
       --build:#8ab4f8;    --build-soft: rgba(138,180,248,.14);
-      --scale:#5bd98a;    --scale-soft: rgba(91,217,138,.14);
-      --govern:#fcad70;   --govern-soft: rgba(252,173,112,.14);
-      --optimise:#d7a8ff; --optimise-soft: rgba(215,168,255,.14);
+      --scale:#81c995;    --scale-soft: rgba(129,201,149,.14);
+      --govern:#fdd663;   --govern-soft: rgba(253,214,99,.14);
+      --optimise:#f28b82; --optimise-soft: rgba(242,139,130,.14);
     }
   }
   :root[data-theme="dark"] {
@@ -39,9 +39,9 @@
       --shadow: 0 1px 2px rgba(0,0,0,.30), 0 4px 14px rgba(0,0,0,.28);
       --shadow-lift: 0 2px 6px rgba(0,0,0,.38), 0 14px 32px rgba(0,0,0,.40);
       --build:#8ab4f8;    --build-soft: rgba(138,180,248,.14);
-      --scale:#5bd98a;    --scale-soft: rgba(91,217,138,.14);
-      --govern:#fcad70;   --govern-soft: rgba(252,173,112,.14);
-      --optimise:#d7a8ff; --optimise-soft: rgba(215,168,255,.14);
+      --scale:#81c995;    --scale-soft: rgba(129,201,149,.14);
+      --govern:#fdd663;   --govern-soft: rgba(253,214,99,.14);
+      --optimise:#f28b82; --optimise-soft: rgba(242,139,130,.14);
   }
   * { box-sizing: border-box; }
   body {
@@ -149,6 +149,8 @@
   .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
   .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media print { .theme-toggle { display: none; } }
+  /* yellow is too light to read as text on its own tint */
+  .p-govern .badge { color: var(--text); }
 </style>
 <script>
   // Runs before the stylesheet paints: reading localStorage here avoids the
@@ -168,7 +170,7 @@
 
   <h2 class="section">Start here</h2>
   <div class="bento">
-    <a class="tile span-7 start-here" href="doc-viewer.html?src=devcamp-attendee-setup-guide.md">
+    <a class="tile span-7 start-here" href="setup-guide.html">
       <div class="kicker">Pre-camp · do this first</div>
       <div class="title">Attendee setup guide</div>
       <div class="desc">GCP project, spend cap, local tools, Antigravity with the Vertex AI fallback, buddy check — everything to finish before the first Saturday.</div>
@@ -217,12 +219,12 @@
       <div class="desc">Agent Runtime, Agent Identity, Sessions, Memory Bank — run the agent on managed infrastructure, and keep what matters when it scales to zero.</div>
       <div class="meta">Session 2 · catch up with <code>pillar-scale</code></div>
     </a>
-    <div class="tile span-6 pillar p-govern locked">
-      <div class="kicker">Lab 3 <span class="badge">after Session 3</span></div>
+    <a class="tile span-6 pillar p-govern" href="lab-3-govern.html">
+      <div class="kicker">Lab 3 · available</div>
       <div class="title">Govern</div>
       <div class="desc">Model Armor, Cloud DLP, Governance Policies, Agent Registry, Agent Gateway — control what the agent may do.</div>
-      <div class="meta">Session 3 · 8 &amp; 10 Oct</div>
-    </div>
+      <div class="meta">Session 3 · catch up with <code>pillar-govern</code></div>
+    </a>
     <div class="tile span-6 pillar p-optimise locked">
       <div class="kicker">Lab 4 <span class="badge">after Session 4</span></div>
       <div class="title">Optimise</div>

@@ -12,12 +12,12 @@
     --text: #1f2430;
     --text-muted: #5f6672;
     --text-faint: #8a909b;
-    --accent: #1a73e8;
-    --accent-hover: #1558b0;
+    --accent: #4285F4;
+    --accent-hover: #3367d6;
     --accent-soft: #e8f0fe;
     --red: #c5221f;
     --red-soft: #fce8e6;
-    --yellow: #a15c00;
+    --yellow: #FBBC05;
     --yellow-soft: #fef7e0;
     --green: #137333;
     --green-soft: #e6f4ea;
@@ -198,8 +198,6 @@
   .callout.tip .callout-label { color: var(--yellow); }
   .callout.check { border-left-color: var(--green); background: var(--green-soft); }
   .callout.check .callout-label { color: var(--green); }
-  .callout.agent { border-left-color: #7c9cff; background: rgba(124,156,255,.10); }
-  .callout.agent .callout-label { color: #7c9cff; }
   .callout.agent p { font-style: italic; }
 
   /* ---------- code ---------- */
@@ -266,6 +264,10 @@
   .red-stroke { stroke: var(--red); }
   .muted-stroke { stroke: var(--text-faint); }
   .soft-fill { fill: var(--bg-sidebar); }
+  .fill-accent { fill: var(--accent-soft); }
+  .fill-green { fill: var(--green-soft); }
+  .fill-yellow { fill: var(--yellow-soft); }
+  .fill-accent-strong { fill: var(--accent); fill-opacity: 0.16; }
 
   /* ---------- mock UI ---------- */
   .mock-stepper { display: flex; gap: 4px; margin: 16px 0 20px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); overflow-x: auto; }
@@ -292,6 +294,13 @@
     .step-title { font-size: 23px; }
   }
 
+  /* ---------- back to docs ---------- */
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); text-decoration: none; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel); margin: 0 6px 12px; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  .back-link.mob { display: none; }
+  @media (max-width: 880px) { .back-link.mob { display: inline-flex; margin: 0 0 12px; } }
+  @media print { .back-link { display: none; } }
+
   /* ---------- theme toggle ---------- */
   .theme-toggle {
     position: fixed; top: 14px; right: 14px; z-index: 999;
@@ -305,6 +314,30 @@
   .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
   .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media print { .theme-toggle { display: none; } }
+
+  /* ---------- Google palette: blue #4285F4, green #34A853, yellow #FBBC05, red #EA4335 ---------- */
+  :root { --g-blue: #4285F4; --g-green: #34A853; --g-yellow: #FBBC05; --g-red: #EA4335; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --g-blue: #8ab4f8; --g-green: #81c995; --g-yellow: #fdd663; --g-red: #f28b82; }
+  }
+  :root[data-theme="dark"] { --g-blue: #8ab4f8; --g-green: #81c995; --g-yellow: #fdd663; --g-red: #f28b82; }
+  .accent-stroke { stroke: var(--g-blue); }   .accent-fill { fill: var(--g-blue); }
+  .green-stroke  { stroke: var(--g-green); }  .green-fill  { fill: var(--g-green); }
+  .yellow-stroke { stroke: var(--g-yellow); } .yellow-fill { fill: var(--g-yellow); }
+  .red-stroke    { stroke: var(--g-red); }    .red-fill    { fill: var(--g-red); }
+  .fill-red { fill: var(--red-soft); }
+  .dot-blue { fill: var(--g-blue); } .dot-green { fill: var(--g-green); } .dot-yellow { fill: var(--g-yellow); } .dot-red { fill: var(--g-red); }
+  .badge-fill { fill: var(--g-blue); }
+  .brand-mark { background: conic-gradient(from 200deg, var(--g-blue), var(--g-green), var(--g-yellow), var(--g-red), var(--g-blue)); }
+  .callout { border-left-color: var(--g-blue); }
+  .callout.warn { border-left-color: var(--g-red); }
+  .callout.tip { border-left-color: var(--g-yellow); }
+  .callout.tip .callout-label { color: var(--text); }
+  .callout.check { border-left-color: var(--g-green); }
+  .callout.agent { border-left-color: var(--g-blue); background: var(--accent-soft); }
+  .callout.agent .callout-label { color: var(--accent); }
+  .eyebrow .pill.optional { color: var(--text); }
+  .step-nav-item.optional .step-label::after { color: var(--text-muted); border-color: var(--g-yellow); }
 </style>
 
 <script>
@@ -322,6 +355,7 @@
 
 <div class="shell">
   <aside class="sidebar">
+    <a class="back-link" href="index.html">← All docs</a>
     <div class="brand">
       <div class="brand-mark">✨</div>
       <div>
@@ -338,6 +372,7 @@
   <main class="main">
     <div class="content-col">
 
+      <a class="back-link mob" href="index.html">← All docs</a>
       <nav class="mobile-topnav" id="mobileNav"></nav>
 
       <!-- ================= OVERVIEW ================= -->
@@ -346,9 +381,72 @@
         <h1 class="step-title">Run Social Spark for real</h1>
         <p class="lede">Take the agent you built in Lab 1 off your laptop and onto managed infrastructure — with its own identity, conversations that survive a restart, and a memory of what you like.</p>
 
+        <figure class="diagram">
+          <svg viewBox="0 0 720 400" role="img" aria-label="Scale has four pieces. The web UI calls the agent, which runs in Agent Runtime, a managed container that scales to zero and has its own Agent Identity. The agent reads and writes Agent Sessions, which hold the current conversation. When a post is published, the session is distilled into Agent Memory Bank, which holds what to remember about the user across conversations, and the agent searches it before drafting. Agent Sandbox, for running code the agent writes in isolation, is shown dashed because this lab does not use it.">
+            <defs>
+              <marker id="sc-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+
+            <!-- client -->
+            <rect x="8" y="160" width="110" height="64" rx="10" class="muted-stroke soft-fill" stroke-width="1.6"/>
+            <text x="63" y="184" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Web UI</text>
+            <text x="63" y="200" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.65">Cloud Run</text>
+            <text x="63" y="212" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.65">Steps 6–7</text>
+            <line x1="118" y1="192" x2="168" y2="192" stroke="currentColor" stroke-width="1.4" marker-end="url(#sc-arrow)"/>
+            <text x="143" y="150" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">/api</text>
+            <text x="143" y="161" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">+ token</text>
+
+            <!-- Agent Runtime -->
+            <rect x="170" y="30" width="270" height="330" rx="14" class="accent-stroke fill-accent" stroke-width="2"/>
+            <text x="305" y="56" font-size="14" font-weight="700" text-anchor="middle" fill="currentColor">Agent Runtime</text>
+            <text x="305" y="72" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.65">where it runs · Steps 2–3</text>
+            <rect x="192" y="158" width="226" height="68" rx="10" class="accent-stroke fill-accent-strong" stroke-width="1.2"/>
+            <text x="305" y="184" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">social_poster</text>
+            <text x="305" y="201" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.7">your container, built from your Dockerfile</text>
+            <text x="305" y="215" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.6">runs as its own Agent Identity</text>
+            <text x="305" y="300" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.6">scales to zero when idle:</text>
+            <text x="305" y="315" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.6">nothing in memory survives</text>
+            <text x="305" y="345" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor" opacity="0.8">so state must live outside →</text>
+
+            <!-- Sessions -->
+            <rect x="490" y="30" width="222" height="84" rx="12" class="green-stroke fill-green" stroke-width="2"/>
+            <text x="601" y="56" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Agent Sessions</text>
+            <text x="601" y="73" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.7">this conversation · Step 4</text>
+            <text x="601" y="89" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.6">messages, draft, pipeline stage</text>
+            <text x="601" y="102" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.6">survives a restart</text>
+            <line x1="440" y1="72" x2="488" y2="72" stroke="currentColor" stroke-width="1.3" marker-start="url(#sc-arrow)" marker-end="url(#sc-arrow)"/>
+
+            <!-- session -> memory -->
+            <line x1="601" y1="114" x2="601" y2="168" stroke="currentColor" stroke-width="1.3" marker-end="url(#sc-arrow)"/>
+            <text x="609" y="136" font-size="9.5" fill="currentColor" opacity="0.75">distilled when</text>
+            <text x="609" y="148" font-size="9.5" fill="currentColor" opacity="0.75">a post is published</text>
+
+            <!-- Memory Bank -->
+            <rect x="490" y="170" width="222" height="84" rx="12" class="yellow-stroke fill-yellow" stroke-width="2"/>
+            <text x="601" y="196" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Agent Memory Bank</text>
+            <text x="601" y="213" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.7">across conversations · Step 5</text>
+            <text x="601" y="229" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.6">your preferences and style,</text>
+            <text x="601" y="242" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.6">searched before drafting</text>
+            <line x1="440" y1="212" x2="488" y2="212" stroke="currentColor" stroke-width="1.3" marker-start="url(#sc-arrow)" marker-end="url(#sc-arrow)"/>
+
+            <!-- Sandbox (dashed, not used) -->
+            <rect x="490" y="286" width="222" height="74" rx="12" class="red-stroke fill-red" stroke-dasharray="5 4" stroke-width="2"/>
+            <text x="601" y="310" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor" opacity="0.8">Agent Sandbox</text>
+            <text x="601" y="327" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.65">runs code the agent writes,</text>
+            <text x="601" y="340" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.65">in isolation · not used here</text>
+            <line x1="440" y1="323" x2="488" y2="323" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#sc-arrow)"/>
+
+            <text x="8" y="392" font-size="10.5" fill="currentColor" opacity="0.6">Runtime is the one thing that goes away when idle. Sessions and Memory Bank are why that doesn't matter.</text>
+          </svg>
+          <figcaption>The four parts of Scale. The agent is disposable; conversation state (Sessions) and long-term recall (Memory Bank) are kept outside it.</figcaption>
+        </figure>
+
         <div class="callout">
           <span class="callout-label">Theory — this is Google's "Scale" pillar</span>
           <p>Lab 1 was <strong>Build</strong>: designing the agent. This lab is <strong>Scale</strong>, and Scale is specifically about <em>where an agent runs and what it remembers</em> — <strong>Agent Runtime</strong> (managed hosting built for agents), <strong>Agent Identity</strong> (the agent gets its own principal, not your credentials), <strong>Sessions</strong> (managed conversation state) and <strong>Memory Bank</strong> (what persists <em>across</em> conversations). It is not about what the agent is allowed to do — that's Govern, Lab 3 — or whether it's any good, which is Optimise, Lab 4.</p>
+          <p><strong>Agent Sandbox</strong> is the fourth piece of Scale: an isolated place to run code an agent writes for itself. Social Spark never writes code, so we don't use it and haven't tested it here. It's in the picture so you know where it sits when your own agent needs it.</p>
           <p>The distinction that matters today: your laptop is a single process that you restart at will. Managed infrastructure scales to zero when nobody is using it, which means <strong>anything held in memory is gone, routinely, not exceptionally</strong>. Most of this lab is about that one fact.</p>
         </div>
 
@@ -551,6 +649,13 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
           <p>Wire <code>VertexAiMemoryBankService</code> into <code>backend/main.py</code> alongside the session service, using the same engine details. Then in <code>backend/social_poster/agent.py</code>, add ADK's <code>load_memory</code> tool to the orchestrator when memory is available, and update its instruction to consult memory before drafting. Add <code>load_memory</code> to the stage map so the pipeline panel shows "consulting memory".</p>
         </div>
 
+        <div class="callout">
+          <span class="callout-label">Tell it what to remember</span>
+          <p>Out of the box Memory Bank decides for itself what is worth keeping. For a social-post agent that is too vague, so configure it. The bank takes <strong>memory topics</strong>: managed ones (<code>USER_PREFERENCES</code>, <code>EXPLICIT_INSTRUCTIONS</code>, <code>USER_PERSONAL_INFO</code>, <code>KEY_CONVERSATION_DETAILS</code>) and custom ones you describe in a sentence. You can also set the extraction model, a TTL so memories expire, and few-shot examples of what to extract.</p>
+          <p>Here we keep preferences and explicit instructions, add one custom <code>posting_style</code> topic, and expire memories after 90 days. It is a PATCH on the engine, so no redeploy: <code>uv run python backend/memory_bank_config.py apply</code> (and <code>show</code> to read it back). It only affects memories generated from then on.</p>
+          <p>Try it before you wire anything else: send the bank a short conversation through <code>client.agent_engines.memories.generate(...)</code> and list what it kept. In our test a message about a sign-off, an emoji rule and a question opener came back as one clean style fact.</p>
+        </div>
+
         <div class="callout warn">
           <span class="callout-label">The part that will waste your afternoon</span>
           <p>Passing a memory service turns on what the docs call "automatic session memory". It is not automatic in any way you'd want. Sessions are ingested into memory in exactly one place — <strong>just before a session is deleted during cleanup</strong>, on a 20-minute idle timer swept every 5 minutes. On a scale-to-zero deployment, the idleness that would eventually trigger that cleanup <em>scales the container to zero first and kills the timer</em>. Memories never appear. Nothing errors.</p>
@@ -720,6 +825,11 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
           <p>An idle Agent Runtime engine costs approximately nothing, which is exactly why it's easy to forget. But "approximately nothing" across four weeks, times everyone in this room, stops being nothing — and a deployed agent holding API keys is a thing you own whether you remember it or not. <strong>Agent Runtime is this camp's weekly teardown item.</strong></p>
         </div>
 
+        <div class="callout warn">
+          <span class="callout-label">Deleting the engine deletes the memories</span>
+          <p>The Memory Bank you just built belongs to the engine. Delete the engine and Google deletes its memories with it, so next session starts with an empty bank. That is fine for a workshop, and worth knowing before you point a real user at one: memories you care about need a home that outlives the deployment.</p>
+        </div>
+
         <div class="code-block">
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
           <pre><code># list what you have
@@ -771,7 +881,7 @@ gcloud run services delete social-spark-frontend \
           <li><a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/overview" target="_blank" rel="noopener">Gemini Enterprise Agent Platform — overview</a>, the four pillars</li>
           <li><a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/scale/runtime/deploy-an-agent" target="_blank" rel="noopener">Deploy an agent to Agent Runtime</a></li>
           <li><a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/scale/runtime/agent-identity" target="_blank" rel="noopener">Agent Identity</a></li>
-          <li><a href="https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/sessions/overview" target="_blank" rel="noopener">Sessions overview</a> and <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/memory-bank/overview" target="_blank" rel="noopener">Memory Bank overview</a></li>
+          <li><a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/scale/sessions" target="_blank" rel="noopener">Sessions overview</a>, <a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/scale/memory-bank" target="_blank" rel="noopener">Memory Bank overview</a> and <a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/scale/memory-bank/setup" target="_blank" rel="noopener">Memory Bank setup</a> (topics, TTL, IAM)</li>
           <li><a href="https://docs.cloud.google.com/secret-manager/docs/integrate-secret-manager-with-adk" target="_blank" rel="noopener">Secret Manager with ADK</a> — how a deployed agent reads secrets with its own identity</li>
           <li><a href="https://google.github.io/adk-docs/" target="_blank" rel="noopener">ADK documentation</a></li>
           <li><a href="https://cloud.google.com/run/docs/securing/ingress" target="_blank" rel="noopener">Cloud Run — restricting ingress</a>, for making the frontend private properly</li>

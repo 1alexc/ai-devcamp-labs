@@ -52,9 +52,11 @@ if _engine:
     )
     # Memory Bank: the managed alternative to this project's hand-rolled
     # memory_agent (a RemoteA2aAgent over a separate RAG service — see
-    # docs/agent-engine-rag-setup.md). Passing a memory service also turns on
-    # ag_ui_adk's automatic session ingestion, so finished conversations become
-    # searchable memory without an explicit add_session_to_memory call.
+    # docs/agent-engine-rag-setup.md). This only makes memory *searchable*.
+    # ag_ui_adk's "automatic" ingestion runs on session cleanup, which a
+    # scale-to-zero engine never reaches, so agent.py ingests explicitly at
+    # publish time (add_session_to_memory, awaited). What the bank extracts is
+    # configured on the engine: backend/memory_bank_config.py.
     memory_service = VertexAiMemoryBankService(
         project=_engine["project"],
         location=_engine["location"],

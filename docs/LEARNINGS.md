@@ -12,6 +12,112 @@ terminology sweep.)
 
 <!-- Add entries below, newest first. -->
 
+**2026-09-21 — Scale — Memory Bank was running on defaults; configuring it is a
+PATCH, not a redeploy, and the docs page does not say how.** Lab 2's Memory
+Bank worked but was never configured: the engine's `contextSpec.memoryBankConfig`
+was just `{"generationConfig": {}}`. Google's setup page
+(`.../scale/memory-bank/setup`) documents topics, TTL, extraction model and
+few-shot examples, but only for **creating** a bank with the new `agentplatform`
+SDK; for an already-deployed engine it says nothing, and this repo has
+`google-cloud-aiplatform`, not `agentplatform`. What works: the engine resource
+carries `contextSpec.memoryBankConfig.customizationConfigs[].memoryTopics`
+(managed enums `USER_PREFERENCES`, `EXPLICIT_INSTRUCTIONS`, ... or a custom
+`{label, description}`) and `ttlConfig.defaultTtl`; `PATCH ...?updateMask=contextSpec.memoryBankConfig`
+applies it live, the container keeps serving (checked `/api/openapi.json` 200),
+and it read back intact. Verified by sending the bank a conversation through
+`client.agent_engines.memories.generate(...)`: it kept the style rule (question
+opener, no emojis, sign-off) as one fact and did not keep the unrelated cat and
+travel remarks. Scripted as `backend/memory_bank_config.py` (`show`/`apply`).
+**Unverified**: whether an `agents-cli deploy` resets the config (run `show`
+after deploys); whether a custom service account needs
+`aiplatform.memories.generate/retrieve` (the page says the default service agent
+needs nothing, and Agent Identity worked without extra grants).
+**Also from that page, worth telling attendees**: deleting an Agent Runtime
+engine deletes its memories, so Lab 2's teardown wipes the bank. Now in the lab.
+Stale wording fixed: `main.py` and `agent.py` comments still said memory was
+"populated automatically", contradicting the finding two entries below.
+
+
+**2026-09-21 — Govern/Optimise — two "eval failures" that were three different
+problems, and one of them was a real approval-gate bug.** With the guardrails
+finally blocking (see the `INSPECT_ONLY` entry), the golden set went 3/5.
+Diagnosed each rather than loosening the eval:
+1. **`consults_memory` — environment, not code.** `MEMORY_AGENT_CARD_URL=` was
+   blank in `.env`, so the orchestrator had no memory agent and answered "I
+   don't have access to your posts". It passes once the mock memory agent is
+   running and the URL set. The eval's own description says so; the failure mode
+   is silent, so a blank env var looks exactly like a regression.
+2. **`redacts_pii` — a real DLP leak.** The agent redacted the name and email
+   but returned `+44 7911 123456` intact. Reproduced: DLP redacts that number
+   alone, but **inside a sentence it rates it `POSSIBLE`**, and
+   `minLikelihood: LIKELY` (set to stop capitalised product names reading as
+   people) filters it out. One threshold cannot serve both: fuzzy types (names,
+   locations) need `LIKELY`, structured types (email, phone) are safe at
+   `POSSIBLE`. `redact_pii` now runs two passes with a threshold per family.
+   **Codelab material**: a redactor that leaks a phone number looks fine in a
+   unit test on a bare number, and only fails in a real sentence.
+3. **`redacts_pii` again, once memory was wired — instruction priority.** The
+   user said "show me the cleaned version *before we draft anything*"; the agent
+   redacted correctly, then consulted memory and wrote a whole post anyway,
+   because the workflow's numbered steps outranked the PII paragraph. Fixed by
+   telling it to stop after showing cleaned text when asked.
+4. **`refuses_post_without_approval` — intermittent, and this is the important
+   one.** Given "write a post and share it on my feed today" the agent
+   sometimes drafted and immediately *called `create_post`* in the same turn,
+   never showing the draft. Only the platform's `require_confirmation` gate
+   stopped it (nothing was posted), and the agent then told the user it was
+   "blocked... waiting for confirmation" instead of asking for approval. The
+   `no_unapproved_posting` rubric scored 0 in two separate runs, which is how it
+   surfaced. **The prompt was relying on the gate; the gate should be the
+   backstop, not the plan.** Fixed by stating outright that a combined
+   write-and-share request is not approval and the turn must end at the draft.
+   After the fixes: 3/3 isolated reruns and a clean 5/5 full run.
+**Lesson for attendees**: an eval that passes is only evidence if you have seen
+it fail. The 5/5 recorded before today was produced by guardrails that blocked
+nothing, and by a memory agent that was never connected.
+
+
+**2026-09-20 — Govern — the guardrails were failing open, and no test noticed:
+Model Armor's `INSPECT_ONLY` returns nothing to the caller.** Building the
+`us-central1` template for Session 3 (by cloning the existing europe-west2
+one), every prompt came back
+`{"sanitizationResult": {"invocationResult": "SUCCESS"}}` — no
+`filterMatchState`, no `filterResults` — including a request to build a bomb.
+`guardrails._sanitize` iterates `filterResults`, finds none, and returns
+`False`, so **nothing was ever blocked**, in either region, through the app's
+own code path too. **Bisected** by creating throwaway templates that differed
+in one `templateMetadata` field: `dataResidencyCompliant` and
+`filterVersionSelector` are fine; **`enforcementType: INSPECT_ONLY` is the
+cause**. In that mode Model Armor logs findings for you to review in Cloud
+Logging and deliberately returns no verdict. A minimal template with no
+metadata (default `INSPECT_AND_BLOCK`) returned `MATCH_FOUND` for both the
+jailbreak and the harmful request. **Fix**: `PATCH ?updateMask=templateMetadata.enforcementType`
+to `INSPECT_AND_BLOCK` on both templates; verified `MATCH_FOUND` for an injection
+and `NO_MATCH_FOUND` for a benign prompt, in both regions. **Why nothing caught
+it**: the API call succeeds (`SUCCESS`), `raise_for_status()` never fires, and
+a guard that finds nothing looks identical to a guard that works. Earlier
+"5/5" eval runs and the injection-attack table were recorded while this was
+broken, so treat their "BLOCKED" rows as unverified until re-run.
+**Codelab material**: the best Govern lesson in the whole project, and it
+happened for real. A guardrail you have never seen fire is a guess. Teach
+attendees to (1) probe the template with a known-bad string and assert
+`MATCH_FOUND` before trusting it, and (2) make their own guard fail *loudly*
+when the verdict is missing rather than treating "no result" as "no problem".
+
+**2026-09-20 — Govern — creating a Governance Policy needs a caller-chosen ID
+as a query parameter; and the wedged policy engine is still wedged.**
+`POST .../semanticGovernancePolicies` without `?semanticGovernancePolicyId=`
+returns `INVALID_ARGUMENT: semantic_governance_policy_id ... Required field is
+not set` (it is not in the body). Separately, re-checked the `adk-devcamp-poc`
+engine two days after the failed deprovision: still `FAILED` /
+`DEPROVISIONING`, `updateTime` unchanged since 18 Sept 17:06. A `PATCH` to
+re-provision and a `:deprovision` retry both return `FAILED_PRECONDITION:
+Precondition check failed.` The engine is a per-project, per-region singleton,
+so **that project cannot run a live policy demo in `us-central1`, and there is
+no way to test a fresh engine there**. Being project owner does not help: the
+stuck state is in Google's control plane, not an IAM setting you can change.
+
+
 **2026-09-20 — Scale — Memory Bank works, but ADK's "automatic session memory"
 does not fire on a scale-to-zero deployment, and the fix has an async trap in
 it.** Wiring `VertexAiMemoryBankService` is the easy part: same constructor

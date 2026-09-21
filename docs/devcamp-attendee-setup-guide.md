@@ -1,7 +1,7 @@
 # AI DevCamp Pro: Agents — Pre-Camp Setup Guide
 **Complete everything before Saturday 26 September.**
 
-Setup takes 45 to 60 minutes across 4 guided phases. Do it early: the Discord #setup-help channel, your buddy group, and a live setup clinic (week of 21 September, date TBC) are there to unblock you before the first workshop.
+Setup takes 45 to 60 minutes across 4 guided phases. Do it early: the Discord #setup-help channel and your buddy group are there to unblock you before the first workshop. This guide is shared on 23 September, and any setup issues are discussed offline on Discord.
 
 
 
@@ -248,13 +248,13 @@ DRY_RUN=true
 **Use `global`, not a regional endpoint, here — confirmed by direct testing, not assumption.** `gemini-flash-latest` returns a 404 "Publisher model not found" in `europe-west1` (and in `europe-west2`, hit the same way during Scale deploy testing): regional Vertex AI endpoints can lag behind `global` for the newest flash models. `global` is the one location confirmed to actually serve `gemini-flash-latest`. This is unrelated to Phase 1's project region (`us-central1` is used there for Agent Runtime and Governance Policies — that's separate from the model call's location) and to Model Armor's region in Session 3 (Model Armor specifically needs a real region, `global` doesn't work for *that* call — the two settings are independent, don't conflate them).
 
 ### 2. Buddy check
-You'll be placed in a small buddy group in Discord before the first workshop. Before Saturday, post your checkpoint results from Phases 1–3 in your group thread and confirm one buddy's results in return. Broken setups get fixed in the group or at the setup clinic, not during the workshop.
+You'll be placed in a small buddy group in Discord before the first workshop. Before Saturday, post your checkpoint results from Phases 1–3 in your group thread and confirm one buddy's results in return. Broken setups get fixed in the group or on Discord, not during the workshop.
 
 ### 3. Recommended before Saturday
 - **Buffer account:** Lab 1 publishes through Buffer's MCP server. Create a free Buffer account and connect at least one channel (a LinkedIn profile is fine). No card needed for the free tier. You'll grab the API key during the lab.
 - **LinkedIn Developer app** (optional bonus step in Lab 1; everything else works through Buffer or in dry-run): skip for now if short on time, a guide is linked from the lab.
 - **GCS image hosting for Buffer** (optional, advanced — not part of Lab 1's taught steps, which keep Buffer text-only by design; only relevant if you want Buffer posts to carry an image like the reference build does): needs a one-time IAM setup outside the app's own reach — a dedicated service account, granted signing rights via impersonation rather than a downloaded key. Set `GOOGLE_CLOUD_PROJECT`/`GCS_BUCKET_NAME` in your `.env`, then run `./gcs-setup.sh` from the repo root — it does the IAM setup and updates your `.env` for you (see `.env.example`'s GCS section for what it does). Skip this entirely unless you're specifically extending past Lab 1.
-- Join **Discord** [invite link] and say hi in #introductions. Channels: #setup-help, #session-1 to #session-4, #show-your-use-case.
+- Join the **GDG London Discord** ([discord.gg/952SuUXME](https://discord.gg/952SuUXME)) and say hi in #introductions. Channels: #setup-help, #session-1 to #session-4, #show-your-use-case.
 - Think of **one use case of your own**: an agent you'd like to exist. You'll declare it in Lab 1 and build it alongside ours as each lab's Assignment.
 
 🏁 **Phase 4 Checkpoint:** `uv run adk web` against any agent and send one message — a 404 "Publisher model ... was not found" means `GOOGLE_CLOUD_LOCATION` is still set to a region, not `global`.

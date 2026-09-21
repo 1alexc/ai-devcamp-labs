@@ -12,12 +12,12 @@
     --text: #1f2430;
     --text-muted: #5f6672;
     --text-faint: #8a909b;
-    --accent: #1a73e8;
-    --accent-hover: #1558b0;
+    --accent: #4285F4;
+    --accent-hover: #3367d6;
     --accent-soft: #e8f0fe;
     --red: #c5221f;
     --red-soft: #fce8e6;
-    --yellow: #a15c00;
+    --yellow: #FBBC05;
     --yellow-soft: #fef7e0;
     --green: #137333;
     --green-soft: #e6f4ea;
@@ -198,8 +198,6 @@
   .callout.tip .callout-label { color: var(--yellow); }
   .callout.check { border-left-color: var(--green); background: var(--green-soft); }
   .callout.check .callout-label { color: var(--green); }
-  .callout.agent { border-left-color: #7c9cff; background: rgba(124,156,255,.10); }
-  .callout.agent .callout-label { color: #7c9cff; }
   .callout.agent p { font-style: italic; }
 
   /* ---------- code ---------- */
@@ -294,6 +292,13 @@
     figure.diagram img { width: 100%; }
   }
 
+  /* ---------- back to docs ---------- */
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); text-decoration: none; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel); margin: 0 6px 12px; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  .back-link.mob { display: none; }
+  @media (max-width: 880px) { .back-link.mob { display: inline-flex; margin: 0 0 12px; } }
+  @media print { .back-link { display: none; } }
+
   /* ---------- theme toggle ---------- */
   .theme-toggle {
     position: fixed; top: 14px; right: 14px; z-index: 999;
@@ -307,6 +312,32 @@
   .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
   .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media print { .theme-toggle { display: none; } }
+
+  /* ---------- Google palette: blue #4285F4, green #34A853, yellow #FBBC05, red #EA4335 ---------- */
+  :root { --g-blue: #4285F4; --g-green: #34A853; --g-yellow: #FBBC05; --g-red: #EA4335; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --g-blue: #8ab4f8; --g-green: #81c995; --g-yellow: #fdd663; --g-red: #f28b82; }
+  }
+  :root[data-theme="dark"] { --g-blue: #8ab4f8; --g-green: #81c995; --g-yellow: #fdd663; --g-red: #f28b82; }
+  .accent-stroke { stroke: var(--g-blue); }   .accent-fill { fill: var(--g-blue); }
+  .green-stroke  { stroke: var(--g-green); }  .green-fill  { fill: var(--g-green); }
+  .yellow-stroke { stroke: var(--g-yellow); } .yellow-fill { fill: var(--g-yellow); }
+  .red-stroke    { stroke: var(--g-red); }    .red-fill    { fill: var(--g-red); }
+  .fill-red { fill: var(--red-soft); }
+  .dot-blue { fill: var(--g-blue); } .dot-green { fill: var(--g-green); } .dot-yellow { fill: var(--g-yellow); } .dot-red { fill: var(--g-red); }
+  .badge-fill { fill: var(--g-blue); }
+  .brand-mark { background: conic-gradient(from 200deg, var(--g-blue), var(--g-green), var(--g-yellow), var(--g-red), var(--g-blue)); }
+  .callout { border-left-color: var(--g-blue); }
+  .callout.warn { border-left-color: var(--g-red); }
+  .callout.tip { border-left-color: var(--g-yellow); }
+  .callout.tip .callout-label { color: var(--text); }
+  .callout.check { border-left-color: var(--g-green); }
+  .callout.agent { border-left-color: var(--g-blue); background: var(--accent-soft); }
+  .callout.agent .callout-label { color: var(--accent); }
+  .eyebrow .pill.optional { color: var(--text); }
+  .fill-accent { fill: var(--accent-soft); } .fill-green { fill: var(--green-soft); }
+  .fill-yellow { fill: var(--yellow-soft); }  .fill-red { fill: var(--red-soft); }
+  .step-nav-item.optional .step-label::after { color: var(--text-muted); border-color: var(--g-yellow); }
 </style>
 
 <script>
@@ -324,6 +355,7 @@
 
 <div class="shell">
   <aside class="sidebar">
+    <a class="back-link" href="index.html">← All docs</a>
     <div class="brand">
       <div class="brand-mark">✨</div>
       <div>
@@ -340,6 +372,7 @@
   <main class="main">
     <div class="content-col">
 
+      <a class="back-link mob" href="index.html">← All docs</a>
       <nav class="mobile-topnav" id="mobileNav"></nav>
 
       <!-- ================= OVERVIEW ================= -->
@@ -353,7 +386,135 @@
           <p>Google Cloud's <a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/overview" target="_blank" rel="noopener">Gemini Enterprise Agent Platform</a> groups agent work into four pillars: <strong>Build, Scale, Govern, Optimise</strong>. This lab is Build — designing and composing an agent: the <strong>Agent Development Kit (ADK)</strong> itself, <strong>Model Garden</strong> (the Gemini models your agents call), function tools, Agent Skills, and MCP toolsets. Multi-agent decomposition (an orchestrator routing to specialist sub-agents) and connecting an <strong>Agent Garden</strong> template or a <strong>RAG Engine</strong>-backed memory agent are Build-pillar concepts too — you'll see the fuller version of that in the tagged reference (below). None of what you build today is about <em>where it runs</em> (that's Scale), <em>who's allowed to do what</em> (that's Govern), or <em>whether it's any good</em> (that's Optimise) — those are Labs 2–4 in this series.</p>
         </div>
 
-        <figure class="diagram"><img src="https://docs.cloud.google.com/static/gemini-enterprise-agent-platform/images/gemini-enterprise-agent-platform.svg" alt="Agent Platform is organized around four pillars: Build, Scale, Govern, and Optimize."></figure>
+        <figure class="diagram">
+          <svg viewBox="0 0 900 228" role="img" aria-label="The Agent Development Kit lifecycle in seven stages, with a loop from evaluate back to design. Define the goal and scope, design the agent and interactions, build agents and tools, configure and connect, and local run and debug are covered in Lab 1. Evaluate and iterate is Lab 4. Deploy is Lab 2.">
+            <defs><marker id="lc-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+            <path d="M705,64 L705,46 L197,46 L197,62" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.6" marker-end="url(#lc-arrow)"/>
+            <text x="451" y="40" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.65">iterate</text>
+            <line x1="100" y1="92" x2="165" y2="92" stroke="currentColor" stroke-width="1.5" marker-end="url(#lc-arrow)"/>
+            <line x1="227" y1="92" x2="292" y2="92" stroke="currentColor" stroke-width="1.5" marker-end="url(#lc-arrow)"/>
+            <line x1="354" y1="92" x2="419" y2="92" stroke="currentColor" stroke-width="1.5" marker-end="url(#lc-arrow)"/>
+            <line x1="481" y1="92" x2="546" y2="92" stroke="currentColor" stroke-width="1.5" marker-end="url(#lc-arrow)"/>
+            <line x1="608" y1="92" x2="673" y2="92" stroke="currentColor" stroke-width="1.5" marker-end="url(#lc-arrow)"/>
+            <line x1="735" y1="92" x2="800" y2="92" stroke="currentColor" stroke-width="1.5" marker-end="url(#lc-arrow)"/>
+            <circle cx="70" cy="92" r="28" class="accent-stroke fill-accent" stroke-width="2"/>
+            <text x="70" y="98" font-size="16" font-weight="700" text-anchor="middle" fill="currentColor">1</text>
+            <text x="70" y="142" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Define the</text>
+            <text x="70" y="157" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">goal &amp; scope</text>
+            <text x="70" y="176" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">Lab 1 · Overview</text>
+            <circle cx="197" cy="92" r="28" class="accent-stroke fill-accent" stroke-width="2"/>
+            <text x="197" y="98" font-size="16" font-weight="700" text-anchor="middle" fill="currentColor">2</text>
+            <text x="197" y="142" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Design the</text>
+            <text x="197" y="157" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">agent &amp; interactions</text>
+            <text x="197" y="176" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">Lab 1 · Steps 2, 4</text>
+            <circle cx="324" cy="92" r="28" class="accent-stroke fill-accent" stroke-width="2"/>
+            <text x="324" y="98" font-size="16" font-weight="700" text-anchor="middle" fill="currentColor">3</text>
+            <text x="324" y="142" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Build agents</text>
+            <text x="324" y="157" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">&amp; tools</text>
+            <text x="324" y="176" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">Lab 1 · Steps 3–7</text>
+            <circle cx="451" cy="92" r="28" class="accent-stroke fill-accent" stroke-width="2"/>
+            <text x="451" y="98" font-size="16" font-weight="700" text-anchor="middle" fill="currentColor">4</text>
+            <text x="451" y="142" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Configure</text>
+            <text x="451" y="157" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">&amp; connect</text>
+            <text x="451" y="176" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">Lab 1 · Steps 6–8</text>
+            <circle cx="578" cy="92" r="28" class="accent-stroke fill-accent" stroke-width="2"/>
+            <text x="578" y="98" font-size="16" font-weight="700" text-anchor="middle" fill="currentColor">5</text>
+            <text x="578" y="142" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Local run</text>
+            <text x="578" y="157" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">&amp; debug</text>
+            <text x="578" y="176" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">Lab 1 · Steps 2, 9</text>
+            <circle cx="705" cy="92" r="28" class="red-stroke fill-red" stroke-width="2"/>
+            <text x="705" y="98" font-size="16" font-weight="700" text-anchor="middle" fill="currentColor">6</text>
+            <text x="705" y="142" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Evaluate</text>
+            <text x="705" y="157" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">&amp; iterate</text>
+            <text x="705" y="176" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">Lab 4</text>
+            <circle cx="832" cy="92" r="28" class="green-stroke fill-green" stroke-width="2"/>
+            <text x="832" y="98" font-size="16" font-weight="700" text-anchor="middle" fill="currentColor">7</text>
+            <text x="832" y="142" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Deploy</text>
+            <text x="832" y="176" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">Lab 2</text>
+            <rect x="10" y="206" width="16" height="12" rx="3" class="accent-stroke fill-accent" stroke-width="1.6"/>
+            <text x="32" y="216.5" font-size="10.5" text-anchor="start" fill="currentColor">Build · Lab 1 (this lab)</text>
+            <rect x="240" y="206" width="16" height="12" rx="3" class="green-stroke fill-green" stroke-width="1.6"/>
+            <text x="262" y="216.5" font-size="10.5" text-anchor="start" fill="currentColor">Scale · Lab 2</text>
+            <rect x="380" y="206" width="16" height="12" rx="3" class="red-stroke fill-red" stroke-width="1.6"/>
+            <text x="402" y="216.5" font-size="10.5" text-anchor="start" fill="currentColor">Optimise · Lab 4</text>
+          </svg>
+          <figcaption>The ADK development lifecycle, and where this camp covers each stage. Lab 1 covers the first five.</figcaption>
+        </figure>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 900 530" role="img" aria-label="The Agent Development Kit components, colour-coded by the lab that uses each. Used in Lab 1: Agents, Tool, Orchestration, Callbacks, Agent Skills, MCP toolsets, Tool Confirmation and the AG-UI web frontend, plus Debugging, Trace and Models. Session Management, Deployment and Memory are Lab 2. Evaluation is Lab 4, and Trace goes deeper there. Bidirectional Streaming, Artifact Management, Code Execution and Planning are not used in this camp.">
+            <rect x="10" y="8" width="880" height="34" rx="10" class="soft-fill muted-stroke" stroke-width="1.2"/>
+            <text x="450" y="30" font-size="13.5" font-weight="700" text-anchor="middle" fill="currentColor">Agent Development Kit: a client-side SDK to define multi-agent applications</text>
+            <text x="10" y="66" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.55">THE COMPONENTS, AND WHICH LAB USES EACH</text>
+            <rect x="10" y="76" width="208" height="56" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="114" y="100" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Agents</text>
+            <text x="114" y="118" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Steps 2, 5</text>
+            <rect x="234" y="76" width="208" height="56" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="338" y="100" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Tool</text>
+            <text x="338" y="118" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Steps 3, 5: your own functions</text>
+            <rect x="458" y="76" width="208" height="56" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="562" y="100" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Orchestration</text>
+            <text x="562" y="118" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Step 5: agent as a tool</text>
+            <rect x="682" y="76" width="208" height="56" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="786" y="100" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Callbacks</text>
+            <text x="786" y="118" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Step 8; guardrails in Lab 3</text>
+            <rect x="10" y="144" width="208" height="56" rx="10" class="muted-stroke soft-fill" stroke-dasharray="5 4" stroke-width="1.8"/>
+            <text x="114" y="168" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor" opacity="0.6">Bidirectional Streaming</text>
+            <text x="114" y="186" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.5">not used</text>
+            <rect x="234" y="144" width="208" height="56" rx="10" class="green-stroke fill-green" stroke-width="1.8"/>
+            <text x="338" y="168" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Session Management</text>
+            <text x="338" y="186" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Lab 2</text>
+            <rect x="458" y="144" width="208" height="56" rx="10" class="red-stroke fill-red" stroke-width="1.8"/>
+            <text x="562" y="168" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Evaluation</text>
+            <text x="562" y="186" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Lab 4</text>
+            <rect x="682" y="144" width="208" height="56" rx="10" class="green-stroke fill-green" stroke-width="1.8"/>
+            <text x="786" y="168" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Deployment</text>
+            <text x="786" y="186" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Lab 2</text>
+            <rect x="10" y="212" width="208" height="56" rx="10" class="muted-stroke soft-fill" stroke-dasharray="5 4" stroke-width="1.8"/>
+            <text x="114" y="236" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor" opacity="0.6">Artifact Management</text>
+            <text x="114" y="254" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.5">not used</text>
+            <rect x="234" y="212" width="208" height="56" rx="10" class="green-stroke fill-green" stroke-width="1.8"/>
+            <text x="338" y="236" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Memory</text>
+            <text x="338" y="254" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Lab 2: Memory Bank</text>
+            <rect x="458" y="212" width="208" height="56" rx="10" class="muted-stroke soft-fill" stroke-dasharray="5 4" stroke-width="1.8"/>
+            <text x="562" y="236" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor" opacity="0.6">Code Execution</text>
+            <text x="562" y="254" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.5">not used</text>
+            <rect x="682" y="212" width="208" height="56" rx="10" class="muted-stroke soft-fill" stroke-dasharray="5 4" stroke-width="1.8"/>
+            <text x="786" y="236" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor" opacity="0.6">Planning</text>
+            <text x="786" y="254" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.5">not used</text>
+            <rect x="10" y="292" width="208" height="56" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="114" y="316" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Agent Skills</text>
+            <text x="114" y="334" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Step 4: load_skill on demand</text>
+            <rect x="234" y="292" width="208" height="56" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="338" y="316" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">MCP Toolsets</text>
+            <text x="338" y="334" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Steps 6–7: Buffer, LinkedIn</text>
+            <rect x="458" y="292" width="208" height="56" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="562" y="316" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Tool Confirmation</text>
+            <text x="562" y="334" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Step 6: human approval gate</text>
+            <rect x="682" y="292" width="208" height="56" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="786" y="316" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Web UI (AG-UI)</text>
+            <text x="786" y="334" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.72">Step 8: CopilotKit frontend</text>
+            <text x="10" y="284" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.55">ALSO IN THIS CAMP: ADK FEATURES THE OFFICIAL PICTURE LEAVES OUT</text>
+            <rect x="10" y="364" width="880" height="36" rx="8" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="450" y="380" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">Debugging</text>
+            <text x="450" y="394" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.72">adk web · Steps 2–9</text>
+            <rect x="10" y="408" width="880" height="36" rx="8" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="450" y="424" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">Trace</text>
+            <text x="450" y="438" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.72">the adk web Trace tab from Step 3; the full story in Lab 4</text>
+            <rect x="10" y="452" width="880" height="36" rx="8" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="450" y="468" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">Models</text>
+            <text x="450" y="482" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.72">Gemini on Vertex AI · Steps 1–2</text>
+            <rect x="10" y="506" width="16" height="12" rx="3" class="accent-stroke fill-accent" stroke-width="1.6"/>
+            <text x="32" y="516.5" font-size="10.5" text-anchor="start" fill="currentColor">Build · Lab 1 (this lab)</text>
+            <rect x="240" y="506" width="16" height="12" rx="3" class="green-stroke fill-green" stroke-width="1.6"/>
+            <text x="262" y="516.5" font-size="10.5" text-anchor="start" fill="currentColor">Scale · Lab 2</text>
+            <rect x="380" y="506" width="16" height="12" rx="3" class="red-stroke fill-red" stroke-width="1.6"/>
+            <text x="402" y="516.5" font-size="10.5" text-anchor="start" fill="currentColor">Optimise · Lab 4</text>
+            <rect x="530" y="506" width="16" height="12" rx="3" class="muted-stroke soft-fill" stroke-dasharray="3 2" stroke-width="1.6"/>
+            <text x="552" y="516.5" font-size="10.5" text-anchor="start" fill="currentColor">Not used in this camp</text>
+          </svg>
+          <figcaption>ADK's components, plus the features this camp adds. Lab 1 is the blue part; the other labs cover the rest.</figcaption>
+        </figure>
 
         <div class="callout agent">
           <span class="callout-label">How this lab works</span>
@@ -375,52 +536,49 @@
             <text x="50" y="105" font-size="10.5" fill="currentColor" opacity="0.65">idea</text>
 
             <!-- orchestrator box -->
-            <rect x="10" y="118" width="150" height="52" rx="10" class="accent-stroke" fill="none" stroke-width="1.6"/>
+            <rect x="10" y="118" width="150" height="52" rx="10" class="accent-stroke fill-accent" stroke-width="1.6"/>
             <text x="85" y="140" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">social_poster</text>
             <text x="85" y="156" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.65">orchestrator agent</text>
 
             <!-- tools below, three boxes -->
-            <line x1="85" y1="170" x2="85" y2="188" stroke="currentColor" stroke-width="1.2"/>
-            <line x1="85" y1="188" x2="30" y2="188" stroke="currentColor" stroke-width="1.2"/>
-            <line x1="85" y1="188" x2="85" y2="188" stroke="currentColor" stroke-width="1.2"/>
-            <line x1="85" y1="188" x2="140" y2="188" stroke="currentColor" stroke-width="1.2"/>
-            <line x1="30" y1="188" x2="30" y2="200" stroke="currentColor" stroke-width="1.2" marker-end="url(#ov-arrow)"/>
-            <line x1="85" y1="188" x2="85" y2="200" stroke="currentColor" stroke-width="1.2" marker-end="url(#ov-arrow)"/>
-            <line x1="140" y1="188" x2="140" y2="200" stroke="currentColor" stroke-width="1.2" marker-end="url(#ov-arrow)"/>
+            <line x1="85" y1="170" x2="85" y2="186" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="60" y1="186" x2="276" y2="186" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="60" y1="186" x2="60" y2="200" stroke="currentColor" stroke-width="1.2" marker-end="url(#ov-arrow)"/>
+            <line x1="168" y1="186" x2="168" y2="200" stroke="currentColor" stroke-width="1.2" marker-end="url(#ov-arrow)"/>
+            <line x1="276" y1="186" x2="276" y2="200" stroke="currentColor" stroke-width="1.2" marker-end="url(#ov-arrow)"/>
 
-            <rect x="2" y="200" width="56" height="40" rx="7" class="muted-stroke" fill="none" stroke-width="1.2"/>
-            <text x="30" y="216" font-size="8.6" text-anchor="middle" fill="currentColor">Skills</text>
-            <text x="30" y="228" font-size="7.6" text-anchor="middle" fill="currentColor" opacity="0.6">on demand</text>
+            <rect x="10" y="200" width="100" height="52" rx="8" class="green-stroke fill-green" stroke-width="1.6"/>
+            <text x="60" y="222" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Skills</text>
+            <text x="60" y="238" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">loaded on demand</text>
 
-            <rect x="60" y="200" width="56" height="40" rx="7" class="muted-stroke" fill="none" stroke-width="1.2"/>
-            <text x="88" y="216" font-size="8.6" text-anchor="middle" fill="currentColor">generate</text>
-            <text x="88" y="226" font-size="8.6" text-anchor="middle" fill="currentColor">_image</text>
+            <rect x="118" y="200" width="100" height="52" rx="8" class="accent-stroke fill-accent" stroke-width="1.6"/>
+            <text x="168" y="222" font-size="11.5" font-weight="700" text-anchor="middle" fill="currentColor">generate_image</text>
+            <text x="168" y="238" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">Gemini image tool</text>
 
-            <rect x="118" y="200" width="60" height="40" rx="7" class="muted-stroke" fill="none" stroke-width="1.2"/>
-            <text x="148" y="214" font-size="8.4" text-anchor="middle" fill="currentColor">web_</text>
-            <text x="148" y="224" font-size="8.4" text-anchor="middle" fill="currentColor">researcher</text>
-            <text x="148" y="234" font-size="7.2" text-anchor="middle" fill="currentColor" opacity="0.6">(isolated)</text>
+            <rect x="226" y="200" width="100" height="52" rx="8" class="red-stroke fill-red" stroke-width="1.6"/>
+            <text x="276" y="222" font-size="11.5" font-weight="700" text-anchor="middle" fill="currentColor">web_researcher</text>
+            <text x="276" y="238" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">isolated sub-agent</text>
 
             <!-- arrow to gate -->
             <line x1="160" y1="144" x2="264" y2="144" stroke="currentColor" stroke-width="1.4" marker-end="url(#ov-arrow)"/>
             <text x="212" y="136" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">draft shown</text>
 
             <!-- gate diamond -->
-            <polygon points="326,108 388,144 326,180 264,144" class="yellow-stroke" fill="none" stroke-width="1.6"/>
+            <polygon points="326,108 388,144 326,180 264,144" class="yellow-stroke fill-yellow" stroke-width="1.6"/>
             <text x="326" y="140" font-size="10.5" text-anchor="middle" font-weight="700" fill="currentColor">approval</text>
             <text x="326" y="153" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">gate</text>
 
             <!-- to buffer -->
             <line x1="388" y1="144" x2="470" y2="102" stroke="currentColor" stroke-width="1.5" marker-end="url(#ov-arrow)"/>
             <text x="430" y="94" font-size="9.5" fill="currentColor" opacity="0.75">approved</text>
-            <rect x="472" y="72" width="130" height="52" rx="10" class="green-stroke" fill="none" stroke-width="1.6"/>
+            <rect x="472" y="72" width="130" height="52" rx="10" class="green-stroke fill-green" stroke-width="1.6"/>
             <text x="537" y="94" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">Buffer MCP</text>
             <text x="537" y="109" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">remote · primary</text>
 
             <!-- to linkedin, dashed -->
             <line x1="388" y1="144" x2="470" y2="188" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ov-arrow)"/>
             <text x="432" y="205" font-size="9.5" fill="currentColor" opacity="0.7">step 7, optional</text>
-            <rect x="472" y="164" width="130" height="52" rx="10" class="muted-stroke" stroke-dasharray="4 3" fill="none" stroke-width="1.4"/>
+            <rect x="472" y="164" width="130" height="52" rx="10" class="accent-stroke fill-accent" stroke-dasharray="4 3" stroke-width="1.4"/>
             <text x="537" y="186" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">LinkedIn MCP</text>
             <text x="537" y="201" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">stdio · bonus</text>
 
@@ -430,7 +588,7 @@
             <text x="670" y="148" font-size="16" fill="currentColor">🚀</text>
             <text x="668" y="166" font-size="9.5" fill="currentColor" opacity="0.7">posted</text>
 
-            <text x="10" y="272" font-size="10.5" fill="currentColor" opacity="0.6">Everything left of the gate you build Steps 1–5. The gate + Buffer is Step 6. LinkedIn is optional Step 7.</text>
+            <text x="10" y="284" font-size="10.5" fill="currentColor" opacity="0.6">Everything left of the gate you build Steps 1–5. The gate + Buffer is Step 6. LinkedIn is optional Step 7.</text>
           </svg>
           <figcaption>The full system you're building today: one orchestrating agent, its tools, and two ways out to a real publish.</figcaption>
         </figure>
@@ -613,6 +771,73 @@ description and tell them where the file was saved.""",
         <div class="eyebrow"><span class="pill">Step 4 of 9</span><span class="dur">⏱ 15 min</span></div>
         <h1 class="step-title">Teach it Agent Skills</h1>
         <p class="lede">A Skill is a folder with a <code>SKILL.md</code> file: YAML frontmatter (name, description) plus markdown instructions. The agent decides when to load one via a tool call; the content isn't in the system prompt until it's actually needed. That's <em>progressive disclosure</em>: keep the default context small, pull in detail only when relevant.</p>
+
+        <div class="callout">
+          <span class="callout-label">Why skills matter</span>
+          <ul>
+            <li><strong>The default prompt stays small.</strong> Only each skill's name and one-line description are always in context. The full rules load when a draft needs them, so adding a fifth or a tenth skill costs about a line each until it is used.</li>
+            <li><strong>Behaviour lives in files, not code.</strong> Tone, structure and platform rules are markdown. Anyone can change them, review the change in a pull request, and never open <code>agent.py</code>.</li>
+            <li><strong>Each concern stays separate.</strong> One long instruction prompt makes rules crowd each other. A skill keeps formatting, platform rules, tone and image style apart, and the agent picks what applies.</li>
+            <li><strong>A skill is just a folder.</strong> You can copy one into another agent or project.</li>
+            <li><strong>It is governance you can read.</strong> A skill is a reviewable file that constrains what the agent writes. Lab 3 comes back to this.</li>
+          </ul>
+        </div>
+
+        <figure class="diagram" id="skills-disclosure">
+          <svg viewBox="0 0 900 372" role="img" aria-label="How Social Spark uses Agent Skills, in three levels. Level 1, always in context: the names and one-line descriptions of four skills, post-formatter for structure, platform-style for platform rules, brand-voice for tone, and poster-style for image style. Level 2, loaded when relevant through the load_skill tool: the full SKILL.md of the skills this draft needs; poster-style loads only when an image is requested. Level 3, only if needed, through the load_skill_resource tool: platform-style loads references/linkedin.md because the draft is for LinkedIn, and does not load references/x.md.">
+            <defs><marker id="sk-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+            <text x="10" y="24" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">1 · ALWAYS IN CONTEXT</text>
+            <text x="306" y="24" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">2 · LOADED WHEN RELEVANT</text>
+            <text x="306" y="38" font-size="10" text-anchor="start" fill="currentColor" opacity="0.55">the load_skill tool</text>
+            <text x="650" y="24" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">3 · ONLY IF NEEDED</text>
+            <text x="650" y="38" font-size="10" text-anchor="start" fill="currentColor" opacity="0.55">the load_skill_resource tool</text>
+            <rect x="10" y="56" width="214" height="48" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="22" y="77" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor">post-formatter</text>
+            <text x="22" y="93" font-size="10" text-anchor="start" fill="currentColor" opacity="0.72">structure: hook, limits, hashtags</text>
+            <line x1="226" y1="80" x2="302" y2="80" stroke="currentColor" stroke-width="1.5" marker-end="url(#sk-arrow)"/>
+            <rect x="306" y="56" width="270" height="48" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
+            <text x="318" y="77" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor">SKILL.md</text>
+            <text x="318" y="93" font-size="10" text-anchor="start" fill="currentColor" opacity="0.72">hook line · short paragraphs · hashtags</text>
+            <rect x="10" y="116" width="214" height="48" rx="10" class="green-stroke fill-green" stroke-width="1.8"/>
+            <text x="22" y="137" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor">platform-style</text>
+            <text x="22" y="153" font-size="10" text-anchor="start" fill="currentColor" opacity="0.72">rules for the target platform</text>
+            <line x1="226" y1="140" x2="302" y2="140" stroke="currentColor" stroke-width="1.5" marker-end="url(#sk-arrow)"/>
+            <rect x="306" y="116" width="270" height="48" rx="10" class="green-stroke fill-green" stroke-width="1.8"/>
+            <text x="318" y="137" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor">SKILL.md</text>
+            <text x="318" y="153" font-size="10" text-anchor="start" fill="currentColor" opacity="0.72">which platform? then which reference file</text>
+            <rect x="10" y="176" width="214" height="48" rx="10" class="yellow-stroke fill-yellow" stroke-width="1.8"/>
+            <text x="22" y="197" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor">brand-voice</text>
+            <text x="22" y="213" font-size="10" text-anchor="start" fill="currentColor" opacity="0.72">tone and banned clichés</text>
+            <line x1="226" y1="200" x2="302" y2="200" stroke="currentColor" stroke-width="1.5" marker-end="url(#sk-arrow)"/>
+            <rect x="306" y="176" width="270" height="48" rx="10" class="yellow-stroke fill-yellow" stroke-width="1.8"/>
+            <text x="318" y="197" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor">SKILL.md</text>
+            <text x="318" y="213" font-size="10" text-anchor="start" fill="currentColor" opacity="0.72">casual · British English · no “game-changer”</text>
+            <rect x="10" y="236" width="214" height="48" rx="10" class="red-stroke fill-red" stroke-width="1.8"/>
+            <text x="22" y="257" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor">poster-style</text>
+            <text x="22" y="273" font-size="10" text-anchor="start" fill="currentColor" opacity="0.72">visual style for images</text>
+            <line x1="226" y1="260" x2="302" y2="260" stroke="currentColor" stroke-width="1.5" marker-end="url(#sk-arrow)" stroke-dasharray="4 3"/>
+            <rect x="306" y="236" width="270" height="48" rx="10" class="red-stroke fill-red" stroke-dasharray="5 4" stroke-width="1.8"/>
+            <text x="318" y="257" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor">SKILL.md</text>
+            <text x="318" y="273" font-size="10" text-anchor="start" fill="currentColor" opacity="0.72">style rules for the generate_image prompt</text>
+            <text x="306" y="300" font-size="10" text-anchor="start" fill="currentColor" opacity="0.6">only loaded when the user asks for an image</text>
+            <line x1="578" y1="140" x2="646" y2="118" stroke="currentColor" stroke-width="1.5" marker-end="url(#sk-arrow)"/>
+            <line x1="578" y1="140" x2="646" y2="176" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#sk-arrow)"/>
+            <rect x="650" y="96" width="240" height="44" rx="10" class="green-stroke fill-green" stroke-width="1.8"/>
+            <text x="662" y="116" font-size="12" font-weight="700" text-anchor="start" fill="currentColor">references/linkedin.md</text>
+            <text x="662" y="131" font-size="10" text-anchor="start" fill="currentColor" opacity="0.72">loaded: the draft is for LinkedIn</text>
+            <rect x="650" y="156" width="240" height="44" rx="10" class="muted-stroke soft-fill" stroke-dasharray="5 4" stroke-width="1.8"/>
+            <text x="662" y="176" font-size="12" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">references/x.md</text>
+            <text x="662" y="191" font-size="10" text-anchor="start" fill="currentColor" opacity="0.55">not loaded: not an X post</text>
+            <line x1="10" y1="322" x2="890" y2="322" stroke="currentColor" stroke-width="1" opacity="0.2"/>
+            <text x="10" y="344" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">A name and a one-line</text>
+            <text x="10" y="358" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">description. About a line each.</text>
+            <text x="306" y="344" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">The full instructions, for only the skills this</text>
+            <text x="306" y="358" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">draft needs. The agent decides, from the description.</text>
+            <text x="650" y="344" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Deeper detail, for only the platform in</text>
+            <text x="650" y="358" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">question. Two levels down, still on demand.</text>
+          </svg>
+          <figcaption>How the agent uses skills in this lab: a cheap menu, then the recipe for what applies, then the fine print only where it matters. Ask for a LinkedIn post and watch the Trace: <code>x.md</code> never loads.</figcaption>
+        </figure>
 
         <div class="callout agent">
           <span class="callout-label">Ask your coding agent</span>
@@ -848,27 +1073,27 @@ Posting rules (strict):
               </marker>
             </defs>
             <text x="10" y="24" font-size="12.5" font-weight="700" fill="currentColor">Instruction only</text>
-            <rect x="10" y="36" width="110" height="34" rx="7" class="muted-stroke" fill="none" stroke-width="1.3"/>
+            <rect x="10" y="36" width="110" height="34" rx="7" class="accent-stroke fill-accent" stroke-width="1.3"/>
             <text x="65" y="57" font-size="10.5" text-anchor="middle" fill="currentColor">model</text>
             <line x1="120" y1="53" x2="220" y2="53" stroke="currentColor" stroke-width="1.3" marker-end="url(#gate-arrow)"/>
-            <rect x="222" y="36" width="120" height="34" rx="7" class="red-stroke" fill="none" stroke-width="1.4"/>
+            <rect x="222" y="36" width="120" height="34" rx="7" class="red-stroke fill-red" stroke-width="1.4"/>
             <text x="282" y="57" font-size="10.5" text-anchor="middle" fill="currentColor">create_post</text>
             <text x="10" y="94" font-size="10" fill="currentColor" opacity="0.7">A misreading model can call it directly; nothing in the runtime stops it.</text>
 
             <line x1="0" y1="115" x2="700" y2="115" stroke="currentColor" stroke-width="1" opacity="0.15"/>
 
             <text x="10" y="140" font-size="12.5" font-weight="700" fill="currentColor">require_confirmation=True</text>
-            <rect x="10" y="152" width="110" height="34" rx="7" class="muted-stroke" fill="none" stroke-width="1.3"/>
+            <rect x="10" y="152" width="110" height="34" rx="7" class="accent-stroke fill-accent" stroke-width="1.3"/>
             <text x="65" y="173" font-size="10.5" text-anchor="middle" fill="currentColor">model</text>
             <line x1="120" y1="169" x2="210" y2="169" stroke="currentColor" stroke-width="1.3" marker-end="url(#gate-arrow)"/>
-            <polygon points="252,150 296,169 252,188 208,169" class="yellow-stroke" fill="none" stroke-width="1.5"/>
+            <polygon points="252,150 296,169 252,188 208,169" class="yellow-stroke fill-yellow" stroke-width="1.5"/>
             <text x="252" y="173" font-size="9" text-anchor="middle" fill="currentColor">ADK gate</text>
             <line x1="296" y1="169" x2="380" y2="169" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#gate-arrow)"/>
             <text x="338" y="160" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">renders in UI</text>
-            <rect x="382" y="152" width="110" height="34" rx="7" class="accent-stroke" fill="none" stroke-width="1.4"/>
+            <rect x="382" y="152" width="110" height="34" rx="7" class="yellow-stroke fill-yellow" stroke-width="1.4"/>
             <text x="437" y="173" font-size="10" text-anchor="middle" fill="currentColor">Approve / Reject</text>
             <line x1="492" y1="169" x2="580" y2="169" stroke="currentColor" stroke-width="1.3" marker-end="url(#gate-arrow)"/>
-            <rect x="582" y="152" width="110" height="34" rx="7" class="green-stroke" fill="none" stroke-width="1.4"/>
+            <rect x="582" y="152" width="110" height="34" rx="7" class="green-stroke fill-green" stroke-width="1.4"/>
             <text x="637" y="173" font-size="10.5" text-anchor="middle" fill="currentColor">create_post</text>
             <text x="10" y="206" font-size="10" fill="currentColor" opacity="0.7">Only fires after a human explicitly responds. Reject and it never runs.</text>
           </svg>
@@ -1034,36 +1259,36 @@ app.mount("/outputs", StaticFiles(directory=GALLERY_DIR), name="outputs")</code>
                 <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
               </marker>
             </defs>
-            <rect x="10" y="70" width="128" height="46" rx="9" class="muted-stroke" fill="none" stroke-width="1.3"/>
+            <rect x="10" y="70" width="128" height="46" rx="9" class="red-stroke fill-red" stroke-width="1.3"/>
             <text x="74" y="90" font-size="11" text-anchor="middle" fill="currentColor">Browser</text>
             <text x="74" y="104" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.65">CopilotSidebar</text>
 
             <line x1="138" y1="93" x2="204" y2="93" stroke="currentColor" stroke-width="1.3" marker-end="url(#br-arrow)"/>
             <text x="171" y="84" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.7">:3000</text>
 
-            <rect x="206" y="70" width="150" height="46" rx="9" class="muted-stroke" fill="none" stroke-width="1.3"/>
+            <rect x="206" y="70" width="150" height="46" rx="9" class="red-stroke fill-red" stroke-width="1.3"/>
             <text x="281" y="88" font-size="10.5" text-anchor="middle" fill="currentColor">route.ts</text>
             <text x="281" y="102" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.65">CopilotRuntime + HttpAgent</text>
 
             <line x1="356" y1="93" x2="420" y2="93" stroke="currentColor" stroke-width="1.3" marker-end="url(#br-arrow)"/>
             <text x="388" y="84" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.7">HTTP</text>
 
-            <rect x="422" y="60" width="150" height="66" rx="9" class="accent-stroke" fill="none" stroke-width="1.6"/>
+            <rect x="422" y="60" width="150" height="66" rx="9" class="green-stroke fill-green" stroke-width="1.6"/>
             <text x="497" y="82" font-size="10.5" text-anchor="middle" font-weight="700" fill="currentColor">main.py :8000</text>
             <text x="497" y="96" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.7">/api/adk (ADKAgent)</text>
             <text x="497" y="110" font-size="8.6" text-anchor="middle" fill="currentColor" opacity="0.7">you wrote this</text>
 
             <line x1="497" y1="126" x2="497" y2="150" stroke="currentColor" stroke-width="1.3" marker-end="url(#br-arrow)"/>
-            <rect x="422" y="152" width="150" height="38" rx="8" class="green-stroke" fill="none" stroke-width="1.4"/>
+            <rect x="422" y="152" width="150" height="38" rx="8" class="accent-stroke fill-accent" stroke-width="1.4"/>
             <text x="497" y="175" font-size="10.5" text-anchor="middle" fill="currentColor">root_agent</text>
 
             <line x1="74" y1="116" x2="74" y2="150" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3"/>
             <line x1="74" y1="150" x2="180" y2="150" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3"/>
-            <rect x="10" y="152" width="170" height="34" rx="7" class="yellow-stroke" fill="none" stroke-width="1.2"/>
+            <rect x="10" y="152" width="170" height="34" rx="7" class="yellow-stroke fill-yellow" stroke-width="1.2"/>
             <text x="95" y="170" font-size="9" text-anchor="middle" fill="currentColor">ConfirmAction.tsx</text>
             <text x="95" y="181" font-size="7.6" text-anchor="middle" fill="currentColor" opacity="0.65">renders adk_request_confirmation</text>
 
-            <rect x="10" y="196" width="170" height="34" rx="7" class="yellow-stroke" fill="none" stroke-width="1.2"/>
+            <rect x="10" y="196" width="170" height="34" rx="7" class="yellow-stroke fill-yellow" stroke-width="1.2"/>
             <line x1="74" y1="186" x2="74" y2="196" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3"/>
             <text x="95" y="214" font-size="9" text-anchor="middle" fill="currentColor">StagePanel.tsx</text>
             <text x="95" y="225" font-size="7.6" text-anchor="middle" fill="currentColor" opacity="0.65">reads pipeline_stage state</text>

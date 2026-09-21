@@ -91,7 +91,20 @@ def _sanitize(kind: str, text: str) -> bool:
         timeout=15,
     )
     resp.raise_for_status()
-    filter_results = resp.json().get("sanitizationResult", {}).get("filterResults", {})
+    result = resp.json().get("sanitizationResult", {})
+    filter_results = result.get("filterResults", {})
+    if not filter_results:
+        # A working template always returns per-filter results, match or not.
+        # None means it is not actually inspecting — typically enforcementType
+        # INSPECT_ONLY, which logs findings but returns no verdict. Treating
+        # that as "clean" is how these guardrails once failed open unnoticed
+        # (LEARNINGS.md, 2026-09-20). Fail closed, and say why.
+        log.error(
+            "Model Armor %s returned no filter results (template %s, %s): "
+            "blocking. Check the template's enforcementType is INSPECT_AND_BLOCK.",
+            kind, MA_TEMPLATE, MA_REGION,
+        )
+        return True
     for filter_name, wrapper in filter_results.items():
         if kind == "sanitizeModelResponse" and filter_name == "pi_and_jailbreak":
             continue
@@ -162,24 +175,27 @@ def guard_output(
 
 # --- DLP ----------------------------------------------------------------------
 
-_DLP_INFO_TYPES = ["PERSON_NAME", "EMAIL_ADDRESS", "PHONE_NUMBER", "LOCATION"]
+# Two thresholds, because the two families fail in opposite ways. Names and
+# locations are fuzzy: at DLP's default POSSIBLE tier a capitalized product or
+# project noun (e.g. "Agent Substrate") reads as PERSON_NAME, so they need
+# LIKELY. Phones and emails are structured, and DLP rates a phone number
+# POSSIBLE whenever it sits inside a sentence ("...or +44 7911 123456 if you
+# want the slides"), so a blanket LIKELY silently leaked it (LEARNINGS.md,
+# 2026-09-21). Structured types therefore run at POSSIBLE.
+_DLP_PASSES = [
+    (["EMAIL_ADDRESS", "PHONE_NUMBER"], "POSSIBLE"),
+    (["PERSON_NAME", "LOCATION"], "LIKELY"),
+]
 
 
-def redact_pii(text: str) -> str:
-    """De-identifies PII via Cloud DLP, replacing each finding with its type
-    (e.g. "[PERSON_NAME]"). Used on final drafts before they leave the app."""
+def _deidentify(text: str, info_types: list[str], min_likelihood: str) -> str:
     resp = httpx.post(
         f"https://dlp.googleapis.com/v2/projects/{PROJECT}/locations/global/content:deidentify",
         headers=_headers(),
         json={
             "inspectConfig": {
-                "infoTypes": [{"name": t} for t in _DLP_INFO_TYPES],
-                # Unspecified defaults to POSSIBLE, DLP's most permissive
-                # tier — loose enough that a capitalized product/project noun
-                # (e.g. "Agent Substrate") reads as PERSON_NAME. LIKELY trades
-                # a little recall on genuinely borderline names for far fewer
-                # false positives on ordinary capitalized nouns.
-                "minLikelihood": "LIKELY",
+                "infoTypes": [{"name": t} for t in info_types],
+                "minLikelihood": min_likelihood,
             },
             "deidentifyConfig": {
                 "infoTypeTransformations": {
@@ -194,6 +210,14 @@ def redact_pii(text: str) -> str:
     )
     resp.raise_for_status()
     return resp.json().get("item", {}).get("value", text)
+
+
+def redact_pii(text: str) -> str:
+    """De-identifies PII via Cloud DLP, replacing each finding with its type
+    (e.g. "[PERSON_NAME]"). Used on final drafts before they leave the app."""
+    for info_types, likelihood in _DLP_PASSES:
+        text = _deidentify(text, info_types, likelihood)
+    return text
 
 
 def redact_pii_text(text: str) -> dict:

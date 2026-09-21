@@ -9,13 +9,17 @@ the Model Armor template and points the app at it.
 From the repo root:
 
 ```bash
-./setup/04-model-armor.sh
+./gcs-setup.sh        # Step 6 creates it in us-central1 and proves it blocks
 ```
 
-This creates a template `devcamp-guardrails` in `europe-west2` with:
+(`setup/04-model-armor.sh` referenced in earlier drafts of this guide no longer
+exists; the template is now created by `gcs-setup.sh`.) This creates a template `devcamp-guardrails` in `europe-west2` with:
 - **Responsible-AI filters** (hate speech, harassment, sexually explicit,
   dangerous) at `MEDIUM_AND_ABOVE` — the build guide's threshold.
 - **Prompt-injection / jailbreak** detection, enabled.
+- **`enforcementType: INSPECT_AND_BLOCK`.** Not `INSPECT_ONLY`: that mode returns
+  no results to the caller, so the guardrails silently never fire (see
+  [LEARNINGS.md](LEARNINGS.md)).
 - It then fires a known injection string at the live API and asserts the
   verdict is `MATCH_FOUND` before printing success.
 
@@ -50,10 +54,12 @@ elsewhere, carry the header too.
 ## 4. Verify end to end
 
 ```bash
-# with the mock memory server running + MEMORY_AGENT_CARD_URL set:
-uv run adk eval backend/social_poster evals/golden.json \
-  --config_file_path evals/eval_config.json
+./evals/run.sh
 ```
+
+The script starts the mock memory agent and sets `MEMORY_AGENT_CARD_URL` for you
+(without a memory agent `consults_memory` fails, silently), and exits non-zero
+if any case fails (bare `adk eval` always exits 0).
 
 Expect **5 / 5**. Two of those cases (`blocks_prompt_injection`, `redacts_pii`)
 exercise the guardrails directly; the injection-attack table in

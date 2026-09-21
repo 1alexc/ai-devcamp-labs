@@ -36,6 +36,11 @@ If the answers clearly come from your uploaded posts, RAG is working.
 
 ## 4. Wire it into the orchestrator
 
+> ⚠️ **Unverified.** This guide has not been run end to end, and no RAG agent is
+> deployed in `adk-devcamp-poc`. Where the card URL appears in the Console is
+> not confirmed: the line below is the intended location, not a tested one.
+> Record what you actually see, and correct this step.
+
 1. Find the deployed agent's **A2A agent card URL** on the Agent Engine
    resource page (the `/.well-known/agent.json` endpoint of its serving URL).
 2. Put it in `backend/social_poster/.env`:

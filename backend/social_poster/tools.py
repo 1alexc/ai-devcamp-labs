@@ -73,7 +73,7 @@ def _sign_via_impersonation(bucket_name: str, blob_name: str) -> str:
     application-default login`, or a deployed Agent Runtime's own runtime
     service account) borrows that SA's identity just long enough to sign,
     via `roles/iam.serviceAccountTokenCreator` granted on it — a one-time,
-    manual IAM setup step (see docs/devcamp-attendee-setup-guide.md), not
+    manual IAM setup step (see docs/setup-guide.html), not
     something this code can grant itself.
     """
     signing_sa = os.environ["GCS_SIGNING_SERVICE_ACCOUNT"]

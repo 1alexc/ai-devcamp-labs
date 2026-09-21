@@ -107,7 +107,7 @@ deliberately keeps Buffer posts text-only and only attaches images via
 LinkedIn's own tool (Step 7), specifically to avoid this exact complexity;
 this fix is for the reference app's more advanced capability, so it's
 documented as an explicitly optional step in
-`docs/devcamp-attendee-setup-guide.md` (Step 6), not folded into the
+`docs/setup-guide.html` (Step 6), not folded into the
 mandatory pre-camp steps everyone has to do.
 
 <!-- END: Build -->

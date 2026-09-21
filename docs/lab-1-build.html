@@ -598,32 +598,32 @@
           <table>
             <thead><tr><th style="width:36%">File / piece</th><th>Who does it</th></tr></thead>
             <tbody>
-              <tr><td><code>tools.py</code> (Gemini image call)</td><td><span class="chip given">given</span> copy it in</td></tr>
-              <tr><td><code>skills/post-formatter/</code>, <code>platform-style/</code>, <code>poster-style/</code></td><td><span class="chip given">given</span> copy them in</td></tr>
+              <tr><td><code>tools.py</code> (Gemini image call)</td><td><span class="chip given">given</span> already in the repo</td></tr>
+              <tr><td><code>skills/post-formatter/</code>, <code>platform-style/</code>, <code>poster-style/</code></td><td><span class="chip given">given</span> already in the repo</td></tr>
               <tr><td><code>skills/brand-voice/SKILL.md</code></td><td><span class="chip write">you write</span> Step 4</td></tr>
               <tr><td><code>backend/social_poster/agent.py</code></td><td><span class="chip write">you write</span> Steps 2, 3, 4, 5, 6, 7</td></tr>
-              <tr><td><code>backend/main.py</code> (the AG-UI bridge)</td><td><span class="chip write">you write</span> Step 8 (only 30 lines, and it's the part that matters)</td></tr>
-              <tr><td><code>frontend/</code> (Next.js + CopilotKit app)</td><td><span class="chip given">given</span> copy the whole folder, Step 8, but you'll <em>read</em> two files in it</td></tr>
-              <tr><td><code>mcp/linkedin_server.py</code></td><td><span class="chip given">given</span> copy it in, Step 7 only</td></tr>
+              <tr><td><code>backend/main.py</code> (the AG-UI bridge)</td><td><span class="chip given">given</span> already in the repo; in Step 8 you <em>read</em> it (it's the part that matters)</td></tr>
+              <tr><td><code>frontend/</code> (Next.js + CopilotKit app)</td><td><span class="chip given">given</span> already in the repo; in Step 8 you'll <em>read</em> two files in it</td></tr>
+              <tr><td><code>mcp/linkedin_server.py</code></td><td><span class="chip given">given</span> already in the repo, Step 7 only</td></tr>
             </tbody>
           </table>
         </div>
 
         <h3>Before you start</h3>
         <ul>
-          <li>Completed the <a href="devcamp-attendee-setup-guide.md">pre-camp setup guide</a>: Python 3.12+, <code>uv</code>, Node 20+, the Google Cloud SDK authenticated against your DevCamp project, and <code>google-adk</code> installed.</li>
+          <li>Completed the <a href="setup-guide.html">pre-camp setup guide</a>: Python 3.12+, <code>uv</code>, Node 20+, the Google Cloud SDK authenticated against your DevCamp project, and <code>google-adk</code> installed.</li>
           <li>A terminal, an editor, and roughly two hours. Every step has a time estimate in the sidebar; total for the core path (Steps 1–6, 8–9) is about <strong>1h45</strong>; Step 7 (LinkedIn) adds another <strong>15 min</strong> and is entirely optional.</li>
           <li>A free <a href="https://buffer.com" target="_blank" rel="noopener">Buffer</a> account for Step 6 (takes two minutes, no card needed for the free tier).</li>
         </ul>
 
         <div class="callout tip">
           <span class="callout-label">Running this in a 90-minute live session?</span>
-          <p>Skip Step 7 entirely, and treat Step 8 (wiring the frontend) as a guided copy-along rather than something everyone types from scratch; the payoff there is understanding <code>main.py</code>'s four ADK-relevant lines, not retyping 400 lines of React you didn't write.</p>
+          <p>Skip Step 7 entirely, and treat Step 8 (wiring the frontend) as a guided read-through rather than something everyone types from scratch; the payoff there is understanding <code>main.py</code>'s four ADK-relevant lines, not retyping 400 lines of React you didn't write.</p>
         </div>
 
         <div class="callout">
           <span class="callout-label">If you fall behind</span>
-          <p>Ask in your buddy group or Discord first — someone might have already solved it. The reference checkpoint for this lab, the <code>pillar-build</code> tag on the <code>social-spark-labs</code> repo, is published the day <em>after</em> the session, on purpose: it's the answer key for catching up before Lab 2, not something to copy from during the workshop. It deliberately contains no Govern-pillar code yet.</p>
+          <p>Ask in your buddy group or Discord first — someone might have already solved it. The reference checkpoint for this lab, the <code>pillar-build</code> tag on the <code>ai-devcamp-labs</code> repo, is published the day <em>after</em> the session, on purpose: it's the answer key for catching up before Lab 2, not something to copy from during the workshop. It deliberately contains no Govern-pillar code yet.</p>
         </div>
 
         <div class="step-footer">
@@ -645,8 +645,8 @@
 
         <div class="code-block">
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-          <pre><code>git clone &lt;STARTER_REPO_URL&gt; social-spark-labs
-cd social-spark-labs
+          <pre><code>git clone https://github.com/sonikajanagill/ai-devcamp-labs.git
+cd ai-devcamp-labs
 cp .env.example backend/social_poster/.env
 uv sync</code></pre>
         </div>
@@ -654,12 +654,12 @@ uv sync</code></pre>
         <p>Edit <code>backend/social_poster/.env</code>: set <code>GOOGLE_CLOUD_PROJECT</code> to your DevCamp project id (no service-account key file needed anywhere — <code>gcloud auth application-default login</code> from Step 2 of the setup guide is enough). Leave everything else; you'll fill in <code>BUFFER_API_KEY</code> in Step 6.</p>
 
         <h4>You should now have</h4>
-        <div class="tree">social-spark-labs/
+        <div class="tree">ai-devcamp-labs/
 ├── AGENTS.md              (given — read by your coding agent)
 ├── pyproject.toml
 ├── .env.example
 ├── backend/
-│   ├── main.py            ← empty, you write this in Step 8
+│   ├── main.py            (given, you read it in Step 8)
 │   └── social_poster/
 │       ├── __init__.py
 │       ├── agent.py       ← empty, you build this all workshop
@@ -1216,17 +1216,23 @@ use_buffer = bool(BUFFER_API_KEY) and POST_VIA != "linkedin"</code></pre>
 
         <div class="callout agent">
           <span class="callout-label">Ask your coding agent</span>
-          <p>Create <code>backend/main.py</code>: a FastAPI app that loads <code>backend/social_poster/.env</code>, wraps <code>root_agent</code> in ag_ui_adk's <code>ADKAgent</code> (app_name <code>social_poster</code>, user_id <code>devcamp-user</code>), mounts it at <code>/api/adk</code> with <code>add_adk_fastapi_endpoint</code>, allows CORS from <code>http://localhost:3000</code>, and serves the <code>gallery/</code> folder at <code>/outputs</code>. Then, in <code>agent.py</code>, add the three pipeline-stage callbacks described in connection point 3.</p>
+          <p>In <code>agent.py</code>, add the three pipeline-stage callbacks described in connection point 3. <code>backend/main.py</code> (connection point 1) already exists in the starter repo: read it, but you don't need to change it.</p>
         </div>
 
-        <p>Nothing to copy: <code>frontend/</code>, <code>run-backend.sh</code> and <code>run-frontend.sh</code> came with the starter repo. Run <code>chmod +x run-backend.sh run-frontend.sh</code> once if they are not executable.</p>
+        <p>Nothing to copy: <code>backend/main.py</code>, <code>frontend/</code>, <code>run-backend.sh</code> and <code>run-frontend.sh</code> came with the starter repo. Run <code>chmod +x run-backend.sh run-frontend.sh</code> once if they are not executable.</p>
 
-        <h3>Connection point 1: the AG-UI bridge (you write this one)</h3>
-        <p>This is 30 lines, and it's the entire reason Step 8 exists: exposing the <em>exact same</em> <code>root_agent</code> object over HTTP.</p>
+        <h3>Connection point 1: the AG-UI bridge (given: read this one)</h3>
+        <p>This is short, and it's the entire reason Step 8 exists: exposing the <em>exact same</em> <code>root_agent</code> object over HTTP.</p>
 
         <div class="code-block">
           <div class="code-head"><span>backend/main.py</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-          <pre><code>import pathlib
+          <pre><code>"""AG-UI bridge: exposes the social_poster agent to the CopilotKit frontend.
+
+Run from the repo root:  uv run uvicorn backend.main:app --port 8000
+"""
+
+import pathlib
+
 from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -1235,22 +1241,48 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv(pathlib.Path(__file__).parent / "social_poster" / ".env")
 
-from backend.social_poster.agent import root_agent  <span class="cm"># the SAME agent object</span>
+from backend.social_poster import db  <span class="cm"># noqa: E402  (needs .env first)</span>
+from backend.social_poster.agent import root_agent  <span class="cm"># noqa: E402  (needs .env first)</span>
 
 app = FastAPI(title="social-agent AG-UI backend")
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"],
-                    allow_methods=["*"], allow_headers=["*"])
 
-adk_agent = ADKAgent(adk_agent=root_agent, app_name="social_poster", user_id="devcamp-user")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+adk_agent = ADKAgent(
+    adk_agent=root_agent,
+    app_name="social_poster",
+    user_id="devcamp-user",  <span class="cm"># single-user POC; extract from auth in real apps</span>
+)
+
 add_adk_fastapi_endpoint(app, adk_agent, path="/api/adk")
 
-<span class="cm"># Serves generate_image's output files so the browser can render them</span>
+<span class="cm"># Serve generate_image's output files so the frontend's image gallery</span>
+<span class="cm"># (PostGallery.tsx) can render them — tools.py writes local file paths, which</span>
+<span class="cm"># the browser has no way to read directly otherwise.</span>
 GALLERY_DIR = pathlib.Path(__file__).resolve().parents[1] / "gallery"
 GALLERY_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/outputs", StaticFiles(directory=GALLERY_DIR), name="outputs")</code></pre>
+app.mount("/outputs", StaticFiles(directory=GALLERY_DIR), name="outputs")
+
+
+@app.get("/healthz")
+def healthz() -&gt; dict:
+    return {"status": "ok"}
+
+
+@app.get("/api/posts")
+def posts() -&gt; dict:
+    """Published posts (with whatever image they used), read from the local
+    SQLite store — durable across reloads/restarts, unlike ADK session state
+    or the browser's own chat history."""
+    return {"posts": db.list_posts()}</code></pre>
         </div>
 
-        <p>That's the whole bridge. <code>root_agent</code> is imported unchanged from the <code>agent.py</code> you spent the last six steps writing.</p>
+        <p>That's the whole bridge, plus a health check and the <code>/api/posts</code> route the post gallery reads. <code>root_agent</code> is imported unchanged from the <code>agent.py</code> you spent the last six steps writing.</p>
 
         <figure class="diagram">
           <svg viewBox="0 0 700 240" role="img" aria-label="The browser talks to a Next.js API route, which forwards to the FastAPI backend's api/adk endpoint over HTTP, which wraps the same root_agent object built in earlier steps. Two frontend components tap the same stream: ConfirmAction renders the approval gate, StagePanel reads pipeline_stage shared state.">
@@ -1427,7 +1459,7 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
           <table>
             <thead><tr><th>Symptom</th><th>Fix</th></tr></thead>
             <tbody>
-              <tr><td>Wrong GCP project / creds showing</td><td><code>gcloud config configurations activate adk-devcamp</code></td></tr>
+              <tr><td>Wrong GCP project / creds showing</td><td><code>gcloud config configurations activate adk-devcamp</code> (use the name of your own gcloud configuration, or run <code>gcloud config set project ${PROJECT_ID}</code> with your actual project ID)</td></tr>
               <tr><td>Port already in use</td><td>Something else is on 8000 or 3000; stop it, or run on a different port and update <code>ADK_BACKEND_URL</code></td></tr>
               <tr><td>Chat hangs after "yes, post it"</td><td><code>ConfirmAction.tsx</code> missing or not imported into <code>page.tsx</code> (Step 8)</td></tr>
               <tr><td><code>Duplicate function declaration: create_post</code></td><td>Both toolsets active with <code>POST_VIA</code> blank; pin it to <code>buffer</code> or <code>linkedin</code> (Step 7)</td></tr>
@@ -1471,7 +1503,7 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
 
         <div class="callout">
           <span class="callout-label">If you got stuck anywhere today</span>
-          <p>The <code>pillar-build</code> tag on the <code>social-spark-labs</code> repo is published the day after the session: the finished version of everything above, and the exact starting point Lab 2 assumes. Use it to catch up before next Saturday, not as a substitute for the build.</p>
+          <p>The <code>pillar-build</code> tag on the <code>ai-devcamp-labs</code> repo is published the day after the session: the finished version of everything above, and the exact starting point Lab 2 assumes. Use it to catch up before next Saturday, not as a substitute for the build.</p>
         </div>
 
         <h3>Assignment</h3>

@@ -642,16 +642,30 @@ the unrelated packaging/model/tool-scope issues above are out of the way.
 
 <!-- Add new Govern entries here, newest first. -->
 
-### The Console's Content violations dashboard reads Model Armor logs, which are off by default and contain the prompt text
+### Guarded mode gets 429s on the Gemini call itself, and the retry has to cover them
 
-The Agent Security tab showed 0 interactions, 0 flagged, 0 blocked even after we had blocked injections all week. The templates
-had no logging enabled (`logTemplateOperations` / `logSanitizeOperations`, the same as the codelab's `--template-metadata-log-operations`).
-Turning them on made `modelarmor.googleapis.com/sanitize_operations` entries appear in Cloud Logging immediately
-(`SANITIZE_USER_PROMPT` `MATCH_FOUND`, `pi_and_jailbreak` confidence HIGH, verdict BLOCK, reason "The prompt violated Prompt
-Injection and Jailbreak filters"). THE CATCH: each entry carries `sanitizationInput.byteItem.byteData`, the prompt as
-**base64-encoded plaintext**, so raw prompts (and replies) land in Cloud Logging, and on the gateway path that is before the
-app's PII boundary. It is therefore opt-in: `MODEL_ARMOR_LOGGING=on ./gcs-setup.sh`. Whether the dashboard fills from these logs is
-what we expect but had not confirmed when this was written. A plain `grep` for the prompt text will miss it: it is base64.
+After the PII boundary and template logging went in, the deployed agent began failing about one probe run in three with an EMPTY
+error message. The engine log had 50 `429 RESOURCE_EXHAUSTED` entries ("Resource exhausted. Please try again later"), all inside one
+four-minute window (14:24-14:28) and none in the six hours around it, i.e. a burst while we ran the probe three times back to back.
+WHICH CALL: the traceback runs `llm_agent -> base_llm_flow._call_llm_async -> google_llm.generate_content_async`: the agent's Gemini
+model call, not Model Armor and not DLP. WHAT IT IS NOT: a project quota. Cloud Monitoring showed zero quota-exceeded events and the
+project's per-minute generate-content limits are unlimited or unset. It looks like the regional model (gemini-2.5-flash, us-central1) out of
+shared capacity; that is inference from the error text, unconfirmed. Guarded mode raises exposure because it must run Gemini in a REGION, every turn makes several model calls
+(root, sub-agents, memory), and each retry is another call. Our retry only covered HTTP 400 (the random "template not found"), so a 429
+failed at once. Fix: retry `[400, 429]` with real backoff (`initial_delay=0.3, max_delay=8, exp_base=2`). Result: 5 clean probe runs in a
+row where about one in three had failed, and no 429s in the following 15 minutes. Cost: slower runs. Advice: space tests out.
+
+### Model Armor logging works, but the Console's Content violations dashboard stayed empty
+
+The Agent Security tab showed 0 interactions, 0 flagged, 0 blocked, and it still did after we turned on template logging
+(`logTemplateOperations` / `logSanitizeOperations`, as in the codelab's `--template-metadata-log-operations`) and generated blocks on both
+routes. VERIFIED: with logging on, `modelarmor.googleapis.com/sanitize_operations` entries appear in Cloud Logging at once (`SANITIZE_USER_PROMPT`,
+`MATCH_FOUND`, `pi_and_jailbreak` HIGH, verdict BLOCK; 25 entries in 15 minutes including 6 blocks). NOT VERIFIED, and probably wrong: that these
+logs feed the dashboard. The page itself says it is only fully populated when Agent Gateway and Google Cloud MCP servers are enabled with
+Model Armor and agent tracing; we wired Model Armor to the gateway by hand (authz extension), not through the Console option, and we have not
+found the source. THE CATCH with logging: each entry carries `sanitizationInput.byteItem.byteData`, the prompt as base64-encoded
+plaintext, so raw prompts and replies land in Cloud Logging, and on the gateway path that is before the app's PII boundary. Hence opt-in:
+`MODEL_ARMOR_LOGGING=on ./gcs-setup.sh`. A `grep` for the prompt text will miss it: it is base64.
 
 ### Model Armor on a deployed agent: the 401, the streaming bypass, the random "not found", and what finally worked
 

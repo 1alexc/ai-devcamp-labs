@@ -381,7 +381,7 @@
 
         <div class="callout check">
           <span class="callout-label">Everything hands-on today runs in a personal project</span>
-          <p>No Google Cloud <strong>organisation</strong> and no <strong>Gemini Enterprise</strong> subscription. We built and tested every hands-on step in a personal project with no organisation above it, on the free-trial credit. Google's documentation does not say either way, so this is what we observed, not a guarantee. What <em>is</em> gated is listed in Step 1.</p>
+          <p>No Google Cloud <strong>organisation</strong> and no <strong>Gemini Enterprise</strong> subscription. We built and tested every hands-on step in a personal project with no organisation above it, in one project. Google's documentation does not say either way, so this is what we observed, not a guarantee. What <em>is</em> gated is listed in Step 1.</p>
         </div>
         <figure class="diagram">
           <svg viewBox="0 0 720 300" role="img" aria-label="Govern has eight parts: Agent Gateway, Agent Identity, Agent Registry, Agent Anomaly Detection, Model Armor, Agent Policy, Agent Security and Agent Compliance. This lab works hands-on with Model Armor, Agent Gateway, Agent Registry and Agent Policy, recaps Agent Identity from Lab 2, works hands-on with Agent Gateway, and treats Agent Anomaly Detection, Agent Security and Agent Compliance as outside today's scope, because they need approval, an organisation, or a paid Security Command Center tier.">
@@ -624,7 +624,7 @@
         </div>
         <div class="callout tip">
           <span class="callout-label">Random "template not found": retry</span>
-          <p>Vertex's template lookup fails at random with <code>The template named ... was not found</code>, for templates that exist, on roughly half of calls in our testing. A retry usually succeeds. The retry has to be set on the <strong>ADK model object</strong> (<code>Gemini(model=..., retry_options=...)</code>, which <code>guardrails.model()</code> does for you). The same options in the request config were ignored inside the deployed agent. With the model-level retry, 15 of 15 checks passed on the deployed agent; without it most failed.</p>
+          <p>Vertex's template lookup fails at random with <code>The template named ... was not found</code>, for templates that exist, on roughly half of calls in our testing. A retry usually succeeds. The retry has to be set on the <strong>ADK model object</strong> (<code>Gemini(model=..., retry_options=...)</code>, which <code>guardrails.model()</code> does for you). The same options in the request config were ignored inside the deployed agent. With the model-level retry, 15 of 15 checks passed on the deployed agent; without it most failed. The same retry also covers <code>429 RESOURCE_EXHAUSTED</code> on the Gemini call itself. In our project a burst of back-to-back testing produced fifty of them in four minutes, with no quota-exceeded events and unlimited per-minute limits, so it looks like the regional model running out of shared capacity, not a limit you own. Every guarded turn makes several model calls, and a retry is another. Space your tests out</p>
         </div>
         <div class="callout">
           <span class="callout-label">Why HIGH, not MEDIUM</span>
@@ -632,9 +632,10 @@
         </div>
 
         <div class="callout tip">
-          <span class="callout-label">See it in the console (optional, and mind the privacy cost)</span>
-          <p>Console → Agent Platform → <strong>Security</strong> shows a <em>Content violations</em> dashboard: interactions, flagged, blocked, and which detector fired. It reads Model Armor's logs, which are <strong>off by default</strong>. Turn them on with <code>MODEL_ARMOR_LOGGING=on ./gcs-setup.sh</code>, or set <code>logSanitizeOperations</code> on the template. The catch: each log entry contains the <strong>prompt and reply text</strong> (base64-encoded, not hidden), and calls through the gateway are logged <em>before</em> the app's PII redaction. Use dummy data, and turn it off afterwards.</p>
-          <p>You may also see a red banner on that page, "your project must belong to an organisation and be subscribed to Security Command Center". That is about the <em>security risks</em> panel only. The violations dashboard works without an organisation.</p>
+          <span class="callout-label">See what Model Armor blocked (optional, and mind the privacy cost)</span>
+          <p>Turn on Model Armor's logging with <code>MODEL_ARMOR_LOGGING=on ./gcs-setup.sh</code> (or <code>logSanitizeOperations</code> on the template), then open Cloud Logging and filter on <code>logName:"modelarmor.googleapis.com%2Fsanitize_operations"</code>. Each entry shows the operation, the verdict (<code>BLOCK</code> or <code>ALLOW</code>), which filter matched and at what confidence. <strong>We verified this.</strong></p>
+          <p>The catch: each entry also holds the <strong>prompt and reply text</strong>, base64-encoded but not hidden, and calls through the gateway are logged <em>before</em> the app's PII redaction. Use dummy data, and turn it off afterwards.</p>
+          <p><strong>What did not work for us:</strong> the <em>Content violations</em> dashboard under Agent Platform, Security stayed at 0 interactions, 0 flagged, 0 blocked, even with logging on and blocks in the logs. Google's own note on that page says it is only fully populated when Agent Gateway and Google Cloud MCP servers are enabled with Model Armor and agent tracing. We attached Model Armor to our gateway by hand, and we have not found what feeds the dashboard. The red banner about an organisation is about the separate <em>security risks</em> panel.</p>
         </div>
 
         <div class="callout check">
@@ -675,10 +676,11 @@ def friendly_block(callback_context, llm_response):
         return LlmResponse(content=types.Content(role="model",
             parts=[types.Part.from_text(text="I can't help with that request: it was flagged by our content safety checks.")]))
 
-# 3. retry ON THE ADK MODEL OBJECT (the same options in the request config are ignored when deployed)
+# 3. retry ON THE ADK MODEL OBJECT (the same options in the request config are ignored when deployed).
+#    400 = the random "template not found"; 429 = the regional Gemini quota
 from google.adk.models import Gemini
 model = Gemini(model="gemini-2.5-flash", retry_options=types.HttpRetryOptions(
-    attempts=8, initial_delay=0.2, max_delay=2.0, exp_base=1.5, jitter=0.2, http_status_codes=[400]))
+    attempts=8, initial_delay=0.3, max_delay=8.0, exp_base=2.0, jitter=0.3, http_status_codes=[400, 429]))
 
 # 4. main.py: streamed Gemini calls are NOT screened, so turn streaming off (ag_ui_adk)
 from google.adk.agents.run_config import StreamingMode

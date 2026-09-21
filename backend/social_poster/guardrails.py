@@ -132,9 +132,13 @@ def model(name: str):
         return name
     return Gemini(
         model=name,
+        # 400 = the random "template not found". 429 = Vertex saying the regional Gemini
+        # model is out of (shared) capacity, seen in a burst of requests: our project had
+        # no quota-exceeded events and unlimited per-minute limits. Every guarded turn makes
+        # several model calls and a retry is another, so back off properly.
         retry_options=genai_types.HttpRetryOptions(
-            attempts=8, initial_delay=0.2, max_delay=2.0, exp_base=1.5, jitter=0.2,
-            http_status_codes=[400],
+            attempts=8, initial_delay=0.3, max_delay=8.0, exp_base=2.0, jitter=0.3,
+            http_status_codes=[400, 429],
         ),
     )
 

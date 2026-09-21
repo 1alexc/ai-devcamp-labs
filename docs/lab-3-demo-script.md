@@ -17,7 +17,7 @@ was run against a real deployment; anything we did not verify is marked **untest
 - That **Agent Anomaly Detection, Agent Security risk views or Agent Compliance** work in this
   project. Anomaly Detection needs an approval form. The Security tab's *risks* panel needs an
   organisation and Security Command Center (the console says so). Compliance has no public
-  documentation. The *content-violations* dashboard does work without an organisation.
+  documentation. The *content-violations* dashboard renders without an organisation but stayed empty for us, so do not promise it fills.
 - That the **gateway protects the web UI.** It does not inspect our custom `/api/adk` route.
 - That anything needs a **Gemini Enterprise subscription or an organisation.** We built it all in
   a personal project with neither, but Google's docs do not say either way. Say "we did this
@@ -37,7 +37,7 @@ MODEL_ARMOR_TEMPLATE_ID=off ./evals/run.sh evals/governance.json   # want: FAILE
 
 If check 1 says **NOT PROVEN**, Model Armor did not fire: the model declined by itself. Fix that
 before anyone sees it (Lab 3, Step 3). If check 2 or 3 says **FAIL** with `template ... was not
-found`, redeploy: the retry is on the model object and a stale revision may still be serving.
+found`, redeploy (a `429` instead means the model is busy: wait a minute, see the table at the end): the retry is on the model object and a stale revision may still be serving.
 
 ## Thursday (theory, 60 min)
 
@@ -104,6 +104,7 @@ Anything **Owned** goes into `evals/governance.json` with the exact refusal expe
 | `Malformed parent field` from DLP | Project number given, DLP wants the ID | Set `PROJECT_ID` |
 | Replies arrive all at once | Streaming is off on purpose (streamed calls are not screened) | Expected in guarded mode |
 | A chat request hangs | The PII middleware replays the body forever | See Step 4: hand the body over once |
+| `429 RESOURCE_EXHAUSTED` in the engine log, or a request that errors with an empty message | Vertex says the regional Gemini model is out of shared capacity. It appeared in a burst of testing, with no quota-exceeded events in our project | The model retries with backoff. Space your tests out: do NOT run `probe_deployed.py` back to back, and do not have a whole room fire at once. Wait a minute |
 | First message is slow | DLP is a network call, about 2 seconds, then cached | Expected |
 
 ## Tear down

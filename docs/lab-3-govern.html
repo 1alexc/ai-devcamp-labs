@@ -487,7 +487,7 @@
         </div>
 <div class="callout agent">
           <span class="callout-label">How this lab works</span>
-          <p>Same shape as Labs 1 and 2. Two steps are designed to trip you up (Steps 2 and 3), and one honest caveat: <strong>Step 6 (Governance Policies) is the newest and least proven part of the platform</strong>, so it is demonstrated, and we tell you exactly what we did and did not verify.</p>
+          <p>Same shape as Labs 1 and 2. Steps 2 and 3 each include a deliberate error to find. <strong>Step 6 (Governance Policies) is the newest part of the platform</strong>, so it is a demonstration.</p>
         </div>
 <div class="callout warn">
           <span class="callout-label">Fell behind?</span>
@@ -530,11 +530,11 @@
 <tr><td>Deployment settings</td><td><code>GOOGLE_CLOUD_LOCATION=us-central1</code>, <code>MODEL_ARMOR_TEMPLATE_ID</code>, <code>MODEL_ARMOR_REGION=us-central1</code>, <code>PROJECT_ID=&lt;your project id&gt;</code>, <code>PII_REDACTION=on</code></td><td>Gemini must run in a region for Model Armor to apply. DLP rejects a project <em>number</em>, and inside Agent Runtime the project is a number, so pass the id as <code>PROJECT_ID</code>. <code>PII_REDACTION=on</code> turns on DLP at the boundary and before a post (Step 4).</td></tr>
 </tbody></table></div>
         <div class="callout warn">
-          <span class="callout-label">Two different identities, and a 401 that looks like permissions</span>
-          <p>Granting <code>modelarmor.user</code> to your <em>agent</em> is not what makes Model Armor work, and a deployed agent that calls the Model Armor sanitize API itself gets <code>401 Unauthorized</code>, with plain REST and with Google's client library. That is not IAM. Google's auth library blocks <strong>"agent token sharing"</strong> by default: code you write inside the agent cannot pass the agent's own identity token on to a Google service. Setting <code>GOOGLE_API_PREVENT_AGENT_TOKEN_SHARING_FOR_GCP_SERVICES=False</code> lets the call through (we verified it), but Google warns against that in production, because a compromised dependency could then steal the agent's token. So this lab uses <strong>inline</strong> enforcement, where Vertex calls Model Armor with its own service agent. That is why the role goes to the Vertex service agent.</p>
+          <span class="callout-label">Two identities: who calls Model Armor</span>
+          <p>Model Armor is applied <strong>inline</strong>: Vertex calls it with its own service agent, so <code>modelarmor.user</code> goes to the <strong>Vertex service agent</strong>, not to your agent. Do not call the Model Armor sanitize API from code inside your agent: Google's auth library blocks "agent token sharing", so the call returns <code>401 Unauthorized</code>. Leave that protection on.</p>
         </div>
         <div class="callout">
-          <span class="callout-label">Why us-central1, and why us?</span>
+          <span class="callout-label">Why us-central1</span>
           <p>The Governance Policy engine only exists in <code>us-central1</code>, so that is where the agent runs. Model Armor templates cannot be created in <code>global</code>, so they go in <code>us-central1</code> too: the same region as the agent, Gemini and the Agent Gateway.</p>
         </div>
 
@@ -597,8 +597,8 @@
             <rect x="808" y="120" width="84" height="60" rx="10" class="muted-stroke soft-fill" stroke-width="1.8"/>
             <text x="850" y="146" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">Reply</text>
             <text x="850" y="163" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.7">or refusal</text>
-            <text x="10" y="314" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Streamed Gemini calls are NOT screened, silently: guarded mode turns streaming off, so replies arrive whole.</text>
-            <text x="10" y="330" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Vertex's template lookup fails at random ("template not found"): the model object retries up to 8 times.</text>
+            <text x="10" y="314" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Streamed Gemini calls are not screened, so guarded mode turns streaming off and replies arrive whole.</text>
+            <text x="10" y="330" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Template lookup can fail at random ("template not found"), so the model object retries up to 8 times.</text>
           </svg>
           <figcaption>What happens to one message. The screening is done by Vertex around the Gemini call, so it works on any route into the agent that makes a non-streamed call.</figcaption>
         </figure>
@@ -620,11 +620,11 @@
         </div>
         <div class="callout warn">
           <span class="callout-label">Deliberate error 3: it works on your laptop and 401s once deployed</span>
-          <p>Call the sanitize API from code inside your deployed agent. It works locally, because you are using your own credentials, and returns <code>401 Unauthorized</code> once deployed. Read the section above for why, and resist the fix of switching the token-sharing protection off: it works, and it removes a safeguard.</p>
+          <p>Call the sanitize API from code inside your deployed agent. It works on your laptop, where you use your own credentials, and returns <code>401 Unauthorized</code> once deployed. Use the inline route in Step 3 instead.</p>
         </div>
         <div class="callout tip">
           <span class="callout-label">Random "template not found": retry</span>
-          <p>Vertex's template lookup fails at random with <code>The template named ... was not found</code>, for templates that exist, on roughly half of calls in our testing. A retry usually succeeds. The retry has to be set on the <strong>ADK model object</strong> (<code>Gemini(model=..., retry_options=...)</code>, which <code>guardrails.model()</code> does for you). The same options in the request config were ignored inside the deployed agent. With the model-level retry, 15 of 15 checks passed on the deployed agent; without it most failed. The same retry also covers <code>429 RESOURCE_EXHAUSTED</code> on the Gemini call itself. In our project a burst of back-to-back testing produced fifty of them in four minutes, with no quota-exceeded events and unlimited per-minute limits, so it looks like the regional model running out of shared capacity, not a limit you own. Every guarded turn makes several model calls, and a retry is another. Space your tests out</p>
+          <p>Vertex's template lookup can fail at random with <code>The template named ... was not found</code>, for templates that exist. A retry succeeds. Set the retry on the <strong>ADK model object</strong> (<code>Gemini(model=..., retry_options=...)</code>), which <code>guardrails.model()</code> does for you. The same retry covers <code>429 RESOURCE_EXHAUSTED</code> from the Gemini call, which means the regional model is busy. Every guarded turn makes several model calls and a retry is another, so space your tests out.</p>
         </div>
         <div class="callout">
           <span class="callout-label">Why HIGH, not MEDIUM</span>
@@ -633,7 +633,7 @@
 
         <div class="callout tip">
           <span class="callout-label">See what Model Armor blocked (optional, and mind the privacy cost)</span>
-          <p>Turn on Model Armor's logging with <code>MODEL_ARMOR_LOGGING=on ./gcs-setup.sh</code> (or <code>logSanitizeOperations</code> on the template), then open Cloud Logging and filter on <code>logName:"modelarmor.googleapis.com%2Fsanitize_operations"</code>. Each entry shows the operation, the verdict (<code>BLOCK</code> or <code>ALLOW</code>), which filter matched and at what confidence. <strong>We verified this.</strong></p>
+          <p>Turn on Model Armor's logging with <code>MODEL_ARMOR_LOGGING=on ./gcs-setup.sh</code> (or <code>logSanitizeOperations</code> on the template), then open Cloud Logging and filter on <code>logName:"modelarmor.googleapis.com%2Fsanitize_operations"</code>. Each entry shows the operation, the verdict (<code>BLOCK</code> or <code>ALLOW</code>), which filter matched and at what confidence.</p>
           <p>The catch: each entry also holds the <strong>prompt and reply text</strong>, base64-encoded but not hidden, and calls through the gateway are logged <em>before</em> the app's PII redaction. Use dummy data, and turn it off afterwards.</p>
           <p><strong>What did not work for us:</strong> the <em>Content violations</em> dashboard under Agent Platform, Security stayed at 0 interactions, 0 flagged, 0 blocked, even with logging on and blocks in the logs. Google's own note on that page says it is only fully populated when Agent Gateway and Google Cloud MCP servers are enabled with Model Armor and agent tracing. We attached Model Armor to our gateway by hand, and we have not found what feeds the dashboard. The red banner about an organisation is about the separate <em>security risks</em> panel.</p>
         </div>
@@ -656,7 +656,7 @@
 
         <div class="callout agent">
           <span class="callout-label">Prompt for your coding agent</span>
-          <p>In <code>backend/social_poster/guardrails.py</code> build four things, each switched by <code>MODEL_ARMOR_TEMPLATE_ID</code> (blank or <code>off</code> means off): a <code>content_config(screen_input=True)</code> helper that returns a <code>GenerateContentConfig</code> carrying a Model Armor config (input template and output template; the two sub-agents use <code>screen_input=False</code> because their input is text the orchestrator wrote); a <code>friendly_block</code> <code>after_model_callback</code> that turns a Model Armor block into a readable refusal; a <code>model(name)</code> helper that wraps the model name in ADK's <code>Gemini</code> class with retry options; and, in <code>main.py</code>, a non-streaming run configuration when guardrails are on. Then wire them onto <code>root_agent</code>, <code>research_agent</code> and <code>draft_agent</code>, and delete any older callbacks that call the Model Armor sanitize API. Use the project <em>id</em> (from <code>PROJECT_ID</code>), not the number.</p>
+          <p>In <code>backend/social_poster/guardrails.py</code> build four things, each switched by <code>MODEL_ARMOR_TEMPLATE_ID</code> (blank or <code>off</code> means off): a <code>content_config(screen_input=True)</code> helper that returns a <code>GenerateContentConfig</code> carrying a Model Armor config (input template and output template; the two sub-agents use <code>screen_input=False</code> because their input is text the orchestrator wrote); a <code>friendly_block</code> <code>after_model_callback</code> that turns a Model Armor block into a readable refusal; a <code>model(name)</code> helper that wraps the model name in ADK's <code>Gemini</code> class with retry options; and, in <code>main.py</code>, a non-streaming run configuration when guardrails are on. Then wire them onto <code>root_agent</code>, <code>research_agent</code> and <code>draft_agent</code>. Use the project <em>id</em> (from <code>PROJECT_ID</code>), not the number.</p>
         </div>
         <div class="callout tip">
           <span class="callout-label">API facts your coding agent will not know</span>
@@ -711,13 +711,13 @@ adk_agent._run_config_factory = no_stream</code></pre>
           <p>The regional location override lasts only for the deploy that passes it, so this also puts <code>GOOGLE_CLOUD_LOCATION</code> back to <code>global</code>. To turn guardrails back on, redeploy with the command above.</p>
         </div>
         <div class="callout warn">
-          <span class="callout-label">Instructor note: what is verified</span>
-          <p>On the deployed agent, over the web UI's own path, with streaming off and the model-level retry: the injection got our friendly refusal, and the benign and PII requests worked, in 5 of 5 runs (15 of 15 checks). Two costs to explain: replies arrive whole, not token by token (a streamed Gemini call is not screened at all, silently), and each retried call adds latency. The <code>backend/probe_deployed.py</code> script checks all of this and tells "Model Armor blocked it" apart from "the model declined by itself".</p>
+          <span class="callout-label">What to expect</span>
+          <p>The injection gets our friendly refusal, and the benign and PII requests work. Replies arrive whole, not token by token, and each retried call adds latency. <code>backend/probe_deployed.py</code> runs the checks and tells "Model Armor blocked it" apart from "the model declined by itself".</p>
         </div>
         <div class="callout check">
           <span class="callout-label">Checkpoint</span>
           <p>Send the injection string to the <strong>deployed</strong> agent. Success is our friendly refusal (<em>"flagged by our content safety checks"</em>). If you get a normal-sounding Gemini refusal instead, Model Armor did <em>not</em> fire: the model just declined. That difference is the point of the exercise. Then set <code>MODEL_ARMOR_TEMPLATE_ID=off</code>, redeploy and compare.</p>
-          <p>For a repeatable check, run <code>./evals/run.sh evals/governance.json</code>. It passes with the guardrail on and <strong>fails</strong> with <code>MODEL_ARMOR_TEMPLATE_ID=off ./evals/run.sh evals/governance.json</code>, because it scores the reply against our exact refusal, not against "did the model say no". An earlier version of this eval passed with the guardrail off, because Gemini refuses an obvious injection by itself.</p>
+          <p>For a repeatable check, run <code>./evals/run.sh evals/governance.json</code>. It passes with the guardrail on and <strong>fails</strong> with <code>MODEL_ARMOR_TEMPLATE_ID=off ./evals/run.sh evals/governance.json</code>, because it scores the reply against our exact refusal, not against "did the model say no".</p>
         </div>
 
         <div class="step-footer">
@@ -795,13 +795,13 @@ adk_agent._run_config_factory = no_stream</code></pre>
           <p><strong>The trap:</strong> after you replay the body, your <code>receive()</code> replacement must hand it over <em>once</em> and then <code>return await receive()</code> from the real channel. If it keeps replaying the request, a streaming response (which listens on <code>receive()</code> for a disconnect) spins and every chat request hangs. It works on a plain endpoint, so a simple test will not catch it: test against a real streaming server.</p>
         </div>
 <div class="callout warn">
-          <span class="callout-label">Verified on the deployed agent, with one catch</span>
-          <p>DLP redaction works on the deployed agent under Agent Identity: name, email and phone were all replaced. The catch: inside Agent Runtime the project is a number, and DLP rejects a number (<code>Malformed parent field</code>). Pass your project <em>id</em> as <code>PROJECT_ID</code> on the deployment. Also, DLP rated a phone number inside a sentence as only <em>possible</em>, so the redactor runs two passes: a lower threshold for emails and phone numbers, a higher one for names and places.</p>
+          <span class="callout-label">DLP on the deployed agent: pass the project id</span>
+          <p>Inside Agent Runtime the project is a number, and DLP rejects a number (<code>Malformed parent field</code>). Pass your project <em>id</em> as <code>PROJECT_ID</code> on the deployment. DLP rates a phone number inside a sentence as only <em>possible</em>, so the redactor runs two passes: a lower threshold for emails and phone numbers, a higher one for names and places.</p>
         </div>
         <div class="callout">
           <span class="callout-label">Why there is a boundary layer</span>
-          <p>Without it the raw message goes to the model and is written to the session store exactly as typed: we found a full phone number and email sitting in the deployed sessions. Layer 2 is only a tool the model is <em>asked</em> to call. So a small piece of middleware in <code>main.py</code> runs each user message through DLP <strong>before the agent sees it</strong>, and we checked the result: the stored message now reads <code>Contact [PERSON_NAME] at [EMAIL_ADDRESS] or [PHONE_NUMBER]</code>, with no raw value anywhere in the session.</p>
-          <p>The costs: about two seconds on the first message (DLP is a network call), and it leaves places alone on purpose. Turn it on with <code>PII_REDACTION=on</code>; it is independent of Model Armor. It fails closed. One bug worth knowing: our first version replayed the request body to the app forever, which is invisible on a normal response and <strong>hangs every streamed one</strong>. It passed a test against a plain endpoint and broke on the real agent.</p>
+          <p>Without it the raw message goes to the model and is written to the session store exactly as typed. Layer 2 is only a tool the model is <em>asked</em> to call. So a small piece of middleware in <code>main.py</code> runs each user message through DLP <strong>before the agent sees it</strong>, so the stored message reads <code>Contact [PERSON_NAME] at [EMAIL_ADDRESS] or [PHONE_NUMBER]</code>.</p>
+          <p>The costs: about two seconds on the first message (DLP is a network call), and it leaves places alone on purpose. Turn it on with <code>PII_REDACTION=on</code>; it is independent of Model Armor. It fails closed.</p>
         </div>
 
         <div class="callout check">
@@ -851,7 +851,7 @@ uv run python backend/governance.py registry-search "bigquery"</code></pre>
         </div>
 <div class="callout warn">
           <span class="callout-label">Read this before you run anything: the setup is heavier than our spike</span>
-          <p>Our first attempt provisioned the engine with an <em>empty</em> gateway configuration. It went <code>FAILED</code>, and <code>deprovision</code> then failed too and left it stuck for good (in Google's control plane: nobody, including the project owner, can clear it). <strong>Do not deprovision the engine to tidy up, and do not provision it casually.</strong> Google's own guide provisions it differently and needs much more than a policy file:</p>
+          <p><strong>Do not provision the engine with an empty gateway configuration, and do not deprovision it to tidy up:</strong> a failed provision cannot be cleared afterwards. Follow Google's guide, which needs more than a policy file:</p>
           <ul>
             <li><strong>The agent must be eligible.</strong> It has to be deployed with <em>both</em> Agent Identity <em>and</em> an Agent Gateway. Both are immutable, so an agent that lacks either must be redeployed. Check with <code>gcloud ai reasoning-engines describe ... --format='value(spec.effectiveIdentity)'</code>: it should start with <code>agents.global.</code>.</li>
             <li><strong>Enforcement is on the model traffic.</strong> An authorization extension points at the engine's DNS hostname, and an authorization policy on the gateway sends only <code>:generateContent</code> and <code>:streamGenerateContent</code> requests to it. It must exclude gRPC, or the agent fails to start.</li>
@@ -859,7 +859,7 @@ uv run python backend/governance.py registry-search "bigquery"</code></pre>
             <li><strong>Start in dry-run.</strong> Set the extension's metadata <code>sgpEnforcementMode: DRY_RUN</code>: every call is allowed and each verdict and rationale is logged (<code>semantic-governance-policy</code> in Cloud Logging). Switch to enforcing once the verdicts look right.</li>
             <li><strong>Supported locations</strong> in Google's docs include <code>us-central1</code>, <code>europe-west1</code> and <code>europe-west4</code>. We have only tested <code>us-central1</code>.</li>
           </ul>
-          <p><strong>What we verified and what we did not:</strong> creating a policy against a registered agent worked, and it resolved to the agent's identity. We have <em>not</em> seen a policy deny a live turn, and we have not run Google's full setup end to end. The policy engine is an LLM judging your sentence, so verdicts are probabilistic: do not claim enforcement in front of anyone until you have seen a denial, and keep secrets out of constraints, because the rationale can be shown to users.</p>
+          <p><strong>Status:</strong> creating a policy against a registered agent works and resolves to the agent's identity. Enforcement (a denied turn) is not demonstrated in this lab. The policy engine is an LLM judging your sentence, so verdicts are probabilistic: keep secrets out of constraints, because the rationale can be shown to users.</p>
         </div>
 <div class="code-block">
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
@@ -958,7 +958,7 @@ gcloud beta network-security authz-policies import agw-social-spark-authz-policy
         </div>
         <div class="callout warn">
           <span class="callout-label">Set failOpen to false</span>
-          <p>Google's own codelab sets <code>failOpen: true</code>. That means if Model Armor is unreachable or misconfigured, the gateway lets the request through <em>silently</em>. A guardrail that fails open is the same trap as <code>INSPECT_ONLY</code>. Use <code>false</code>, so a broken guardrail is loud.</p>
+          <p>With <code>failOpen: true</code>, if Model Armor is unreachable or misconfigured the gateway lets the request through <em>silently</em>. A guardrail that fails open is the same trap as <code>INSPECT_ONLY</code>. Use <code>false</code>, so a broken guardrail is loud.</p>
         </div>
         <h2>Bind your agent to it</h2>
         <div class="code-block">
@@ -981,7 +981,7 @@ gcloud beta network-security authz-policies import agw-social-spark-authz-policy
         </div>
         <div class="callout warn">
           <span class="callout-label">What this does and does not cover</span>
-          <ul><li><strong>Verified:</strong> a native <code>streamQuery</code> call carrying an injection is blocked at the gateway with <code>403 Model Armor: Prompt violates content security configurations</code>, before the agent runs. Needed only the Reasoning Engine service agent grants from Step 1 (<code>calloutUser</code> and <code>user</code>); the Service Extensions agent needed nothing extra for ingress.</li><li><strong>Not covered:</strong> Social Spark's own web UI, which talks AG-UI over a custom <code>/api/adk</code> path. In our test the gateway did not inspect it (the injection was answered by the model itself). Google's docs say inline screening is for <code>streamQuery</code>, MCP and A2A traffic. Also our container-based engine does not implement <code>streamQuery</code>, so a <em>benign</em> native call returns <code>404 Execution failed</code>: that comes from the agent, not from Model Armor.</li><li><strong>The lesson:</strong> a gateway protects the interfaces it understands. If your app has its own route, screening for it has to live in the agent (Steps 2 to 4), or the route has to use a protocol the gateway inspects.</li></ul>
+          <ul><li><strong>Covered:</strong> a native <code>streamQuery</code> call carrying an injection is blocked at the gateway with <code>403 Model Armor: Prompt violates content security configurations</code>, before the agent runs. It needs only the Reasoning Engine service agent grants from Step 1 (<code>calloutUser</code> and <code>user</code>).</li><li><strong>Not covered:</strong> Social Spark's own web UI, which talks AG-UI over a custom <code>/api/adk</code> path. Inline screening applies to <code>streamQuery</code>, MCP and A2A traffic. A <em>benign</em> native call to this container-based engine returns <code>404 Execution failed</code>: that comes from the agent, not from Model Armor.</li><li><strong>The rule:</strong> a gateway protects the interfaces it understands. Your own routes are screened inside the agent (Steps 2 to 4).</li></ul>
         </div>
         <div class="callout check">
           <span class="callout-label">Checkpoint</span>
@@ -1071,7 +1071,7 @@ gcloud beta network-security authz-policies import agw-social-spark-authz-policy
           <ul>
             <li><strong>Gateway pieces:</strong> unbind the agent (redeploy with <code>--agent-gateway-ingress ""</code>), then delete the authorization policy, the authorization extension and the gateway, in that order. These commands are untested: we did not delete ours.</li>
             <li><strong>Model Armor templates and DLP</strong> cost nothing while idle. Leave them.</li>
-            <li><strong>The Governance Policy engine: leave it alone.</strong> Provisioning is easy to do and impossible to undo. In our project deprovisioning failed and the engine has been stuck since.</li>
+            <li><strong>The Governance Policy engine: leave it alone.</strong> Provisioning is easy and cannot be undone.</li>
           </ul>
           <div class="code-block">
             <div class="code-head"><span>terminal — replace YOUR_PROJECT (untested)</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>

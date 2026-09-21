@@ -641,7 +641,7 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
         <div class="callout">
           <span class="callout-label">Theory — sessions vs. memory</span>
           <p>These are genuinely different things and the names don't help. A <strong>session</strong> is one conversation: the messages, the state, the draft in progress. <strong>Memory</strong> is what survives when that conversation ends and a new one starts — your preferences, your usual topics, how you phrase things.</p>
-          <p>In Lab 1 this repo did memory the hard way: a separate <code>memory_agent</code>, reached over A2A, backed by a RAG service you'd have to deploy and feed yourself. Memory Bank is the managed version of the same idea — it distils facts out of finished conversations on its own, and ADK's <code>load_memory</code> tool searches them. You can run both at once, which is the honest way to see what the managed version is actually saving you.</p>
+          <p>Memory Bank is the managed memory service: it distils facts out of finished conversations on its own, and ADK's <code>load_memory</code> tool searches them. It sits alongside the Lab 1 <code>memory_agent</code>, so you can run both.</p>
         </div>
 
         <div class="callout agent">
@@ -715,8 +715,8 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
 
         <div class="callout warn">
           <span class="callout-label">A trap we fell into, so you don't have to</span>
-          <p>The obvious approach is to point CopilotKit's <code>HttpAgent</code> straight at the deployed backend and hand it a custom <code>fetch</code> that attaches the token. <strong>It works in development and silently drops the token in a production build</strong>, and the engine answers <code>401 UNAUTHENTICATED</code>.</p>
-          <p>What made it diagnosable: <code>/api/posts</code> returned <code>200</code> from the <em>same container</em>, with the <em>same credentials</em>, at the same moment — which rules out IAM, the token and the URL in one observation. Routing AG-UI through your own handler too, instead of relying on the library's hook, keeps everything on one proven path. When two routes disagree under identical conditions, the difference between them <em>is</em> the bug.</p>
+          <p>Do not point CopilotKit's <code>HttpAgent</code> straight at the deployed backend with a custom <code>fetch</code> that attaches the token. <strong>It works in development and drops the token in a production build</strong>, and the engine answers <code>401 UNAUTHENTICATED</code>. Route AG-UI through your own handler instead.</p>
+          
         </div>
 
         <div class="callout check">

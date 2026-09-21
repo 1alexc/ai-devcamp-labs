@@ -5,7 +5,7 @@ agents, and the Scale pillar's main capability. The companion doc
 [`cloud-run-deploy.md`](cloud-run-deploy.md) covers the older Cloud Run path,
 which still works and is unaffected by anything here.
 
-> **Everything below was run for real** against `adk-devcamp-poc` on
+> **Everything below was run for real** against a test project on
 > 2026-09-19, not transcribed from documentation. Gotchas are recorded in
 > [`LEARNINGS.md`](LEARNINGS.md).
 
@@ -25,7 +25,7 @@ a step is added.
 
 ```bash
 agents-cli deploy -d agent_runtime \
-  --project adk-devcamp-poc --region us-central1 --agent-identity \
+  --project YOUR_PROJECT_ID --region us-central1 --agent-identity \
   --service-name social-spark-poster \
   --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,RESEARCH_MODEL=gemini-2.5-flash,DRAFT_MODEL=gemini-2.5-flash,ORCHESTRATOR_MODEL=gemini-2.5-flash,GCS_BUCKET_NAME=YOUR_BUCKET" \
   --no-confirm-project --no-wait
@@ -57,7 +57,7 @@ repo's existing root `Dockerfile`, and file selection honours `.gitignore`, so
 
 ```bash
 agents-cli deploy --status -d agent_runtime \
-  --project adk-devcamp-poc --region us-central1 --no-confirm-project
+  --project YOUR_PROJECT_ID --region us-central1 --no-confirm-project
 ```
 
 > **Gotcha**: `--status` needs `-d agent_runtime` too. Without it you get "No
@@ -105,8 +105,8 @@ server-side and add the token: `app/api/adk` (AG-UI), `app/api/posts`, and
 
 ```bash
 gcloud run deploy social-spark-frontend --source frontend \
-  --region=us-central1 --project=adk-devcamp-poc \
-  --service-account=social-spark-frontend@adk-devcamp-poc.iam.gserviceaccount.com \
+  --region=us-central1 --project=YOUR_PROJECT_ID \
+  --service-account=social-spark-frontend@YOUR_PROJECT_ID.iam.gserviceaccount.com \
   --no-allow-unauthenticated \
   --set-env-vars="ADK_BACKEND_ORIGIN=<passthrough origin>" \
   --port=8080 --memory=1Gi --min-instances=0 --max-instances=3
@@ -116,7 +116,7 @@ The service is **private**. Reach it without any OAuth setup:
 
 ```bash
 gcloud run services proxy social-spark-frontend \
-  --region us-central1 --project adk-devcamp-poc --port 8090
+  --region us-central1 --project YOUR_PROJECT_ID --port 8090
 ```
 
 then open <http://localhost:8090>. The proxy authenticates as you. The app's own
@@ -201,11 +201,11 @@ which is the other common reason a deployment appears to have vanished. Ask
 the CLI:
 
 ```bash
-agents-cli deploy --list -d agent_runtime --project adk-devcamp-poc --region us-central1 --no-confirm-project
+agents-cli deploy --list -d agent_runtime --project YOUR_PROJECT_ID --region us-central1 --no-confirm-project
 ```
 
 ```bash
-gcloud run services list --project adk-devcamp-poc --region us-central1
+gcloud run services list --project YOUR_PROJECT_ID --region us-central1
 ```
 
 ## 8. Teardown
@@ -214,6 +214,6 @@ Agent Runtime is the weekly teardown item. It scales to zero, so an idle engine
 costs approximately nothing, but delete it when finished with:
 
 ```bash
-agents-cli deploy --list -d agent_runtime --project adk-devcamp-poc --region us-central1
-gcloud run services delete social-spark-frontend --region us-central1 --project adk-devcamp-poc
+agents-cli deploy --list -d agent_runtime --project YOUR_PROJECT_ID --region us-central1
+gcloud run services delete social-spark-frontend --region us-central1 --project YOUR_PROJECT_ID
 ```

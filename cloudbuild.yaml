@@ -1,6 +1,14 @@
 # Eval-gated deploy: the golden evalset must pass before `gcloud run deploy`
 # runs, so a change that breaks approval-gating or PII redaction never
 # reaches prod. See docs/cloud-run-deploy.md for the full walkthrough.
+#
+# One-time prerequisites in a new project (the build fails without them):
+#   * Secret `model-armor-template-id` in Secret Manager, readable by the Cloud
+#     Run service account (or delete the --set-secrets line to run ungoverned).
+#   * Logs bucket:  gcloud storage buckets create gs://PROJECT_ID-cloudbuild-logs \
+#                     --location=us-central1
+#   * us-central1 is the camp's region (Model Armor and Governance need a real
+#     region); pass --substitutions=_REGION=... only if you know why.
 steps:
   # 1. Install deps, start the mock memory agent as a sidecar, run the golden
   #    evalset. `adk eval` always exits 0 regardless of pass/fail (verified
@@ -64,7 +72,7 @@ steps:
 
 substitutions:
   _SERVICE_NAME: social-poster
-  _REGION: europe-west2
+  _REGION: us-central1
 
 logsBucket: gs://$PROJECT_ID-cloudbuild-logs/social-poster
 options:

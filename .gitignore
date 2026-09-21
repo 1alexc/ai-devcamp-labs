@@ -5,7 +5,6 @@ __pycache__/
 gallery/
 social_spark.db
 # agents-cli deploy state — points at one specific engine in one project
-deployment_metadata.json
 .adk/
 node_modules/
 .next/
@@ -13,10 +12,6 @@ node_modules/
 eval_history/
 tsconfig.tsbuildinfo
 ai_devcamp_docs/
-# the working plan: camp strategy, session schedule, answer-key detail.
-# Must never reach social-spark-labs, which is built from the starter tag.
-recursive-zooming-owl.md
-
 # Coding Agents
 .agents/
 .claude/

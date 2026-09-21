@@ -63,7 +63,7 @@ this service:
 ```bash
 gcloud iam service-accounts create social-poster-run \
   --display-name="social-poster Cloud Run service account" \
-  --project=adk-devcamp-poc
+  --project=YOUR_PROJECT_ID
 ```
 
 | Role | Why |
@@ -81,9 +81,9 @@ the real Agent Engine memory agent from
 [agent-engine-rag-setup.md](agent-engine-rag-setup.md) and wire it in.
 
 ```bash
-SA="social-poster-run@adk-devcamp-poc.iam.gserviceaccount.com"
+SA="social-poster-run@YOUR_PROJECT_ID.iam.gserviceaccount.com"
 for ROLE in roles/aiplatform.user roles/modelarmor.user roles/dlp.user roles/secretmanager.secretAccessor; do
-  gcloud projects add-iam-policy-binding adk-devcamp-poc \
+  gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
     --member="serviceAccount:$SA" \
     --role="$ROLE" \
     --condition=None
@@ -110,12 +110,12 @@ empty string in `--set-env-vars` matches local behaviour exactly. Move them to
 Secret Manager the day a real token exists.
 
 ```bash
-gcloud services enable secretmanager.googleapis.com --project=adk-devcamp-poc
+gcloud services enable secretmanager.googleapis.com --project=YOUR_PROJECT_ID
 
 echo -n "devcamp-guardrails" | gcloud secrets create model-armor-template-id \
   --data-file=- \
   --replication-policy=automatic \
-  --project=adk-devcamp-poc
+  --project=YOUR_PROJECT_ID
 ```
 
 ## 3. Deploy
@@ -125,14 +125,14 @@ One-off manual deploy (builds via Cloud Build automatically from `--source`):
 ```bash
 gcloud run deploy social-poster \
   --source=. \
-  --region=europe-west2 \
-  --service-account=social-poster-run@adk-devcamp-poc.iam.gserviceaccount.com \
+  --region=us-central1 \
+  --service-account=social-poster-run@YOUR_PROJECT_ID.iam.gserviceaccount.com \
   --no-allow-unauthenticated \
   --min-instances=0 \
   --max-instances=3 \
-  --set-env-vars=GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=adk-devcamp-poc,GOOGLE_CLOUD_LOCATION=europe-west2,RESEARCH_MODEL=gemini-flash-latest,DRAFT_MODEL=gemini-flash-latest,ORCHESTRATOR_MODEL=gemini-flash-latest,DRY_RUN=true,MEMORY_AGENT_CARD_URL=,IMAGE_MODEL_ID=gemini-2.5-flash-image,LINKEDIN_ACCESS_TOKEN=,BUFFER_API_KEY= \
+  --set-env-vars=GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,RESEARCH_MODEL=gemini-flash-latest,DRAFT_MODEL=gemini-flash-latest,ORCHESTRATOR_MODEL=gemini-flash-latest,DRY_RUN=true,MEMORY_AGENT_CARD_URL=,IMAGE_MODEL_ID=gemini-2.5-flash-image,LINKEDIN_ACCESS_TOKEN=,BUFFER_API_KEY= \
   --set-secrets=MODEL_ARMOR_TEMPLATE_ID=model-armor-template-id:latest \
-  --project=adk-devcamp-poc
+  --project=YOUR_PROJECT_ID
 ```
 
 ⏱ **note deploy time**.
@@ -142,7 +142,7 @@ no reason to expose it to the open internet for a workshop test. Verify
 against it with an authenticated local proxy instead of a bare public URL:
 
 ```bash
-gcloud run services proxy social-poster --region=europe-west2 --port=8000
+gcloud run services proxy social-poster --region=us-central1 --port=8000
 ```
 
 Leave that running in one terminal. In another, run the frontend as usual —

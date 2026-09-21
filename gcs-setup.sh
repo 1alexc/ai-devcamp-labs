@@ -4,27 +4,41 @@
 # it's safe to re-run the whole file each time a new step is added rather
 # than tracking which ones you've already done.
 #
-# Edit PERSONAL_EMAIL to your own Google account once, then run:
+# Uses whichever Google account gcloud is logged in as (override with
+# PERSONAL_EMAIL=you@gmail.com ./gcs-setup.sh). Needs GOOGLE_CLOUD_PROJECT in
+# backend/social_poster/.env (copy .env.example there first), then run:
 #   ./gcs-setup.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 
-PERSONAL_EMAIL="<user.name>@gmail.com"  # <-- change to your own Google account
-
 # === Step 0: gcloud auth ====================================================
 echo "=== Step 0: gcloud auth ==="
 current_account="$(gcloud config get-value account 2>/dev/null || true)"
-if [[ "$current_account" == "$PERSONAL_EMAIL" ]]; then
-  echo "Already logged in as $PERSONAL_EMAIL, skipping."
-else
-  gcloud auth login "$PERSONAL_EMAIL"
+PERSONAL_EMAIL="${PERSONAL_EMAIL:-$current_account}"
+if [[ -z "$PERSONAL_EMAIL" ]]; then
+  echo "No gcloud account found. Run 'gcloud auth login', then re-run this script."
+  exit 1
 fi
+echo "Using $PERSONAL_EMAIL."
 
 ADC_FILE="$HOME/.config/gcloud/application_default_credentials.json"
 if [[ -f "$ADC_FILE" ]]; then
   echo "Application Default Credentials already set up, skipping."
 else
   gcloud auth application-default login
+fi
+echo
+
+# Every step below needs the project; load it once, up front.
+ENV_FILE="backend/social_poster/.env"
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  source "$ENV_FILE"
+  set +a
+fi
+if [[ -z "${GOOGLE_CLOUD_PROJECT:-}" ]]; then
+  echo "GOOGLE_CLOUD_PROJECT is not set. Copy .env.example to $ENV_FILE and set it, then re-run."
+  exit 1
 fi
 echo
 
@@ -35,17 +49,11 @@ echo
 # steps, which keep Buffer text-only by design. Skipped entirely if
 # GCS_BUCKET_NAME isn't set in backend/social_poster/.env yet.
 echo "=== Step 1: GCS image hosting for Buffer ==="
-ENV_FILE="backend/social_poster/.env"
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "skipping — $ENV_FILE not found (copy .env.example there first)."
 else
-  set -a
-  source "$ENV_FILE"
-  set +a
   if [[ -z "${GCS_BUCKET_NAME:-}" ]]; then
     echo "skipping — GCS_BUCKET_NAME not set in $ENV_FILE."
-  elif [[ -z "${GOOGLE_CLOUD_PROJECT:-}" ]]; then
-    echo "skipping — GOOGLE_CLOUD_PROJECT not set in $ENV_FILE."
   else
     SA_NAME="social-spark-uploader"
     SA_EMAIL="${SA_NAME}@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com"
@@ -160,7 +168,6 @@ echo
 # gets pasted into a shell history or a chat window.
 echo "=== Step 5: Buffer API key secret ==="
 BUFFER_SECRET_ID="buffer-api-key"
-ENV_FILE="backend/social_poster/.env"
 if ! [[ -f "$ENV_FILE" ]]; then
   echo "No $ENV_FILE yet — skipping (create it, then re-run)."
 elif gcloud secrets describe "$BUFFER_SECRET_ID" --project="$GOOGLE_CLOUD_PROJECT" >/dev/null 2>&1; then

@@ -25,7 +25,9 @@ import tempfile
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 # --- Deployment target --------------------------------------------------------
-PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "adk-devcamp-poc")
+PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT") or sys.exit(
+    "Set GOOGLE_CLOUD_PROJECT to your GCP project ID (export GOOGLE_CLOUD_PROJECT=...)."
+)
 
 # us-central1, deliberately. The Govern pillar's Semantic Governance Policy
 # Engine does not exist in `global` or `europe-west2` — the API answers
@@ -169,7 +171,7 @@ def main() -> int:
             "  1. Store the Buffer token (run this yourself; the key must not\n"
             "     pass through this script):\n"
             "       gcloud secrets create buffer-api-key --data-file=- \\\n"
-            "         --project=adk-devcamp-poc\n"
+            "         --project=$GOOGLE_CLOUD_PROJECT\n"
             "  2. Grant the PLATFORM service agent access — not the Agent\n"
             "     Identity principal, which doesn't exist until after a\n"
             "     successful deploy:\n"

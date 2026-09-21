@@ -9,7 +9,7 @@ deploy and note any IAM friction** — both numbers go in the codelab.
 
 1. Console → **Agent Platform → Agents → Agent Garden** (`console.cloud.google.com/vertex-ai/agents/agent-garden`).
 2. Find the **RAG sample** (retrieval-augmented generation over a datastore).
-3. **Deploy to Agent Engine**, project `adk-devcamp-poc`, region `europe-west2`
+3. **Deploy to Agent Engine**, project `YOUR_PROJECT_ID`, region `europe-west2`
    (same region as everything else; Agent Engine availability was implicitly
    verified when the project was set up — if the region picker refuses, note it
    in LEARNINGS.md and pick the nearest region, it doesn't need to colocate
@@ -37,7 +37,7 @@ If the answers clearly come from your uploaded posts, RAG is working.
 ## 4. Wire it into the orchestrator
 
 > ⚠️ **Unverified.** This guide has not been run end to end, and no RAG agent is
-> deployed in `adk-devcamp-poc`. Where the card URL appears in the Console is
+> deployed in `YOUR_PROJECT_ID`. Where the card URL appears in the Console is
 > not confirmed: the line below is the intended location, not a tested one.
 > Record what you actually see, and correct this step.
 
@@ -62,5 +62,5 @@ screenshot is Week 2 slide material.
 
 Agent Engine bills while deployed. When done for the day either **delete the
 deployment** or set **min instances 0**, and 📊 **record what the day cost**
-(billing report, filtered to Agent Runtime) — that number goes in the
-decisions doc.
+(billing report, filtered to Agent Runtime) — note the number
+down so you can compare before and after.

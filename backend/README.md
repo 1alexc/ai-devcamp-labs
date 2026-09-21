@@ -57,7 +57,7 @@ This serves:
 ### Try it without the frontend
 
 ```bash
-cd backend && uv run adk web
+uv run adk web backend
 ```
 
 Opens ADK's own dev UI (chat + a trace inspector) so you can exercise the

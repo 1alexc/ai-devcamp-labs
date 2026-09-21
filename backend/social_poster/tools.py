@@ -15,9 +15,7 @@ from google import genai
 from google.cloud import storage
 from google.genai import types as genai_types
 
-# Images land in a gallery/ directory at this repo's root (this is the
-# standalone reference repo — see tools.py's counterpart in the main
-# adk-devcamp-poc repo for the cumulative-folder version of this comment).
+# Images land in a gallery/ directory at this repo's root.
 OUTPUTS_DIR = pathlib.Path(__file__).resolve().parents[2] / "gallery"
 
 

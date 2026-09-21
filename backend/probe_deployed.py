@@ -17,6 +17,7 @@ Uses your own gcloud login, so you need roles/aiplatform.user (Lab 2, Step 1).
 """
 import argparse
 import json
+import os
 import subprocess
 import uuid
 
@@ -80,7 +81,7 @@ def ask(url: str, headers: dict, text: str) -> tuple[str, list[str]]:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--project", default="adk-devcamp-poc")
+    ap.add_argument("--project", default=os.environ.get("GOOGLE_CLOUD_PROJECT"), required=not os.environ.get("GOOGLE_CLOUD_PROJECT"))
     ap.add_argument("--region", default="us-central1")
     ap.add_argument("--engine", default="")
     ap.add_argument("--name", default="social-spark-poster")

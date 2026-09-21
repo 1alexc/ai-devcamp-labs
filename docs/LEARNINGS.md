@@ -57,7 +57,7 @@ automatically extend to every posting path, check each one specifically.
 `upload_image` (tools.py) returns a plain
 `storage.googleapis.com` object URL on the assumption the bucket has
 `allUsers:objectViewer` — `.env.example`'s own setup steps tell you to grant
-it. Tried it live on this project's `social-spark-creatives` bucket:
+it. Tried it live on the reference project's bucket:
 `gcloud storage buckets add-iam-policy-binding ... --member=allUsers
 --role=roles/storage.objectViewer` → `HTTPError 412: The member bindings
 allUsers and allAuthenticatedUsers are not allowed since public access
@@ -66,7 +66,7 @@ prevention is enforced.` Checked the bucket's actual IAM policy directly
 all, confirming every hosted URL this app has ever produced 403s to a plain
 browser fetch; nobody had actually opened one until embedding it as a chat
 image made that visible. **Public Access Prevention is a common default on
-managed/shared GCP projects** (this DevCamp project has it) — don't assume
+managed/shared GCP projects** (the reference project had it; a personal project without an organisation usually doesn't) — don't assume
 `.env.example`'s bucket instructions will work as written; check first with
 `gcloud storage buckets describe gs://YOUR_BUCKET
 --format="value(iamConfiguration.publicAccessPrevention)"`. **Fix (shipped,
@@ -876,7 +876,7 @@ when the verdict is missing rather than treating "no result" as "no problem".
 
 `POST .../semanticGovernancePolicies` without `?semanticGovernancePolicyId=`
 returns `INVALID_ARGUMENT: semantic_governance_policy_id ... Required field is
-not set` (it is not in the body). Separately, re-checked the `adk-devcamp-poc`
+not set` (it is not in the body). Separately, re-checked the test
 engine two days after the failed deprovision: still `FAILED` /
 `DEPROVISIONING`, `updateTime` unchanged since 18 Sept 17:06. A `PATCH` to
 re-provision and a `:deprovision` retry both return `FAILED_PRECONDITION:

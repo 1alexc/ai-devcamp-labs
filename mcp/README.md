@@ -11,7 +11,7 @@ DRY_RUN=true uv run python mcp/linkedin_server.py   # then speak MCP over stdio,
 npx @modelcontextprotocol/inspector uv run python mcp/linkedin_server.py
 ```
 
-## LinkedIn Developer app setup (⏱ time yourself — the number goes in the decisions doc)
+## LinkedIn Developer app setup
 
 1. **Create the app**: https://www.linkedin.com/developers/apps → *Create app*.
    You need a LinkedIn *company page* to associate (create a dummy one if needed).
@@ -54,8 +54,10 @@ npx @modelcontextprotocol/inspector uv run python mcp/linkedin_server.py
 
 ```bash
 DRY_RUN=false LINKEDIN_ACCESS_TOKEN=... uv run python -c "
-from mcp.linkedin_server import create_post
-print(create_post.fn('Testing my ADK DevCamp posting pipeline. If you can read this, it worked.'))
+import importlib.util as u
+s = u.spec_from_file_location('linkedin_server', 'mcp/linkedin_server.py')
+m = u.module_from_spec(s); s.loader.exec_module(m)
+print(m.create_post.fn('Testing my ADK DevCamp posting pipeline. If you can read this, it worked.'))
 "
 ```
 

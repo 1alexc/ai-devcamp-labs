@@ -22,9 +22,13 @@ import google.auth
 import google.auth.transport.requests
 import httpx
 
-PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "adk-devcamp-poc")
+PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT") or sys.exit(
+    "Set GOOGLE_CLOUD_PROJECT to your GCP project ID (export GOOGLE_CLOUD_PROJECT=...)."
+)
 REGION = os.environ.get("ENGINE_REGION", "us-central1")
-ENGINE = os.environ.get("AGENT_ENGINE_ID", "2160676138265870336")
+ENGINE = os.environ.get("AGENT_ENGINE_ID") or sys.exit(
+    "Set AGENT_ENGINE_ID to your deployed engine's numeric ID (see `agents-cli deploy --list`)."
+)
 URL = (f"https://{REGION}-aiplatform.googleapis.com/v1beta1/projects/{PROJECT}"
        f"/locations/{REGION}/reasoningEngines/{ENGINE}")
 

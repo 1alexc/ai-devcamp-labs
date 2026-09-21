@@ -28,7 +28,9 @@ import google.auth
 import google.auth.transport.requests
 import httpx
 
-PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "adk-devcamp-poc")
+PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT") or sys.exit(
+    "Set GOOGLE_CLOUD_PROJECT to your GCP project ID (export GOOGLE_CLOUD_PROJECT=...)."
+)
 REGION = "us-central1"
 ENGINE_NAME = os.environ.get("AGENT_ENGINE_DISPLAY_NAME", "social-spark-poster")
 AIP = f"https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT}/locations/{REGION}"

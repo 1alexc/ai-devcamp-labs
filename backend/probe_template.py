@@ -11,6 +11,7 @@ greetings and ordinary requests should pass, attacks should be blocked. It is a 
 sample, so treat a clean result as "no obvious problem", not proof.
 """
 import argparse
+import os
 import subprocess
 
 import httpx
@@ -39,7 +40,7 @@ def matched(result: dict) -> bool:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--project", default="adk-devcamp-poc")
+    ap.add_argument("--project", default=os.environ.get("GOOGLE_CLOUD_PROJECT"), required=not os.environ.get("GOOGLE_CLOUD_PROJECT"))
     ap.add_argument("--region", default="us-central1")
     ap.add_argument("--template", default="devcamp-guardrails")
     a = ap.parse_args()

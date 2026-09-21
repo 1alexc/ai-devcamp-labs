@@ -482,7 +482,7 @@
 
         <ol>
           <li>Go to <a href="https://cloud.google.com/free" target="_blank" rel="noopener">cloud.google.com/free</a> and start the free trial with a Google account. A personal Gmail is fine; work accounts often have restrictions, so avoid them.</li>
-          <li>In the top navbar project dropdown, click <strong>New Project</strong> and create a project named <code>ai-devcamp-&lt;yourname&gt;</code>. Leave <em>Location</em> as "No organization" if prompted. Projects are global metadata containers in Google Cloud, so you won't see a region selector here.
+          <li>In the top navbar project dropdown, click <strong>New Project</strong> and create a project named <code>ai-devcamp-&lt;yourname&gt;</code>. Google adds a numeric suffix to make the <strong>Project ID</strong> unique, for example <code>ai-devcamp-sonika-509210</code>. <strong>Write down your Project ID</strong>: every command and setting below uses the ID, not the name (find it on the console dashboard's project info card, or in the project dropdown). From here on it is written <code>&lt;PROJECT_ID&gt;</code>. Leave <em>Location</em> as "No organization" if prompted. Projects are global metadata containers in Google Cloud, so you won't see a region selector here.
             <div style="margin:12px 0"><div class="shots"><figure><img src="img/gcp-project-id.png" alt="Creating the project and finding its Project ID" width="500"><figcaption>Creating the project and finding its Project ID</figcaption></figure></div></div></li>
           <li>Verify your billing account is linked to your new project (console → <strong>Billing → My Projects</strong>).
             <div style="margin:12px 0"><div class="shots"><figure><img src="img/gcp-billing-linked.png" alt="Billing account linked to the project" width="500"><figcaption>Billing account linked to the project</figcaption></figure></div></div></li>
@@ -514,7 +514,7 @@
 
         <p>Install, in order:</p>
         <ol>
-          <li><strong>Python 3.12+</strong> (python.org or your package manager; the project requires 3.12).</li>
+          <li><strong>Python 3.12+</strong>. Easiest: install <code>uv</code> first (next item), then run <code>uv python install 3.12</code>. Or use python.org or your package manager.</li>
           <li><strong>uv</strong>, the Python package manager: <code>curl -LsSf https://astral.sh/uv/install.sh | sh</code></li>
           <li><strong>Node.js 20+</strong> (nodejs.org).</li>
           <li><strong>Google Cloud SDK</strong> (cloud.google.com/sdk), then in your terminal:</li>
@@ -523,8 +523,10 @@
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
           <pre><code>gcloud auth login
 gcloud auth application-default login
-gcloud config set project ai-devcamp-&lt;yourname&gt;
+gcloud config set project &lt;PROJECT_ID&gt;
 gcloud config set compute/region us-central1
+# Lets your local credentials bill API calls to your project (avoids 403s on a new account):
+gcloud auth application-default set-quota-project &lt;PROJECT_ID&gt;
 
 # Enable all required APIs in one command:
 gcloud services enable \
@@ -543,7 +545,7 @@ gcloud services enable \
   networksecurity.googleapis.com</code></pre>
         </div>
         <ol start="5">
-          <li><strong>ADK</strong>: <code>uv tool install google-adk</code> (or <code>pip install google-adk</code>).</li>
+          <li><strong>ADK</strong>: nothing to install now. The starter repo pins an exact ADK version; Lab 1 installs it with <code>uv sync</code> and runs it as <code>uv run adk ...</code>. Please don't install ADK globally, so everyone runs the same version.</li>
           <li><strong>Git</strong> and a <strong>GitHub account</strong>. In Lab 1 you'll clone the starter repo: the web frontend, the LinkedIn MCP server and the Agent Skills come prebuilt, and you build the agent backend.</li>
         </ol>
 
@@ -557,7 +559,7 @@ gcloud services enable \
             <defs><marker id="loc-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
             <rect x="8" y="80" width="222" height="80" rx="12" class="accent-stroke fill-accent" stroke-width="2"/>
             <text x="119" y="112" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Your GCP project</text>
-            <text x="119" y="130" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.7">ai-devcamp-&lt;yourname&gt;</text>
+            <text x="119" y="130" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.7">&lt;PROJECT_ID&gt;</text>
             <text x="119" y="146" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.7">one project, three locations</text>
             <line x1="230" y1="120" x2="330" y2="54" stroke="currentColor" stroke-width="1.4" marker-end="url(#loc-arrow)"/>
             <rect x="332" y="20" width="376" height="68" rx="12" class="green-stroke fill-green" stroke-width="2"/>
@@ -586,7 +588,7 @@ gcloud services enable \
 
         <div class="callout check">
           <span class="callout-label">Phase 2 checkpoint</span>
-          <p><code>adk --version</code>, <code>node --version</code> and <code>gcloud config get-value project</code> all return sensible answers.</p>
+          <p><code>uv --version</code>, <code>uv python list --only-installed</code> (shows 3.12 or newer), <code>node --version</code> and <code>gcloud config get-value project</code> (your <code>&lt;PROJECT_ID&gt;</code>) all return sensible answers.</p>
         </div>
 
         <div class="step-footer">
@@ -636,10 +638,10 @@ gcloud services enable \
           <li><strong>Sign in through the Business Account (Google Cloud Project) pathway.</strong>
             <ul>
               <li><strong>Select the Business pathway.</strong> When logging in (or back in, if you previously used a personal or Pro account), do <strong>not</strong> choose "Continue with Google". Choose <strong>Business Account</strong>, or the option that says <em>"Use Google Cloud project instead"</em> or <em>"Continue with Google Cloud"</em>.</li>
-              <li><strong>Authenticate.</strong> Even though it says "Business", your browser opens Google's standard sign-in. Use your personal Gmail, or whichever account owns your <code>ai-devcamp-&lt;yourname&gt;</code> project.</li>
+              <li><strong>Authenticate.</strong> Even though it says "Business", your browser opens Google's standard sign-in. Use your personal Gmail, or whichever account owns your project.</li>
               <li><strong>Link your project and budget.</strong> The extension asks for:
                 <ul>
-                  <li><strong>Google Cloud Project ID:</strong> <code>ai-devcamp-&lt;yourname&gt;</code>, the project holding your Agent Platform budget.</li>
+                  <li><strong>Google Cloud Project ID:</strong> your <code>&lt;PROJECT_ID&gt;</code> (the ID, not the name), the project holding your Agent Platform budget.</li>
                   <li><strong>Location:</strong> <code>Global</code>.</li>
                   <li><strong>Select License / Agent Platform:</strong> if you see <em>"No license available for this project and location"</em>, click <strong>"Use Agent Platform instead — Pay as you go provisioned for your Google Cloud project"</strong>.</li>
                 </ul>
@@ -652,7 +654,7 @@ gcloud services enable \
 
         <div class="callout warn">
           <span class="callout-label">Troubleshooting: Agent Platform API error</span>
-          <p>If Antigravity says <em>"Agent Platform API has not been used in project ai-devcamp-&lt;yourname&gt; before or it is disabled"</em>:</p>
+          <p>If Antigravity says <em>"Agent Platform API has not been used in project &lt;PROJECT_ID&gt; before or it is disabled"</em>:</p>
           <p><strong>Fix:</strong> click the link in the error message to enable the Agent Platform API (<code>aiplatform.googleapis.com</code>), or run <code>gcloud services enable aiplatform.googleapis.com</code>. Wait 2 to 3 minutes for it to propagate, then retry.</p>
           <p><strong>IAM permissions:</strong> your Google account needs <strong>Agent Platform User</strong> (<code>roles/aiplatform.user</code>), <strong>Owner</strong> or <strong>Editor</strong> on your GCP project.</p>
         </div>
@@ -675,7 +677,7 @@ gcloud services enable \
 
         <div class="callout check">
           <span class="callout-label">Phase 3 checkpoint</span>
-          <ul><li>Antigravity displays your account tier as <strong>Business (Pay-As-You-Go)</strong>.</li><li>Ask Antigravity to create a hello-world Python file; review its plan, accept, run it.</li><li><code>agents-cli --version</code> returns a version. In Antigravity's chat panel ask <em>"What ADK skills do you have?"</em>. It should list several <code>google-agents-cli-*</code> entries (like <code>adk-code</code>, <code>adk-dev-guide</code>).</li></ul>
+          <ul><li>Antigravity displays your plan as <strong>Agent Platform</strong> (pay as you go).</li><li>Ask Antigravity to create a hello-world Python file; review its plan, accept, run it.</li><li><code>agents-cli --version</code> returns a version. In Antigravity's chat panel ask <em>"What ADK skills do you have?"</em>. It should list several <code>google-agents-cli-*</code> entries (like <code>adk-code</code>, <code>adk-dev-guide</code>).</li></ul>
         </div>
 
         <div class="step-footer">
@@ -698,7 +700,7 @@ gcloud services enable \
         <div class="code-block">
           <div class="code-head"><span>.env — from Lab 1</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
           <pre><code>GOOGLE_GENAI_USE_VERTEXAI=TRUE
-GOOGLE_CLOUD_PROJECT=ai-devcamp-&lt;yourname&gt;
+GOOGLE_CLOUD_PROJECT=&lt;PROJECT_ID&gt;
 GOOGLE_CLOUD_LOCATION=global
 DRY_RUN=true</code></pre>
         </div>
@@ -720,12 +722,12 @@ DRY_RUN=true</code></pre>
           <li><strong>GCS image hosting for Buffer</strong> (optional and advanced, not part of Lab 1's taught steps, which keep Buffer text-only by design). Only relevant if you want Buffer posts to carry an image like the reference build does. It needs a one-time IAM setup outside the app's own reach: a dedicated service account with signing rights via impersonation, not a downloaded key. Set <code>GOOGLE_CLOUD_PROJECT</code> and <code>GCS_BUCKET_NAME</code> in your <code>.env</code>, then run <code>./gcs-setup.sh</code> from the repo root. Skip this unless you're specifically extending past Lab 1.</li>
           <li>Join the <strong>GDG London Discord</strong> (<a href="https://discord.gg/952SuUXME" target="_blank" rel="noopener">discord.gg/952SuUXME</a>) and say hi in <code>#introductions</code>. Channels: <code>#setup-help</code>, <code>#session-1</code> to <code>#session-4</code>, <code>#show-your-use-case</code>.</li>
           <li>Think of <strong>one use case of your own</strong>: an agent you'd like to exist. You'll declare it in Lab 1 and build it alongside ours as each lab's Assignment.</li>
-          <li><strong>Optional: see Google's own scaffold.</strong> Curious what <code>agents-cli</code> generates? In a scratch folder (not the workshop repo), run <code>agents-cli create my-agent --prototype --yes</code>. The labs use our own project, so treat this as a look around.</li>
+          <li><strong>Optional: see Google's own scaffold.</strong> Curious what <code>agents-cli</code> generates? In a scratch folder (not the workshop repo), run <code>agents-cli create my-agent --prototype --yes</code>. The labs use our own project, so treat this as a look around. It is also the best test that everything above works: the scaffold uses your gcloud project, and you run it with <code>cd my-agent &amp;&amp; agents-cli install &amp;&amp; agents-cli playground</code>.</li>
         </ul>
 
         <div class="callout check">
           <span class="callout-label">Phase 4 checkpoint</span>
-          <p><code>uv run adk web</code> against any agent, and send one message. A 404 <em>"Publisher model ... was not found"</em> means <code>GOOGLE_CLOUD_LOCATION</code> is still set to a region, not <code>global</code>.</p>
+          <p>Your four <code>.env</code> values are written down and your buddy check is posted. If you tried the scaffold above, <code>agents-cli playground</code> opens a chat and your first message gets a reply. A 404 <em>"Publisher model ... was not found"</em> means <code>GOOGLE_CLOUD_LOCATION</code> is still set to a region, not <code>global</code>.</p>
         </div>
 
         <div class="step-footer">

@@ -29,7 +29,7 @@ def generate_image(prompt: str) -> dict:
         dict with 'status', and on success 'image_path' (local file path)
         or on failure an 'error' message.
     """
-    model = os.environ.get("IMAGE_MODEL_ID", "gemini-2.5-flash-image")
+    model = os.environ.get("IMAGE_MODEL_ID", "gemini-3.1-flash-image")
     client = genai.Client()  # picks up GOOGLE_GENAI_USE_VERTEXAI / project / location
     try:
         response = client.models.generate_content(

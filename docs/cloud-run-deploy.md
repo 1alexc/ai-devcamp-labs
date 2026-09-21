@@ -1,3 +1,5 @@
+> **Optional reference, not part of the labs.** The labs deploy with `agents-cli deploy` to Agent Runtime (see [agent-runtime-deploy.md](agent-runtime-deploy.md)). This page documents the older Cloud Run + Cloud Build path with an eval-gated pipeline. You do not need it, or `cloudbuild.yaml`, to complete any lab.
+
 # Setup guide: deploy to Cloud Run + CI/CD (Week 4)
 
 This ships the governed agent to production on Cloud Run, with a Cloud Build

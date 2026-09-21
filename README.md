@@ -73,7 +73,7 @@ gcs-setup.sh             one-time Google Cloud setup: APIs, templates, grants
 | Doc | Covers |
 |---|---|
 | [agent-runtime-deploy.md](docs/agent-runtime-deploy.md) | Deploy to Agent Runtime, sessions and memory, the frontend on Cloud Run |
-| [cloud-run-deploy.md](docs/cloud-run-deploy.md) | Dockerfile, `cloudbuild.yaml`, IAM, eval-gated CI/CD |
+| [cloud-run-deploy.md](docs/cloud-run-deploy.md) | Optional reference (not used in the labs): Dockerfile, `cloudbuild.yaml`, IAM, eval-gated CI/CD |
 | [model-armor-setup.md](docs/model-armor-setup.md) | Guardrail templates, grants and switches |
 | [observability.md](docs/observability.md) | Cloud Trace and the BigQuery analytics agent |
 | [LEARNINGS.md](docs/LEARNINGS.md) | What broke and why, by pillar |

@@ -425,53 +425,53 @@
         <h2>What protects what</h2>
         <figure class="diagram">
           <svg viewBox="0 0 900 452" role="img" aria-label="A grid of which protection covers which route into the agent. Agent Gateway with Model Armor blocks native traffic before the agent runs but does not inspect the web UI path. Model Armor on the Gemini call covers the web UI with streaming off. DLP at the boundary covers the web UI only. The DLP tool depends on the model. DLP before the post, the approval gate and Agent Identity cover both routes.">
-            <text x="310" y="28" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">Native traffic</text>
-            <text x="310" y="44" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.7">streamQuery, MCP, A2A</text>
-            <text x="610" y="28" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">Social Spark web UI</text>
-            <text x="610" y="44" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.7">AG-UI over /api/adk</text>
-            <text x="10" y="85" font-size="12" font-weight="700" text-anchor="start" fill="currentColor">Agent Gateway + Model Armor</text>
+            <text x="310" y="28" font-size="16" font-weight="700" text-anchor="start" fill="currentColor">Native traffic</text>
+            <text x="310" y="44" font-size="13" text-anchor="start" fill="currentColor" opacity="0.7">streamQuery, MCP, A2A</text>
+            <text x="610" y="28" font-size="16" font-weight="700" text-anchor="start" fill="currentColor">Social Spark web UI</text>
+            <text x="610" y="44" font-size="13" text-anchor="start" fill="currentColor" opacity="0.7">AG-UI over /api/adk</text>
+            <text x="10" y="85" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">Agent Gateway + Model Armor</text>
             <rect x="300" y="58" width="286" height="42" rx="8" class="green-stroke fill-green" stroke-width="1.4"/>
-            <text x="443" y="84" font-size="11" text-anchor="middle" fill="currentColor">Blocks before the agent runs</text>
+            <text x="443" y="84" font-size="14" text-anchor="middle" fill="currentColor">Blocks before the agent runs</text>
             <rect x="600" y="58" width="290" height="42" rx="8" class="red-stroke fill-red" stroke-width="1.4"/>
-            <text x="745" y="84" font-size="11" text-anchor="middle" fill="currentColor">Not inspected: custom path</text>
-            <text x="10" y="135" font-size="12" font-weight="700" text-anchor="start" fill="currentColor">Model Armor on the Gemini call</text>
+            <text x="745" y="84" font-size="14" text-anchor="middle" fill="currentColor">Not inspected: custom path</text>
+            <text x="10" y="135" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">Model Armor on the Gemini call</text>
             <rect x="300" y="108" width="286" height="42" rx="8" class="muted-stroke soft-fill" stroke-width="1.4"/>
-            <text x="443" y="134" font-size="11" text-anchor="middle" fill="currentColor">n/a: our engine has no streamQuery</text>
+            <text x="443" y="134" font-size="14" text-anchor="middle" fill="currentColor">n/a: our engine has no streamQuery</text>
             <rect x="600" y="108" width="290" height="42" rx="8" class="green-stroke fill-green" stroke-width="1.4"/>
-            <text x="745" y="134" font-size="11" text-anchor="middle" fill="currentColor">Yes, with streaming off</text>
-            <text x="10" y="185" font-size="12" font-weight="700" text-anchor="start" fill="currentColor">DLP at the boundary</text>
+            <text x="745" y="134" font-size="14" text-anchor="middle" fill="currentColor">Yes, with streaming off</text>
+            <text x="10" y="185" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">DLP at the boundary</text>
             <rect x="300" y="158" width="286" height="42" rx="8" class="red-stroke fill-red" stroke-width="1.4"/>
-            <text x="443" y="184" font-size="11" text-anchor="middle" fill="currentColor">No: only wraps our own route</text>
+            <text x="443" y="184" font-size="14" text-anchor="middle" fill="currentColor">No: only wraps our own route</text>
             <rect x="600" y="158" width="290" height="42" rx="8" class="green-stroke fill-green" stroke-width="1.4"/>
-            <text x="745" y="184" font-size="11" text-anchor="middle" fill="currentColor">Yes: redacted before the agent</text>
-            <text x="10" y="235" font-size="12" font-weight="700" text-anchor="start" fill="currentColor">DLP tool: redact_pii_text</text>
+            <text x="745" y="184" font-size="14" text-anchor="middle" fill="currentColor">Yes: redacted before the agent</text>
+            <text x="10" y="235" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">DLP tool: redact_pii_text</text>
             <rect x="300" y="208" width="286" height="42" rx="8" class="yellow-stroke fill-yellow" stroke-width="1.4"/>
-            <text x="443" y="234" font-size="11" text-anchor="middle" fill="currentColor">Only if the model calls it</text>
+            <text x="443" y="234" font-size="14" text-anchor="middle" fill="currentColor">Only if the model calls it</text>
             <rect x="600" y="208" width="290" height="42" rx="8" class="yellow-stroke fill-yellow" stroke-width="1.4"/>
-            <text x="745" y="234" font-size="11" text-anchor="middle" fill="currentColor">Only if the model calls it</text>
-            <text x="10" y="285" font-size="12" font-weight="700" text-anchor="start" fill="currentColor">DLP before the post</text>
+            <text x="745" y="234" font-size="14" text-anchor="middle" fill="currentColor">Only if the model calls it</text>
+            <text x="10" y="285" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">DLP before the post</text>
             <rect x="300" y="258" width="286" height="42" rx="8" class="green-stroke fill-green" stroke-width="1.4"/>
-            <text x="443" y="284" font-size="11" text-anchor="middle" fill="currentColor">Yes: a callback in the agent</text>
+            <text x="443" y="284" font-size="14" text-anchor="middle" fill="currentColor">Yes: a callback in the agent</text>
             <rect x="600" y="258" width="290" height="42" rx="8" class="green-stroke fill-green" stroke-width="1.4"/>
-            <text x="745" y="284" font-size="11" text-anchor="middle" fill="currentColor">Yes: a callback in the agent</text>
-            <text x="10" y="335" font-size="12" font-weight="700" text-anchor="start" fill="currentColor">Approval gate</text>
+            <text x="745" y="284" font-size="14" text-anchor="middle" fill="currentColor">Yes: a callback in the agent</text>
+            <text x="10" y="335" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">Approval gate</text>
             <rect x="300" y="308" width="286" height="42" rx="8" class="green-stroke fill-green" stroke-width="1.4"/>
-            <text x="443" y="334" font-size="11" text-anchor="middle" fill="currentColor">Yes: require_confirmation</text>
+            <text x="443" y="334" font-size="14" text-anchor="middle" fill="currentColor">Yes: require_confirmation</text>
             <rect x="600" y="308" width="290" height="42" rx="8" class="green-stroke fill-green" stroke-width="1.4"/>
-            <text x="745" y="334" font-size="11" text-anchor="middle" fill="currentColor">Yes: require_confirmation</text>
-            <text x="10" y="385" font-size="12" font-weight="700" text-anchor="start" fill="currentColor">Agent Identity and IAM</text>
+            <text x="745" y="334" font-size="14" text-anchor="middle" fill="currentColor">Yes: require_confirmation</text>
+            <text x="10" y="385" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">Agent Identity and IAM</text>
             <rect x="300" y="358" width="286" height="42" rx="8" class="green-stroke fill-green" stroke-width="1.4"/>
-            <text x="443" y="384" font-size="11" text-anchor="middle" fill="currentColor">Yes: the agent's own identity</text>
+            <text x="443" y="384" font-size="14" text-anchor="middle" fill="currentColor">Yes: the agent's own identity</text>
             <rect x="600" y="358" width="290" height="42" rx="8" class="green-stroke fill-green" stroke-width="1.4"/>
-            <text x="745" y="384" font-size="11" text-anchor="middle" fill="currentColor">Yes: the agent's own identity</text>
+            <text x="745" y="384" font-size="14" text-anchor="middle" fill="currentColor">Yes: the agent's own identity</text>
             <rect x="10" y="422" width="16" height="12" rx="3" class="green-stroke fill-green" stroke-width="1.6"/>
-            <text x="32" y="432.5" font-size="10.5" text-anchor="start" fill="currentColor">verified</text>
+            <text x="32" y="433.5" font-size="13" text-anchor="start" fill="currentColor">verified</text>
             <rect x="130" y="422" width="16" height="12" rx="3" class="yellow-stroke fill-yellow" stroke-width="1.6"/>
-            <text x="152" y="432.5" font-size="10.5" text-anchor="start" fill="currentColor">depends on the model</text>
+            <text x="152" y="433.5" font-size="13" text-anchor="start" fill="currentColor">depends on the model</text>
             <rect x="320" y="422" width="16" height="12" rx="3" class="red-stroke fill-red" stroke-width="1.6"/>
-            <text x="342" y="432.5" font-size="10.5" text-anchor="start" fill="currentColor">not covered</text>
+            <text x="342" y="433.5" font-size="13" text-anchor="start" fill="currentColor">not covered</text>
             <rect x="450" y="422" width="16" height="12" rx="3" class="muted-stroke soft-fill" stroke-width="1.6"/>
-            <text x="472" y="432.5" font-size="10.5" text-anchor="start" fill="currentColor">not applicable</text>
+            <text x="472" y="433.5" font-size="13" text-anchor="start" fill="currentColor">not applicable</text>
           </svg>
           <figcaption>A gateway protects the interfaces it understands. An app with its own route needs its own screening, and the layers that live inside the agent cover both routes.</figcaption>
         </figure>
@@ -522,7 +522,7 @@
         <div class="tbl-wrap"><table>
 <thead><tr><th>What</th><th>Who / where</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td><code>roles/modelarmor.user</code></td><td><strong>Agent Platform's own service agent</strong><br><code>service-&lt;PROJECT_NUMBER&gt;@gcp-sa-aiplatform.iam.gserviceaccount.com</code></td><td>Agent Platform applies Model Armor inline on each Gemini call, so <em>it</em> needs the role. Without it every guarded call returns <code>403 ... useToSanitizeUserPrompt denied</code>.</td></tr>
+<tr><td><code>roles/modelarmor.user</code></td><td><strong>Gemini Enterprise service agent</strong><br><code>service-&lt;PROJECT_NUMBER&gt;@gcp-sa-aiplatform.iam.gserviceaccount.com</code></td><td>It applies Model Armor inline on each Gemini call, so <em>it</em> needs the role. Without it every guarded call returns <code>403 ... useToSanitizeUserPrompt denied</code>.</td></tr>
 <tr><td><code>roles/modelarmor.calloutUser</code> and <code>roles/modelarmor.user</code></td><td><strong>The Reasoning Engine service agent</strong> (a different one from the row above)<br><code>service-&lt;PROJECT_NUMBER&gt;@gcp-sa-aiplatform-re.iam.gserviceaccount.com</code></td><td>Agent Gateway calls Model Armor with this identity on ingress traffic, so it needs both roles. Only for the Agent Gateway route in Step 7. Egress traffic uses the Service Extensions service agent instead.</td></tr>
 <tr><td><code>roles/dlp.user</code></td><td><strong>Your agent's identity</strong>, as the project-wide <code>principalSet://agents.global.proj-&lt;NUMBER&gt;.system.id.goog/attribute.platformContainer/aiplatform/projects/&lt;NUMBER&gt;</code></td><td>The agent calls Cloud DLP itself to redact personal data. The specific principal only exists after a deploy, so grant the project-wide set.</td></tr>
 <tr><td>APIs</td><td><code>modelarmor</code>, <code>dlp</code>, <code>agentregistry</code>, <code>networkservices</code>, <code>networksecurity</code>. For Step 6 also <code>compute</code>, <code>dns</code>, <code>cloudtrace</code></td><td>Model Armor, DLP, the Agent Registry catalogue, and the gateway, extension and policy in Step 7 (their <code>gcloud</code> imports fail without the two network APIs). <code>gcs-setup.sh</code> enables them.</td></tr>
@@ -531,7 +531,7 @@
 </tbody></table></div>
         <div class="callout warn">
           <span class="callout-label">Two identities: who calls Model Armor</span>
-          <p>Model Armor is applied <strong>inline</strong>: Agent Platform calls it with its own service agent, so <code>modelarmor.user</code> goes to the <strong>Agent Platform service agent</strong>, not to your agent. Do not call the Model Armor sanitize API from code inside your agent: Google's auth library blocks "agent token sharing", so the call returns <code>401 Unauthorized</code>. Leave that protection on.</p>
+          <p>Model Armor is applied <strong>inline</strong>: the Gemini Enterprise service agent calls it, so <code>modelarmor.user</code> goes to the <strong>Gemini Enterprise service agent</strong>, not to your agent. Do not call the Model Armor sanitize API from code inside your agent: Google's auth library blocks "agent token sharing", so the call returns <code>401 Unauthorized</code>. Leave that protection on.</p>
         </div>
         <div class="callout">
           <span class="callout-label">Why us-central1</span>
@@ -547,15 +547,15 @@
       <section class="step-panel" data-step="2">
         <div class="eyebrow"><span class="pill">Step 2 of 9</span><span class="dur">⏱ 25 min</span></div>
         <h1 class="step-title">Model Armor: screen every call</h1>
-        <p class="lede">Model Armor is applied by Agent Platform on each Gemini call, with a template you name. Your code does not call it.</p>
+        <p class="lede">Model Armor is applied on each Gemini call, with a template you name. Your code does not call it.</p>
 
         <div class="callout">
           <span class="callout-label">Theory</span>
-          <p>A <strong>template</strong> says which filters run: responsible-AI categories (hate, harassment, sexual, dangerous) and prompt-injection and jailbreak detection. You attach templates to the model call, and Agent Platform screens the prompt going in and the reply coming out. A blocked call comes back as an error with code <code>MODEL_ARMOR</code>, which <code>guardrails.friendly_block</code> turns into a readable refusal.</p>
+          <p>A <strong>template</strong> says which filters run: responsible-AI categories (hate, harassment, sexual, dangerous) and prompt-injection and jailbreak detection. You attach templates to the model call, and each call is screened: the prompt going in and the reply coming out. A blocked call comes back as an error with code <code>MODEL_ARMOR</code>, which <code>guardrails.friendly_block</code> turns into a readable refusal.</p>
           <p>We use <strong>two templates</strong>. The input one has the injection filter. The output one does not, because that filter fires on a model reply that merely <em>discusses</em> injection.</p>
         </div>
         <figure class="diagram">
-          <svg viewBox="0 0 900 340" role="img" aria-label="A user message reaches root_agent, which makes a Gemini call. Agent Platform screens that one call: the input template checks the prompt for injection and harm, then Gemini runs in a region, then the output template checks the reply for harm. A blocked call comes back as an error with code MODEL_ARMOR and no content, and friendly_block turns it into a readable refusal. Streamed calls are not screened, and template lookups are retried.">
+          <svg viewBox="0 0 900 340" role="img" aria-label="A user message reaches root_agent, which makes a Gemini call. that one call is screened: the input template checks the prompt for injection and harm, then Gemini runs in a region, then the output template checks the reply for harm. A blocked call comes back as an error with code MODEL_ARMOR and no content, and friendly_block turns it into a readable refusal. Streamed calls are not screened, and template lookups are retried.">
             <defs><marker id="ma-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
             <rect x="10" y="120" width="120" height="60" rx="10" class="muted-stroke soft-fill" stroke-width="1.8"/>
             <text x="70" y="146" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">User message</text>
@@ -566,8 +566,8 @@
             <text x="245" y="163" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">makes the Gemini call</text>
             <line x1="320" y1="150" x2="362" y2="150" stroke="currentColor" stroke-width="1.5" marker-end="url(#ma-arrow)"/>
             <rect x="360" y="44" width="410" height="246" rx="10" class="red-stroke fill-red" stroke-width="1.8"/>
-            <text x="565" y="68" font-size="13.5" font-weight="700" text-anchor="middle" fill="currentColor">One Gemini call, screened by Agent Platform</text>
-            <text x="565" y="84" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">applied by Agent Platform with its own service agent, not by your code</text>
+            <text x="565" y="68" font-size="13.5" font-weight="700" text-anchor="middle" fill="currentColor">One Gemini call, screened</text>
+            <text x="565" y="84" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">applied by the Gemini Enterprise service agent, not by your code</text>
             <rect x="378" y="108" width="112" height="84" rx="8" class="red-stroke fill-red" stroke-width="1.4"/>
             <text x="434" y="132" font-size="11.5" font-weight="700" text-anchor="middle" fill="currentColor">Input template</text>
             <text x="434" y="148" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.75">devcamp-guardrails</text>
@@ -600,7 +600,7 @@
             <text x="10" y="314" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Streamed Gemini calls are not screened, so guarded mode turns streaming off and replies arrive whole.</text>
             <text x="10" y="330" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Template lookup can fail at random ("template not found"), so the model object retries up to 8 times.</text>
           </svg>
-          <figcaption>What happens to one message. The screening is done by Agent Platform around the Gemini call, so it works on any route into the agent that makes a non-streamed call.</figcaption>
+          <figcaption>What happens to one message. The screening is done around the Gemini call, so it works on any route into the agent that makes a non-streamed call.</figcaption>
         </figure>
 
         <div class="callout agent">
@@ -624,7 +624,7 @@
         </div>
         <div class="callout tip">
           <span class="callout-label">Random "template not found": retry</span>
-          <p>Agent Platform's template lookup can fail at random with <code>The template named ... was not found</code>, for templates that exist. A retry succeeds. Set the retry on the <strong>ADK model object</strong> (<code>Gemini(model=..., retry_options=...)</code>), which <code>guardrails.model()</code> does for you. The same retry covers <code>429 RESOURCE_EXHAUSTED</code> from the Gemini call, which means the regional model is busy. Every guarded turn makes several model calls and a retry is another, so space your tests out.</p>
+          <p>The template lookup can fail at random with <code>The template named ... was not found</code>, for templates that exist. A retry succeeds. Set the retry on the <strong>ADK model object</strong> (<code>Gemini(model=..., retry_options=...)</code>), which <code>guardrails.model()</code> does for you. The same retry covers <code>429 RESOURCE_EXHAUSTED</code> from the Gemini call, which means the regional model is busy. Every guarded turn makes several model calls and a retry is another, so space your tests out.</p>
         </div>
         <div class="callout">
           <span class="callout-label">Why HIGH, not MEDIUM</span>
@@ -735,51 +735,52 @@ adk_agent._run_config_factory = no_stream</code></pre>
           <p>Cloud DLP finds personal data by <em>information type</em> (names, emails, phone numbers, locations) and replaces each finding. It is a <strong>redaction</strong> layer, not a <strong>decision</strong> layer, and it is pattern-based rather than semantic, so it has false positives. The agent runs it on the final draft just before <code>create_post</code>, and exposes it as a tool so pasted source text can be cleaned first.</p>
         </div>
 <figure class="diagram">
-          <svg viewBox="0 0 900 320" role="img" aria-label="One message, Contact Priya Sharma, plus 44 7911 123456, about the London event, passes three DLP layers. Layer 1, the boundary middleware, runs before the agent, the model, the session and Memory Bank, redacts emails, phone numbers and person names but not places, and fails closed. Layer 2 is the redact_pii_text tool the model chooses to call, which also redacts locations. Layer 3 is redact_before_post, a callback on the posting tool, which redacts the full set just before sending.">
+          <svg viewBox="0 0 900 340" role="img" aria-label="One message, Contact Priya Sharma, plus 44 7911 123456, about the London event, passes three DLP layers. Layer 1, the boundary middleware, runs before the agent, the model, the session and Memory Bank, redacts emails, phone numbers and person names but not places, and fails closed. Layer 2 is the redact_pii_text tool the model chooses to call, which also redacts locations. Layer 3 is redact_before_post, a callback on the posting tool, which redacts the full set just before sending.">
             <defs><marker id="dl-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
-            <text x="10" y="24" font-size="12" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">The same message, seen by three layers</text>
+            <text x="10" y="24" font-size="14" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">The same message, seen by three layers</text>
             <rect x="10" y="32" width="880" height="32" rx="8" class="muted-stroke soft-fill" stroke-width="1.2"/>
-            <text x="450" y="53" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">Contact Priya Sharma, +44 7911 123456, about the London event</text>
+            <text x="450" y="53" font-size="15" font-weight="700" text-anchor="middle" fill="currentColor">Contact Priya Sharma, +44 7911 123456, about the London event</text>
             <rect x="10" y="74" width="280" height="190" rx="10" class="accent-stroke fill-accent" stroke-width="1.8"/>
             <circle cx="32" cy="100" r="12" class="dot-blue"/>
-            <text x="32" y="104.5" font-size="12.5" font-weight="700" text-anchor="middle" fill="#fff">1</text>
-            <text x="52" y="105" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">Boundary middleware</text>
-            <text x="26" y="128" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">runs before anything else: the agent,</text>
-            <text x="26" y="143" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">the model, the session, Memory Bank</text>
-            <text x="26" y="168" font-size="10" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">redacts</text>
-            <text x="26" y="183" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.85">email · phone · person name (not places)</text>
-            <text x="26" y="208" font-size="10" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">what happens next sees</text>
-            <text x="26" y="224" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor">Contact [PERSON_NAME], [PHONE_NUMBER],</text>
-            <text x="26" y="240" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor">about the London event</text>
-            <text x="26" y="256" font-size="10" text-anchor="start" fill="currentColor" opacity="0.6">on when PII_REDACTION=on</text>
+            <text x="32" y="104.5" font-size="15" font-weight="700" text-anchor="middle" fill="#fff">1</text>
+            <text x="52" y="105" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">Boundary middleware</text>
+            <text x="26" y="128" font-size="13" text-anchor="start" fill="currentColor" opacity="0.8">runs before anything else: the agent,</text>
+            <text x="26" y="143" font-size="13" text-anchor="start" fill="currentColor" opacity="0.8">the model, the session, Memory Bank</text>
+            <text x="26" y="168" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">redacts</text>
+            <text x="26" y="183" font-size="13" text-anchor="start" fill="currentColor" opacity="0.85">email · phone · person name (not places)</text>
+            <text x="26" y="208" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">what happens next sees</text>
+            <text x="26" y="224" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">Contact [PERSON_NAME], [PHONE_NUMBER],</text>
+            <text x="26" y="240" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">about the London event</text>
+            <text x="26" y="256" font-size="12.5" text-anchor="start" fill="currentColor" opacity="0.6">on when PII_REDACTION=on</text>
             <line x1="290" y1="170" x2="318" y2="170" stroke="currentColor" stroke-width="1.5" marker-end="url(#dl-arrow)"/>
             <rect x="310" y="74" width="280" height="190" rx="10" class="green-stroke fill-green" stroke-width="1.8"/>
             <circle cx="332" cy="100" r="12" class="dot-green"/>
-            <text x="332" y="104.5" font-size="12.5" font-weight="700" text-anchor="middle" fill="#fff">2</text>
-            <text x="352" y="105" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">redact_pii_text tool</text>
-            <text x="326" y="128" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">the model chooses to call it, then</text>
-            <text x="326" y="143" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">shows you the cleaned copy</text>
-            <text x="326" y="168" font-size="10" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">redacts</text>
-            <text x="326" y="183" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.85">email · phone · name · location</text>
-            <text x="326" y="208" font-size="10" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">what happens next sees</text>
-            <text x="326" y="224" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor">Contact [PERSON_NAME], [PHONE_NUMBER],</text>
-            <text x="326" y="240" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor">about the [LOCATION] event</text>
-            <text x="326" y="256" font-size="10" text-anchor="start" fill="currentColor" opacity="0.6">always available; model judgement</text>
+            <text x="332" y="104.5" font-size="15" font-weight="700" text-anchor="middle" fill="#fff">2</text>
+            <text x="352" y="105" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">redact_pii_text tool</text>
+            <text x="326" y="128" font-size="13" text-anchor="start" fill="currentColor" opacity="0.8">the model chooses to call it, then</text>
+            <text x="326" y="143" font-size="13" text-anchor="start" fill="currentColor" opacity="0.8">shows you the cleaned copy</text>
+            <text x="326" y="168" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">redacts</text>
+            <text x="326" y="183" font-size="13" text-anchor="start" fill="currentColor" opacity="0.85">email · phone · name · location</text>
+            <text x="326" y="208" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">what happens next sees</text>
+            <text x="326" y="224" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">Contact [PERSON_NAME], [PHONE_NUMBER],</text>
+            <text x="326" y="240" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">about the [LOCATION] event</text>
+            <text x="326" y="256" font-size="12.5" text-anchor="start" fill="currentColor" opacity="0.6">always available; model judgement</text>
             <line x1="590" y1="170" x2="618" y2="170" stroke="currentColor" stroke-width="1.5" marker-end="url(#dl-arrow)"/>
             <rect x="610" y="74" width="280" height="190" rx="10" class="yellow-stroke fill-yellow" stroke-width="1.8"/>
             <circle cx="632" cy="100" r="12" class="dot-yellow"/>
-            <text x="632" y="104.5" font-size="12.5" font-weight="700" text-anchor="middle" fill="#fff">3</text>
-            <text x="652" y="105" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">redact_before_post</text>
-            <text x="626" y="128" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">the last stop: a callback on the</text>
-            <text x="626" y="143" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">posting tool, just before it sends</text>
-            <text x="626" y="168" font-size="10" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">redacts</text>
-            <text x="626" y="183" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.85">email · phone · name · location</text>
-            <text x="626" y="208" font-size="10" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">what happens next sees</text>
-            <text x="626" y="224" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor">Contact [PERSON_NAME], [PHONE_NUMBER],</text>
-            <text x="626" y="240" font-size="10.5" font-weight="700" text-anchor="start" fill="currentColor">about the [LOCATION] event</text>
-            <text x="626" y="256" font-size="10" text-anchor="start" fill="currentColor" opacity="0.6">on when PII_REDACTION=on</text>
-            <text x="10" y="290" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Layer 1 fails closed: if DLP is down the request is refused (503), never passed through raw. It leaves places alone, because a city is not what makes a message personal.</text>
-            <text x="10" y="306" font-size="10.5" text-anchor="start" fill="currentColor" opacity="0.8">Layers 2 and 3 use the full set. A different message shape reaches each layer, which is why there are three.</text>
+            <text x="632" y="104.5" font-size="15" font-weight="700" text-anchor="middle" fill="#fff">3</text>
+            <text x="652" y="105" font-size="15" font-weight="700" text-anchor="start" fill="currentColor">redact_before_post</text>
+            <text x="626" y="128" font-size="13" text-anchor="start" fill="currentColor" opacity="0.8">the last stop: a callback on the</text>
+            <text x="626" y="143" font-size="13" text-anchor="start" fill="currentColor" opacity="0.8">posting tool, just before it sends</text>
+            <text x="626" y="168" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">redacts</text>
+            <text x="626" y="183" font-size="13" text-anchor="start" fill="currentColor" opacity="0.85">email · phone · name · location</text>
+            <text x="626" y="208" font-size="12.5" font-weight="700" text-anchor="start" fill="currentColor" opacity="0.6">what happens next sees</text>
+            <text x="626" y="224" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">Contact [PERSON_NAME], [PHONE_NUMBER],</text>
+            <text x="626" y="240" font-size="13" font-weight="700" text-anchor="start" fill="currentColor">about the [LOCATION] event</text>
+            <text x="626" y="256" font-size="12.5" text-anchor="start" fill="currentColor" opacity="0.6">on when PII_REDACTION=on</text>
+            <text x="10" y="290" font-size="13" text-anchor="start" fill="currentColor" opacity="0.8">Layer 1 fails closed: if DLP is down the request is refused (503), never passed through raw.</text>
+            <text x="10" y="306" font-size="13" text-anchor="start" fill="currentColor" opacity="0.8">It leaves places alone, because a city is not what makes a message personal.</text>
+            <text x="10" y="322" font-size="13" text-anchor="start" fill="currentColor" opacity="0.8">Layers 2 and 3 use the full set. A different message shape reaches each layer, which is why there are three.</text>
           </svg>
           <figcaption>Where DLP runs. The first layer is what keeps the raw value out of the session store and away from the model.</figcaption>
         </figure>

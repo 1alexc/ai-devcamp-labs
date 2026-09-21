@@ -98,13 +98,13 @@ Anything **Owned** goes into `evals/governance.json` with the exact refusal expe
 
 | Symptom | Cause | Say / do |
 |---|---|---|
-| `template ... was not found` | Agent Platform's template lookup fails at random | Retry; it is retried automatically. A stale revision means redeploy |
+| `template ... was not found` | The template lookup fails at random | Retry; it is retried automatically. A stale revision means redeploy |
 | Injection refused, but not with our message | Model Armor did not fire; the model declined | This is the lesson. Check streaming is off and the template is set |
 | `401` from Model Armor in your own code | google-auth blocks agent token sharing | Do not turn the protection off. Use the inline route |
 | `Malformed parent field` from DLP | Project number given, DLP wants the ID | Set `PROJECT_ID` |
 | Replies arrive all at once | Streaming is off on purpose (streamed calls are not screened) | Expected in guarded mode |
 | A chat request hangs | The PII middleware replays the body forever | See Step 4: hand the body over once |
-| `429 RESOURCE_EXHAUSTED` in the engine log, or a request that errors with an empty message | Agent Platform says the regional Gemini model is out of shared capacity. It appeared in a burst of testing, with no quota-exceeded events in our project | The model retries with backoff. Space your tests out: do NOT run `probe_deployed.py` back to back, and do not have a whole room fire at once. Wait a minute |
+| `429 RESOURCE_EXHAUSTED` in the engine log, or a request that errors with an empty message | The platform says the regional Gemini model is out of shared capacity. It appeared in a burst of testing, with no quota-exceeded events in our project | The model retries with backoff. Space your tests out: do NOT run `probe_deployed.py` back to back, and do not have a whole room fire at once. Wait a minute |
 | First message is slow | DLP is a network call, about 2 seconds, then cached | Expected |
 
 ## Tear down

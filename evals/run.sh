@@ -39,10 +39,25 @@ if ! curl -sf -o /dev/null "$url"; then
 fi
 export MEMORY_AGENT_CARD_URL="$url"
 
+# The governance set proves the GUARDRAIL, so it needs Model Armor on: a regional Gemini
+# location, pinned models, the templates. Override any of these to see it fail, e.g.
+#   MODEL_ARMOR_TEMPLATE_ID=off ./evals/run.sh evals/governance.json
+CFG="evals/eval_config.json"
+if [[ "$SET" == *governance* ]]; then
+  CFG="evals/governance_config.json"
+  export GOOGLE_CLOUD_LOCATION="${GOOGLE_CLOUD_LOCATION_GOV:-us-central1}"
+  export MODEL_ARMOR_TEMPLATE_ID="${MODEL_ARMOR_TEMPLATE_ID:-devcamp-guardrails}"
+  export MODEL_ARMOR_REGION="${MODEL_ARMOR_REGION:-us-central1}"
+  export RESEARCH_MODEL="${RESEARCH_MODEL:-gemini-2.5-flash}"
+  export DRAFT_MODEL="${DRAFT_MODEL:-gemini-2.5-flash}"
+  export ORCHESTRATOR_MODEL="${ORCHESTRATOR_MODEL:-gemini-2.5-flash}"
+  echo "Governance set: Model Armor template=$MODEL_ARMOR_TEMPLATE_ID, Gemini in $GOOGLE_CLOUD_LOCATION"
+fi
+
 # 2. Run, and turn "N failed" into a real exit code.
 log="$(mktemp)"
 uv run adk eval backend/social_poster "$SET" \
-  --config_file_path evals/eval_config.json --print_detailed_results 2>&1 | tee "$log" \
+  --config_file_path "$CFG" --print_detailed_results 2>&1 | tee "$log" \
   | grep -E '^(Eval Id|Overall Eval Status)|Tests (passed|failed)'
 [[ -n "$started_mock" ]] && kill "$started_mock" 2>/dev/null
 

@@ -531,11 +531,16 @@ gcloud services enable \
   aiplatform.googleapis.com \
   run.googleapis.com \
   cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  secretmanager.googleapis.com \
   dlp.googleapis.com \
   modelarmor.googleapis.com \
   discoveryengine.googleapis.com \
   cloudresourcemanager.googleapis.com \
-  apphub.googleapis.com</code></pre>
+  apphub.googleapis.com \
+  agentregistry.googleapis.com \
+  networkservices.googleapis.com \
+  networksecurity.googleapis.com</code></pre>
         </div>
         <ol start="5">
           <li><strong>ADK</strong>: <code>uv tool install google-adk</code> (or <code>pip install google-adk</code>).</li>
@@ -544,7 +549,7 @@ gcloud services enable \
 
         <div class="callout">
           <span class="callout-label">Why us-central1?</span>
-          <p>Regions in Google Cloud are chosen when you deploy each service, not when you create the project. All workshops in this camp deploy to <code>us-central1</code>. The Semantic Governance Policy Engine (used in Session 3, Govern) currently exists <strong>only in us-central1</strong>: <code>global</code> and <code>europe-west2</code> both return <em>"The Semantic Governance Policy Engine service is not available in location X"</em>. A Governance Policy also binds to an Agent Registry entry in whatever region the engine was deployed to. Setting <code>us-central1</code> here means your agent can attach governance policies in Session 3 without redeploying.</p>
+          <p>Regions in Google Cloud are chosen when you deploy each service, not when you create the project. All workshops in this camp deploy to <code>us-central1</code>, the one location we tested end to end. The Semantic Governance Policy Engine (used in Session 3, Govern) is not available in <code>global</code> or <code>europe-west2</code> (verified directly). Google's documentation lists these supported locations: <code>us-central1</code>, <code>us-east1</code>, <code>us-east4</code>, <code>us-west1</code>, <code>europe-southwest1</code>, <code>europe-west1</code>, <code>europe-west4</code>, <code>europe-west8</code>. We have only tested <code>us-central1</code>. A Governance Policy binds to an Agent Registry entry in whatever region the engine was deployed to, so stay in one region.</p>
         </div>
 
         <figure class="diagram">

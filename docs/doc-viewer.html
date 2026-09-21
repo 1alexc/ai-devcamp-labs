@@ -157,6 +157,8 @@
   }
 
   function renderMarkdown(src) {
+    // HTML comments are authoring markers (e.g. the pillar sections in LEARNINGS.md), not content.
+    src = src.replace(/<!--[\s\S]*?-->/g, "");
     const lines = src.replace(/\r\n/g, "\n").split("\n");
     let html = "";
     let i = 0;

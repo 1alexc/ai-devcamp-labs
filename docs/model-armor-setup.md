@@ -1,67 +1,62 @@
-# Setup guide: Model Armor + DLP for the guardrails
+# Guardrails setup: Model Armor and DLP
 
-Week 3's guardrails call two Google Cloud services. Both were enabled during
-initial setup (`modelarmor.googleapis.com`, `dlp.googleapis.com`); this guide creates
-the Model Armor template and points the app at it.
+> The full walkthrough, with diagrams, is [Lab 3](lab-3-govern.html). This page is the
+> short reference.
 
-## 1. Create the Model Armor template
+## What runs where
 
-From the repo root:
+| Layer | What it does | Where it runs | Switch |
+|---|---|---|---|
+| Model Armor on the Gemini call | Screens the prompt and the reply | Vertex applies it around each Gemini call | `MODEL_ARMOR_TEMPLATE_ID` |
+| Agent Gateway + Model Armor | Screens native traffic before the agent runs | The gateway, in front of the agent | Bind with `--agent-gateway-ingress` |
+| DLP at the boundary | De-identifies each user message before the agent, model, session or Memory Bank see it | Middleware in `backend/main.py` | `PII_REDACTION=on` |
+| DLP tool and pre-post pass | Cleans text the model shows you, and the post itself | Inside the agent | `PII_REDACTION=on` (pre-post) |
 
-```bash
-./gcs-setup.sh        # Step 6 creates it in us-central1 and proves it blocks
-```
-
-(`setup/04-model-armor.sh` referenced in earlier drafts of this guide no longer
-exists; the template is now created by `gcs-setup.sh`.) This creates a template `devcamp-guardrails` in `europe-west2` with:
-- **Responsible-AI filters** (hate speech, harassment, sexually explicit,
-  dangerous) at `MEDIUM_AND_ABOVE` — the build guide's threshold.
-- **Prompt-injection / jailbreak** detection, enabled.
-- **`enforcementType: INSPECT_AND_BLOCK`.** Not `INSPECT_ONLY`: that mode returns
-  no results to the caller, so the guardrails silently never fire (see
-  [LEARNINGS.md](LEARNINGS.md)).
-- It then fires a known injection string at the live API and asserts the
-  verdict is `MATCH_FOUND` before printing success.
-
-> **Region caveat**: the script does NOT enable the malicious-URI filter.
-> `europe-west2` supports Model Armor but not that specific capability
-> (`CAPABILITY_NOT_SUPPORTED`). Model Armor availability is **per-capability**,
-> not per-region — a region "having" Model Armor doesn't mean it has every
-> filter. If you switch regions, re-check which filters that region supports.
-
-## 2. Wire it into the app
-
-Copy the printed value into `backend/social_poster/.env`:
-
-```
-MODEL_ARMOR_TEMPLATE_ID=devcamp-guardrails
-MODEL_ARMOR_REGION=europe-west2
-```
-
-Leaving `MODEL_ARMOR_TEMPLATE_ID` **blank** turns off all three guardrail
-layers — the app reverts to Week 2 behaviour. That's the switch for a
-before/after demo.
-
-## 3. The quota-project gotcha (both services)
-
-Model Armor and DLP are called via REST with your local ADC. User-account ADC
-attributes API quota to the OAuth client's project unless you send an explicit
-`x-goog-user-project` header — without it DLP returns
-`403 … requires a quota project` and Model Armor can misbehave. `guardrails.py`
-sets that header on every call (`_headers()`); if you copy this pattern
-elsewhere, carry the header too.
-
-## 4. Verify end to end
+## Set it up
 
 ```bash
-./evals/run.sh
+./gcs-setup.sh        # Steps 6-8: templates, grants, gateway
 ```
 
-The script starts the mock memory agent and sets `MEMORY_AGENT_CARD_URL` for you
-(without a memory agent `consults_memory` fails, silently), and exits non-zero
-if any case fails (bare `adk eval` always exits 0).
+- **Templates:** `devcamp-guardrails` (input: injection + harm) and `devcamp-guardrails-output`
+  (harm only), both in `us-central1`, both `INSPECT_AND_BLOCK`, both at **HIGH** confidence.
+- **Permissions:** Vertex's own service agent needs `roles/modelarmor.user`. The Reasoning Engine
+  service agent needs `roles/modelarmor.calloutUser` and `roles/modelarmor.user` for the gateway.
+  Your agent's identity needs `roles/dlp.user`. All in Lab 3, Step 1.
+- **Deploy settings:** `GOOGLE_CLOUD_LOCATION=us-central1` (Gemini must be in a region),
+  `MODEL_ARMOR_TEMPLATE_ID`, `MODEL_ARMOR_REGION=us-central1`, `PROJECT_ID=<your project id>`,
+  `PII_REDACTION=on`.
 
-Expect **5 / 5**. Two of those cases (`blocks_prompt_injection`, `redacts_pii`)
-exercise the guardrails directly; the injection-attack table in
-[injection-attack-table.md](injection-attack-table.md) is the hand-off artefact
-for Renuka's Week 3 demo.
+## Turn guardrails off on a deployed agent
+
+```bash
+uvx google-agents-cli deploy -d agent_runtime \
+  --project YOUR_PROJECT --region us-central1 --agent-identity \
+  --service-name social-spark-poster \
+  --update-env-vars "MODEL_ARMOR_TEMPLATE_ID=off" \
+  --no-confirm-project
+```
+
+A deployed engine rejects an empty value, so `off` is the switch.
+
+## Check that it really works
+
+```bash
+uv run python backend/probe_deployed.py     # says WHAT stopped each request
+uv run python backend/probe_template.py     # is a template too jumpy or too lax?
+./evals/run.sh evals/governance.json        # passes with guardrails on, FAILS with them off
+```
+
+`probe_deployed.py` tells "Model Armor blocked it" apart from "the model declined by itself".
+Gemini refuses an obvious injection unaided, so "it was refused" proves nothing.
+
+## Things that will trip you (each one was hit for real; see [LEARNINGS](LEARNINGS.md))
+
+- **Gemini on `global` cannot use a Model Armor template.** Use a region. Pin the models.
+- **Streamed Gemini calls are not screened at all**, silently. Guarded mode turns streaming off.
+- **`INSPECT_ONLY` returns no verdict.** Nothing blocks and nothing errors.
+- **A 401 from Model Armor inside your deployed agent** is google-auth's "prevent agent token
+  sharing" default, not IAM. Do not switch it off; use the inline route.
+- **Vertex's template lookup fails at random** ("template ... not found"). The model object retries.
+- **DLP rejects the project number** Agent Runtime provides. Pass the ID as `PROJECT_ID`.
+- **The gateway does not inspect our custom `/api/adk` route.** In-agent screening covers it.

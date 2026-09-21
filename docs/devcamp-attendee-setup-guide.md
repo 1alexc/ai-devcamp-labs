@@ -154,14 +154,19 @@ Install, in order:
      aiplatform.googleapis.com \
      run.googleapis.com \
      cloudbuild.googleapis.com \
+     artifactregistry.googleapis.com \
+     secretmanager.googleapis.com \
      dlp.googleapis.com \
      modelarmor.googleapis.com \
      discoveryengine.googleapis.com \
      cloudresourcemanager.googleapis.com \
-     apphub.googleapis.com
+     apphub.googleapis.com \
+     agentregistry.googleapis.com \
+     networkservices.googleapis.com \
+     networksecurity.googleapis.com
    ```
 > [!NOTE]
-> **Why us-central1?** In Google Cloud, regions are selected when deploying individual services, not when creating the project. All workshops in this camp deploy resources to `us-central1`. The Semantic Governance Policy Engine (used in Session 3, Govern) currently exists **only in us-central1** (verified directly: `global` and `europe-west2` both return *"The Semantic Governance Policy Engine service is not available in location X"*). Furthermore, a Governance Policy binds to an Agent Registry entry in whatever region the engine was deployed to. Setting `us-central1` here ensures your agent deployments will be able to attach governance policies in Session 3 without redeploying.
+> **Why us-central1?** In Google Cloud, regions are selected when deploying individual services, not when creating the project. All workshops in this camp deploy resources to `us-central1`, the one location we tested end to end. The Semantic Governance Policy Engine (used in Session 3, Govern) is not available in `global` or `europe-west2` (verified directly: both return *"The Semantic Governance Policy Engine service is not available in location X"*). Google's documentation lists these supported locations: `us-central1`, `us-east1`, `us-east4`, `us-west1`, `europe-southwest1`, `europe-west1`, `europe-west4`, `europe-west8`. We have only tested `us-central1`. A Governance Policy binds to an Agent Registry entry in whatever region the engine was deployed to, so stay in one region.
 
 5. **ADK**: `uv tool install google-adk` (or `pip install google-adk`)
 6. **Git** + a **GitHub account**. In Lab 1 you'll clone the starter repo: the web frontend, the LinkedIn MCP server and the Agent Skills come prebuilt; you build the agent backend.

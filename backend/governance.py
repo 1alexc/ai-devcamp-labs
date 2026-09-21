@@ -101,7 +101,11 @@ def cmd_engine(_):
 
 
 def cmd_provision(_):
-    # Not in the discovery doc: what provisions the singleton is a PATCH on gatewayConfigs.
+    # WARNING: this is the spike's method, an EMPTY gateway config, and it is the one that
+    # left our engine FAILED and un-deprovisionable. Google's guide provisions with a real
+    # gateway-config (name, network, subnetwork, dns-zone-name); see Lab 3, Step 6, and
+    # `gcloud beta ai semantic-governance-policy-engine update --help`. Untested against
+    # a clean project. Do not run this on a project you care about.
     op = _call("PATCH", f"{AIP}/semanticGovernancePolicyEngine",
                params={"updateMask": "gatewayConfigs"},
                json={"gatewayConfigs": {"default": {}}})

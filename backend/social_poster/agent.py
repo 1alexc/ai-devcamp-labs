@@ -3,13 +3,13 @@ over `research_agent`, `draft_agent`, an optional `memory_agent`, and posting
 toolsets, plus three guardrail layers from guardrails.py wired onto EVERY
 agent:
 
-- Model Armor screens each model call's input (before_model_callback) and
-  output (after_model_callback); MEDIUM_AND_ABOVE findings get a friendly
-  refusal instead of a model call.
+- Model Armor screens each model call INLINE (generate_content_config), input
+  and output; a block becomes a friendly refusal (after_model_callback).
+  Needs a regional GOOGLE_CLOUD_LOCATION: see guardrails.py for why.
 - Cloud DLP redacts PII (person names, emails, phone numbers, locations) from
   final drafts on their way into create_post (before_tool_callback).
 
-All three no-op when MODEL_ARMOR_TEMPLATE_ID is unset, so ungoverned
+All no-op when MODEL_ARMOR_TEMPLATE_ID is unset or "off", so ungoverned
 behaviour is one env var away for A/B demos.
 """
 
@@ -94,15 +94,15 @@ ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "gemini-flash-latest")
 # output_key writes the summary into session state for draft_agent to read.
 research_agent = Agent(
     name="research_agent",
-    model=RESEARCH_MODEL,
+    model=guardrails.model(RESEARCH_MODEL),
     description="Researches facts, dates, and context on the web for a post idea.",
     instruction="""Research the given topic with google_search and return a
 concise, factual summary: key facts, dates, numbers, and anything surprising
 or quotable. No drafting — just the research notes.""",
     tools=[google_search],
     output_key="research_notes",
-    before_model_callback=guardrails.guard_input,
-    after_model_callback=guardrails.guard_output,
+    generate_content_config=guardrails.content_config(screen_input=False),
+    after_model_callback=guardrails.friendly_block,
 )
 
 # --- Specialist: drafting -----------------------------------------------------
@@ -261,7 +261,7 @@ def _catch_image_placeholder(
 
 draft_agent = Agent(
     name="draft_agent",
-    model=DRAFT_MODEL,
+    model=guardrails.model(DRAFT_MODEL),
     description="Writes and revises the social media post draft, and generates images.",
     instruction=f"""You write social media post drafts.
 
@@ -307,8 +307,8 @@ Rules:
         *([upload_image] if use_gcs else []),
     ],
     output_key="current_draft",
-    before_model_callback=guardrails.guard_input,
-    after_model_callback=[_catch_image_placeholder, guardrails.guard_output],
+    generate_content_config=guardrails.content_config(screen_input=False),
+    after_model_callback=[guardrails.friendly_block, _catch_image_placeholder],
     after_tool_callback=_track_image_state,
 )
 
@@ -505,7 +505,7 @@ def _track_stage(
     elif tool.name == "create_post" and tool_response.get("isError") is False:
         # Fires on BLOCKED attempts too (require_confirmation returns an
         # {"error": ...} without "isError") — only a completed MCP call
-        # carries isError: False. See LEARNINGS (2026-07-14).
+        # carries isError: False. See docs/LEARNINGS.md.
         tool_context.state["pipeline_stage"] = "posted"
         parsed = _unwrap_mcp_result(tool_response)
         db.save_post(
@@ -608,7 +608,7 @@ else:
 
 root_agent = Agent(
     name="social_poster",
-    model=ORCHESTRATOR_MODEL,
+    model=guardrails.model(ORCHESTRATOR_MODEL),
     description="Orchestrates research, drafting, and publishing of social media posts.",
     instruction=f"""You orchestrate turning an idea into a social media post.
 You do not research or draft yourself — you route work to specialist tools.
@@ -669,8 +669,9 @@ Posting rules (strict):
         *([buffer_toolset, buffer_post_toolset] if use_buffer else []),
     ],
     before_agent_callback=_init_stage,
-    before_model_callback=[guardrails.guard_input, _stage_attached_image],
-    after_model_callback=guardrails.guard_output,
+    generate_content_config=guardrails.content_config(),
+    before_model_callback=[_stage_attached_image],
+    after_model_callback=guardrails.friendly_block,
     before_tool_callback=[_delay_buffer_post, guardrails.redact_before_post],
     after_tool_callback=_track_stage,
     after_agent_callback=_stage_after_agent,

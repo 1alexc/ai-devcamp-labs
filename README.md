@@ -65,7 +65,7 @@ skills/                  Agent Skills (brand voice)
 frontend/                Next.js + CopilotKit UI
 evals/                   adk eval sets (quality and governance)
 docs/                    labs, setup guide, deploy and reference docs
-gcs-setup.sh             one-time Google Cloud setup: APIs, templates, grants
+gcp-setup.sh             one-time Google Cloud setup: APIs, templates, grants
 ```
 
 ## Deploy and reference docs

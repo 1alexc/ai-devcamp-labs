@@ -84,16 +84,29 @@ def _sign_via_impersonation(bucket_name: str, blob_name: str) -> str:
         target_scopes=["https://www.googleapis.com/auth/cloud-platform"],
         lifetime=300,
     )
-    signing_credentials.refresh(google.auth.transport.requests.Request())
 
+    # Pass the ImpersonatedCredentials object itself, not a pre-fetched
+    # access_token + service_account_email pair. Those two kwargs make
+    # google-cloud-storage call IAM's signBlob endpoint authenticated AS the
+    # target service account (an already-impersonated token), asking it to
+    # sign a blob for itself — which needs signBlob permission granted to
+    # the SA on itself, something gcp-setup.sh never creates (confirmed live
+    # — 403 "iam.serviceAccounts.signBlob denied", even with the correct
+    # grant to the human identity in place). Passing `credentials=` instead
+    # makes google-cloud-storage fall through to
+    # `credentials.sign_bytes(...)`, which ImpersonatedCredentials
+    # implements by calling signBlob authenticated as the ORIGINAL source
+    # identity (the human, or the deployed engine's own runtime SA) — the
+    # identity that actually holds `roles/iam.serviceAccountTokenCreator` on
+    # the target SA. No manual .refresh() needed either; sign_bytes handles
+    # its own authenticated request.
     bucket = storage.Client().bucket(bucket_name)
     blob = bucket.blob(blob_name)
     return blob.generate_signed_url(
         version="v4",
         expiration=datetime.timedelta(hours=SIGNED_URL_EXPIRY_HOURS),
         method="GET",
-        service_account_email=signing_credentials.service_account_email,
-        access_token=signing_credentials.token,
+        credentials=signing_credentials,
     )
 
 
@@ -104,20 +117,30 @@ def upload_image(image_path: str) -> dict:
     file, only a real HTTPS URL (confirmed live: "Invalid post: Image could
     not be read from its URL").
 
-    Returns a V4 signed URL (see _sign_via_impersonation) rather than a
-    plain public object URL — this project's bucket has Public Access
-    Prevention enforced, which makes a plain public URL a dead end
+    Returns a V4 signed URL by default (see _sign_via_impersonation) rather
+    than a plain public object URL — this project's bucket has Public Access
+    Prevention enforced by default, which makes a plain public URL a dead end
     (confirmed live: granting allUsers/objectViewer 412s). The signed URL
     expires after SIGNED_URL_EXPIRY_HOURS (default 7 days, V4's own max);
     fine here since these are short-lived post images, not permanent links.
+
+    If GCS_PUBLIC_BUCKET=true (opt-in, see .env.example and gcp-setup.sh),
+    skips signing entirely and returns the plain object URL instead. That
+    needs Public Access Prevention turned off and allUsers granted read on
+    the bucket first — gcp-setup.sh does the grant once PAP is off. A plain
+    URL is much shorter than a signed one (no query-string signature), which
+    also sidesteps a real failure mode: a long signed URL nested inside
+    Buffer's create_post `assets` argument can make Gemini's function-calling
+    return MALFORMED_FUNCTION_CALL instead of a real tool call (confirmed
+    live — see docs/LEARNINGS.md).
 
     Args:
         image_path: Absolute path to a local image file (e.g. the image_path
             returned by generate_image).
 
     Returns:
-        dict with 'status', and on success 'url' (a signed HTTPS URL) or on
-        failure an 'error' message.
+        dict with 'status', and on success 'url' (a signed or plain HTTPS
+        URL, depending on GCS_PUBLIC_BUCKET) or on failure an 'error' message.
     """
     if os.environ.get("DRY_RUN", "true").lower() != "false":
         return {
@@ -130,7 +153,9 @@ def upload_image(image_path: str) -> dict:
     bucket_name = os.environ.get("GCS_BUCKET_NAME", "")
     if not bucket_name:
         return {"status": "error", "error": "GCS_BUCKET_NAME is not set."}
-    if not os.environ.get("GCS_SIGNING_SERVICE_ACCOUNT", ""):
+
+    public_bucket = os.environ.get("GCS_PUBLIC_BUCKET", "false").lower() == "true"
+    if not public_bucket and not os.environ.get("GCS_SIGNING_SERVICE_ACCOUNT", ""):
         return {"status": "error", "error": "GCS_SIGNING_SERVICE_ACCOUNT is not set."}
 
     try:
@@ -138,7 +163,13 @@ def upload_image(image_path: str) -> dict:
         blob_name = f"post-images/{int(time.time())}-{uuid.uuid4().hex[:8]}{ext}"
         bucket = storage.Client().bucket(bucket_name)
         bucket.blob(blob_name).upload_from_filename(image_path)
-        url = _sign_via_impersonation(bucket_name, blob_name)
+        if public_bucket:
+            # Plain object URL — only fetchable if the bucket is actually
+            # public (gcp-setup.sh with GCS_PUBLIC_BUCKET=true). No signing,
+            # no impersonation, no expiry.
+            url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+        else:
+            url = _sign_via_impersonation(bucket_name, blob_name)
     except Exception as e:  # surface API errors to the model as a tool result
         return {"status": "error", "error": str(e)}
 

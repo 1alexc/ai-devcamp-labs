@@ -14,7 +14,7 @@ at `/api/adk`.
   `gcloud auth application-default login` run once. No service-account key
   file is used anywhere in this project — the optional GCS image-hosting
   feature (see below) signs URLs via service-account *impersonation*
-  instead (`gcs-setup.sh`), specifically to avoid ever downloading one.
+  instead (`gcp-setup.sh`), specifically to avoid ever downloading one.
 
 ## Setup
 
@@ -72,7 +72,7 @@ Each of these is off by default; the agent still works without any of them.
 | Publish to LinkedIn | `LINKEDIN_ACCESS_TOKEN` | 3-legged OAuth token; see [mcp/README.md](../mcp/README.md) for the developer-app setup |
 | Publish/schedule via Buffer | `BUFFER_API_KEY` | free Buffer account, hosted MCP server, nothing to run locally |
 | Force one posting route | `POST_VIA=buffer` or `linkedin` | blank (default) lets the agent route by what the user asks for |
-| Let Buffer attach generated images | `GCS_BUCKET_NAME` + `GCS_SIGNING_SERVICE_ACCOUNT` | run `./gcs-setup.sh` from the repo root first (one-time IAM setup, no key file) — see the comment above it in `.env.example` |
+| Let Buffer attach generated images | `GCS_BUCKET_NAME` + `GCS_SIGNING_SERVICE_ACCOUNT` | run `./gcp-setup.sh` from the repo root first (one-time IAM setup, no key file) — see the comment above it in `.env.example` |
 | Recall the user's past posts | `MEMORY_AGENT_CARD_URL` | the A2A agent card URL. Local mock: `uv run python backend/mock_memory_agent.py`, then point at `http://localhost:8001/.well-known/agent.json` (`./evals/run.sh` does this for evals); real deploy, untested end to end: [docs/agent-engine-rag-setup.md](../docs/agent-engine-rag-setup.md) |
 | Guardrails (Model Armor + DLP) | `MODEL_ARMOR_TEMPLATE_ID` | see [docs/model-armor-setup.md](../docs/model-armor-setup.md) |
 

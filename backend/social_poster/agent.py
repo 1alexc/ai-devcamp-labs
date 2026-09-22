@@ -53,11 +53,25 @@ from .tools import (
     use_provided_image_url,
 )
 
-log = logging.getLogger(__name__)
-
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 SKILLS_DIR = REPO_ROOT / "skills"
 MCP_SERVER = REPO_ROOT / "mcp" / "linkedin_server.py"  # McpToolset needs absolute paths
+
+# Confirmed live: this file's own log.info/log.warning calls (Buffer delay,
+# image placeholder self-correction, etc.) were silently dropped — nothing
+# in the app ever called logging.basicConfig, so Python's root logger sat at
+# its default WARNING level with no handler, and INFO never printed anywhere.
+# basicConfig is a no-op if the root logger already has a handler (uvicorn
+# sets one up when running via run-backend.sh), so this is safe either way —
+# it's what actually turns these calls on for `adk web` and for any other
+# entrypoint that hasn't configured logging itself.
+LOG_FILE = REPO_ROOT / "social_spark.log"
+logging.basicConfig(
+    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler(LOG_FILE)],
+)
+log = logging.getLogger(__name__)
 
 # --- Image hosting (optional) --------------------------------------------------
 # Buffer's create_post can't fetch a locally-generated image file — it needs a
@@ -383,6 +397,17 @@ def _buffer_connection() -> StreamableHTTPConnectionParams:
     return StreamableHTTPConnectionParams(
         url="https://mcp.buffer.com/mcp",
         headers={"Authorization": f"Bearer {BUFFER_API_KEY}"},
+        # ADK's own default here is 5 seconds (StreamableHTTPConnectionParams,
+        # covers both the initial session handshake AND every individual
+        # tool call, e.g. list_tools/create_post) — too tight for a real
+        # network round-trip to a third-party remote server, especially with
+        # many attendees hitting Buffer's shared infra at once in a workshop.
+        # Confirmed live: a plain get_tools() call failed once with
+        # asyncio.TimeoutError under load, then succeeded in 0.5s moments
+        # later — the call itself is normally fast, but the 5s budget has no
+        # margin for a slow moment. 30s keeps the confirmation gate from
+        # ever hanging on a transient blip.
+        timeout=30.0,
     )
 
 
@@ -508,8 +533,22 @@ def _track_stage(
         # carries isError: False. See docs/LEARNINGS.md.
         tool_context.state["pipeline_stage"] = "posted"
         parsed = _unwrap_mcp_result(tool_response)
+        platform = "Buffer" if args.get("channelId") else "LinkedIn"
+        # Buffer's create_post never returns post_url/url (confirmed live —
+        # its own tool description says it returns "status ... and
+        # scheduling details" instead); logging the raw parsed result here
+        # is what actually shows status/dueAt/shareMode, since the DB's
+        # post_url column stays null for every Buffer post.
+        log.info(
+            "%s create_post result: status=%s dueAt=%s shareMode=%s raw=%s",
+            platform,
+            parsed.get("status"),
+            parsed.get("dueAt"),
+            parsed.get("shareMode"),
+            parsed,
+        )
         db.save_post(
-            platform="Buffer" if args.get("channelId") else "LinkedIn",
+            platform=platform,
             text=args.get("text", ""),
             post_url=parsed.get("post_url") or parsed.get("url"),
             image_path=tool_context.state.get("current_image_path"),
@@ -584,6 +623,28 @@ _IMAGE_REUSE_NOTE = (
     else ""
 )
 
+# list_channels requires an organizationId argument (confirmed live against
+# Buffer's real schema — ADK's own function declaration shows it as
+# required). Its own description says "tell the user which organization you
+# are querying", which left to itself makes the model ASK the user for an
+# org name instead of just resolving it — get_account (no arguments) already
+# returns organizations[]. Spelling out the exact two-call chain here stops
+# the model from treating "unclear org/channel" as a reason to stop and ask,
+# when almost every attendee's Buffer account has exactly one organization
+# and one channel per platform.
+_BUFFER_CHANNEL_LOOKUP = """
+  To find a Buffer channelId, resolve it yourself, don't ask the user:
+    1. Call get_account (no arguments). Read organizations[0].id — almost
+       every account has exactly one organization; only ask the user if
+       there is genuinely more than one.
+    2. Call list_channels with that organizationId. Match the channel whose
+       "service" field is the platform the user asked for (linkedin,
+       twitter for X, facebook, instagram, ...).
+    3. If exactly one channel matches that service, use its id as channelId
+       directly — do not ask the user which account, and never ask for an
+       organization name; you already have it from step 1. Only ask the
+       user to pick if more than one channel matches the same service."""
+
 if use_linkedin and use_buffer:
     _BUFFER_ROUTING = f"""
 
@@ -592,16 +653,14 @@ Two ways to publish, choose based on what the user wants:
   Can include a generated image (pass the local image_path).
 - Buffer tools: use these instead if the user wants to SCHEDULE a post for
   later, or wants to post to a platform OTHER than LinkedIn (X, Facebook, etc.)
-  that they've connected in Buffer. If unsure which platforms are connected,
-  ask Buffer to list channels first.{_BUFFER_IMAGE_NOTE}
+  that they've connected in Buffer.{_BUFFER_CHANNEL_LOOKUP}{_BUFFER_IMAGE_NOTE}
 """
 elif use_buffer:
     _BUFFER_ROUTING = f"""
 
 Publish exclusively via Buffer's tools (POST_VIA=buffer) — there is no direct
 LinkedIn tool in this configuration. For an immediate post, ask Buffer to
-publish now rather than schedule. If unsure which platforms are connected,
-ask Buffer to list channels first.{_BUFFER_IMAGE_NOTE}
+publish now rather than schedule.{_BUFFER_CHANNEL_LOOKUP}{_BUFFER_IMAGE_NOTE}
 """
 else:
     _BUFFER_ROUTING = ""
@@ -652,7 +711,16 @@ Posting rules (strict):
   them in this conversation. "Yes", "post it", "approved" counts; silence,
   topic changes, or enthusiasm about the idea does not.
 - If the draft changes after approval, show it again and get fresh approval.
-- After posting, share the returned post URL (or confirmation) with the user.
+- After posting, check the tool result's own "status" and "dueAt" fields
+  before telling the user what happened — confirmed live: Buffer's
+  create_post returns "the created post with ... status, and scheduling
+  details," never a post_url, and BUFFER_REVIEW_DELAY_MINUTES above forces
+  every Buffer post to a future "scheduled" status, not sent immediately.
+  If status is "scheduled" (or shareMode is "customScheduled"), tell the
+  user it's QUEUED IN BUFFER for that dueAt time, not published or posted —
+  those words are only correct once status is actually "sent". LinkedIn's
+  own tool (Step 7) posts immediately for real, so its result can be
+  reported as posted/published directly.
 - Report the outcome exactly as the tool returned it. If the result says
   dry_run (or that nothing was posted), tell the user plainly that NOTHING was
   published, and do not describe the post as sent, live, or successful. Only

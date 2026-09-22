@@ -5,9 +5,9 @@
 # than tracking which ones you've already done.
 #
 # Uses whichever Google account gcloud is logged in as (override with
-# PERSONAL_EMAIL=you@gmail.com ./gcs-setup.sh). Needs GOOGLE_CLOUD_PROJECT in
+# PERSONAL_EMAIL=you@gmail.com ./gcp-setup.sh). Needs GOOGLE_CLOUD_PROJECT in
 # backend/social_poster/.env (copy .env.example there first), then run:
-#   ./gcs-setup.sh
+#   ./gcp-setup.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -90,6 +90,35 @@ else
     else
       echo "Add this line to $ENV_FILE:"
       echo "  GCS_SIGNING_SERVICE_ACCOUNT=$SA_EMAIL"
+    fi
+
+    # === Step 1b: (optional) make the bucket public instead of signing =====
+    # Off by default: signed URLs above are the taught path, and this
+    # bucket has Public Access Prevention (PAP) enforced by default
+    # specifically to block this (see docs/LEARNINGS.md — a plain
+    # allUsers:objectViewer grant 412s outright while PAP is on). Opt in
+    # with GCS_PUBLIC_BUCKET=true in $ENV_FILE only after you've turned
+    # PAP off yourself (Console → bucket → Permissions → Public access
+    # prevention → Inherit from project — a deliberate, human decision
+    # this script won't make for you). Every image ever uploaded becomes
+    # world-readable to anyone with the URL; know that before opting in.
+    if [[ "${GCS_PUBLIC_BUCKET:-false}" == "true" ]]; then
+      echo "1b/1  GCS_PUBLIC_BUCKET=true — checking Public Access Prevention..."
+      pap="$(gcloud storage buckets describe "gs://$GCS_BUCKET_NAME" --format="value(public_access_prevention)")"
+      if [[ "$pap" == "enforced" ]]; then
+        echo "Public Access Prevention is still 'enforced' on gs://$GCS_BUCKET_NAME."
+        echo "Turn it off first: Console → Cloud Storage → $GCS_BUCKET_NAME →"
+        echo "Permissions → Public access prevention → Inherit from project."
+        echo "Then re-run this script. Skipping the public grant for now."
+      else
+        echo "PAP is '$pap' — granting allUsers objectViewer on gs://$GCS_BUCKET_NAME..."
+        gcloud storage buckets add-iam-policy-binding "gs://$GCS_BUCKET_NAME" \
+          --member="allUsers" \
+          --role="roles/storage.objectViewer" >/dev/null
+        echo "Bucket is now public. Every object under gs://$GCS_BUCKET_NAME is"
+        echo "readable by anyone with its URL, indefinitely — including images"
+        echo "already uploaded before this step ran."
+      fi
     fi
   fi
 fi

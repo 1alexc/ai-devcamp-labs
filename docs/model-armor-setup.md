@@ -15,7 +15,7 @@
 ## Set it up
 
 ```bash
-./gcs-setup.sh        # Steps 6-8: templates, grants, gateway
+./gcp-setup.sh        # Steps 6-8: templates, grants, gateway
 ```
 
 - **Templates:** `devcamp-guardrails` (input: injection + harm) and `devcamp-guardrails-output`

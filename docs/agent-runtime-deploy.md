@@ -12,7 +12,7 @@ which still works and is unaffected by anything here.
 ## 0. One-time setup
 
 ```bash
-./gcs-setup.sh
+./gcp-setup.sh
 ```
 
 Steps 2–5 of that script enable the APIs (including Cloud Resource Manager,

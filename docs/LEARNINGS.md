@@ -99,7 +99,7 @@ human-run IAM setup (create the uploader SA, grant it
 `storage.objectAdmin` on the bucket, grant the calling identity
 `iam.serviceAccountTokenCreator` on that SA) — first shipped as raw gcloud
 commands in `.env.example`'s comments, then promoted to an actual
-idempotent script (`gcs-setup.sh`, repo root) once it became
+idempotent script (`gcp-setup.sh`, repo root) once it became
 clear a comment block isn't discoverable enough for attendees to actually
 find and run correctly by hand. **This is NOT part of Lab 1's taught
 curriculum** — Lab 1

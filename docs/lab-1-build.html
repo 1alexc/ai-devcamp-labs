@@ -1535,18 +1535,19 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
 
 <script>
   const STEPS = [
-    { i: 0, label: "Overview", dur: "" },
-    { i: 1, label: "Set up your workspace", dur: "5m" },
-    { i: 2, label: "The smallest agent", dur: "5m" },
-    { i: 3, label: "Give it a tool", dur: "10m" },
-    { i: 4, label: "Agent Skills", dur: "15m" },
-    { i: 5, label: "Web research", dur: "10m" },
-    { i: 6, label: "Publish via Buffer", dur: "20m" },
-    { i: 7, label: "LinkedIn", dur: "15m", optional: true },
-    { i: 8, label: "Wire the frontend", dur: "15m" },
-    { i: 9, label: "Run the golden path", dur: "10m" },
-    { i: 10, label: "Wrap-up", dur: "" },
+    { i: 0, label: "Overview", dur: "", hash: "overview" },
+    { i: 1, label: "Set up your workspace", dur: "5m", hash: "step1" },
+    { i: 2, label: "The smallest agent", dur: "5m", hash: "step2" },
+    { i: 3, label: "Give it a tool", dur: "10m", hash: "step3" },
+    { i: 4, label: "Agent Skills", dur: "15m", hash: "step4" },
+    { i: 5, label: "Web research", dur: "10m", hash: "step5" },
+    { i: 6, label: "Publish via Buffer", dur: "20m", hash: "step6" },
+    { i: 7, label: "LinkedIn", dur: "15m", optional: true, hash: "step7" },
+    { i: 8, label: "Wire the frontend", dur: "15m", hash: "step8" },
+    { i: 9, label: "Run the golden path", dur: "10m", hash: "step9" },
+    { i: 10, label: "Wrap-up", dur: "", hash: "wrapup" },
   ];
+  const HASH_TO_STEP = Object.fromEntries(STEPS.map(s => [s.hash, s.i]));
 
   const navEl = document.getElementById("stepNav");
   const mobileEl = document.getElementById("mobileNav");
@@ -1574,7 +1575,7 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
   let current = 0;
   const seen = new Set([0]);
 
-  function goTo(n) {
+  function goTo(n, updateHash) {
     current = n;
     seen.add(n);
     document.querySelectorAll(".step-panel").forEach(p => {
@@ -1591,7 +1592,16 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
     const pct = Math.round((n / 10) * 100);
     document.getElementById("progressFill").style.width = pct + "%";
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    if (updateHash !== false) {
+      const hash = "#" + (STEPS[n] ? STEPS[n].hash : "overview");
+      if (location.hash !== hash) history.pushState({ step: n }, "", hash);
+    }
   }
+
+  window.addEventListener("popstate", () => {
+    const n = HASH_TO_STEP[location.hash.slice(1)];
+    goTo(n !== undefined ? n : 0, false);
+  });
 
   function copyBlock(btn) {
     const code = btn.closest(".code-block").querySelector("code");
@@ -1602,7 +1612,8 @@ def _stage_after_agent(callback_context: CallbackContext) -&gt; None:
     }
   }
 
-  goTo(0);
+  const initialStep = HASH_TO_STEP[location.hash.slice(1)];
+  goTo(initialStep !== undefined ? initialStep : 0, false);
 </script>
 
 <script>

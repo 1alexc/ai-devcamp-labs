@@ -42,6 +42,9 @@ def generate_image(prompt: str) -> dict:
     except Exception as e:  # surface API errors to the model as a tool result
         return {"status": "error", "error": str(e)}
 
+    if not response.candidates:
+        return {"status": "error", "error": "Model returned no candidates (likely blocked by safety filters)."}
+
     for part in response.candidates[0].content.parts:
         if part.inline_data and part.inline_data.mime_type.startswith("image/"):
             OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -205,7 +208,9 @@ def use_provided_image_url(url: str) -> dict:
     if not (url.startswith("http://") or url.startswith("https://")):
         return {"status": "error", "error": f"Not a valid http(s) URL: {url!r}"}
     try:
-        request = urllib.request.Request(url, method="HEAD")
+        request = urllib.request.Request(
+            url, method="HEAD", headers={"User-Agent": "Mozilla/5.0 (compatible; SocialSparkBot/1.0)"}
+        )
         with urllib.request.urlopen(request, timeout=10) as response:
             final_url = response.geturl()
             if "accounts.google.com" in final_url:

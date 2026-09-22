@@ -69,13 +69,17 @@ def _upload_image(author_urn: str, image_path: str) -> str:
     )
     init.raise_for_status()
     value = init.json()["value"]
-    with open(image_path, "rb") as f:
-        up = httpx.put(
-            value["uploadUrl"],
-            content=f.read(),
-            headers={"Authorization": _headers()["Authorization"]},
-            timeout=60,
-        )
+    try:
+        with open(image_path, "rb") as f:
+            image_bytes = f.read()
+    except OSError as e:
+        raise RuntimeError(f"Could not read image at {image_path!r}: {e}") from e
+    up = httpx.put(
+        value["uploadUrl"],
+        content=image_bytes,
+        headers={"Authorization": _headers()["Authorization"]},
+        timeout=60,
+    )
     up.raise_for_status()
     return value["image"]
 
@@ -108,7 +112,10 @@ def create_post(text: str, image_path: str | None = None) -> dict:
         "isReshareDisabledByAuthor": False,
     }
     if image_path:
-        image_urn = _upload_image(author_urn, image_path)
+        try:
+            image_urn = _upload_image(author_urn, image_path)
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
         payload["content"] = {"media": {"id": image_urn, "altText": "Post illustration"}}
 
     resp = httpx.post(f"{API_BASE}/rest/posts", headers=_headers(), json=payload, timeout=30)

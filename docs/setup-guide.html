@@ -381,7 +381,7 @@
       <section class="step-panel" data-step="0">
         <div class="eyebrow"><span class="pill">Overview</span></div>
         <h1 class="step-title">Pre-camp setup guide</h1>
-        <p class="lede">Complete everything before <strong>Saturday 26 September</strong>. Setup takes 45 to 60 minutes across four guided phases. Do it early: the Discord <code>#setup-help</code> channel and your buddy group are there to unblock you before the first workshop. This guide is shared on 23 September, and any setup issues are discussed offline on Discord.</p>
+        <p class="lede">Setup takes 45 to 60 minutes across four guided phases. Do it early: the Discord <code>#setup-help</code> channel and your buddy group are there to unblock you before the first workshop. This guide is shared on 23 September, and any setup issues are discussed offline on Discord.</p>
 
         <figure class="diagram">
           <svg viewBox="0 0 900 430" role="img" aria-label="Four pre-camp phases in order: Phase 1 Cloud and budget foundation, Phase 2 Local developer tools, Phase 3 Coding agent setup, Phase 4 Environment and camp readiness. They lead into Lab 1 on the first Saturday, where you create the agent project and run it locally.">
@@ -512,12 +512,46 @@
         <h1 class="step-title">Local developer tools</h1>
         <p class="lede"><span class="goal">Get your command line talking to Google Cloud, configure your default deployment region, and install ADK development tools.</span></p>
 
-        <p>Install, in order:</p>
+        <p>Install, in order. Windows users: run all of these inside the Ubuntu (WSL) terminal.</p>
+
         <ol>
-          <li><strong>Python 3.12+</strong>. Easiest: install <code>uv</code> first (next item), then run <code>uv python install 3.12</code>. Or use python.org or your package manager.</li>
-          <li><strong>uv</strong>, the Python package manager: <code>curl -LsSf https://astral.sh/uv/install.sh | sh</code></li>
-          <li><strong>Node.js 20+</strong> (nodejs.org).</li>
-          <li><strong>Google Cloud SDK</strong> (cloud.google.com/sdk), then in your terminal:</li>
+          <li><strong>Google Cloud SDK</strong> (the <code>gcloud</code> CLI):</li>
+        </ol>
+        <div class="code-block">
+          <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>curl -sSL https://sdk.cloud.google.com | bash
+exec -l $SHELL
+gcloud init</code></pre>
+        </div>
+
+        <ol start="2">
+          <li><strong>uv</strong>, the Python package manager:</li>
+        </ol>
+        <div class="code-block">
+          <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>curl -LsSf https://astral.sh/uv/install.sh | sh</code></pre>
+        </div>
+
+        <ol start="3">
+          <li><strong>Python 3.14</strong>, installed through <code>uv</code> (now that it's on your machine):</li>
+        </ol>
+        <div class="code-block">
+          <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>uv python install 3.14</code></pre>
+        </div>
+
+        <ol start="4">
+          <li><strong>Node.js 20+</strong>, installed through <code>nvm</code>:</li>
+        </ol>
+        <div class="code-block">
+          <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+exec -l $SHELL
+nvm install 20</code></pre>
+        </div>
+
+        <ol start="5">
+          <li><strong>Authenticate <code>gcloud</code> and enable the APIs</strong>:</li>
         </ol>
         <div class="code-block">
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
@@ -544,10 +578,27 @@ gcloud services enable \
   networkservices.googleapis.com \
   networksecurity.googleapis.com</code></pre>
         </div>
-        <ol start="5">
-          <li><strong>ADK</strong>: nothing to install now. The starter repo pins an exact ADK version; Lab 1 installs it with <code>uv sync</code> and runs it as <code>uv run adk ...</code>. Please don't install ADK globally, so everyone runs the same version.</li>
-          <li><strong>Git</strong> and a <strong>GitHub account</strong>. In Lab 1 you'll clone the starter repo: the web frontend, the LinkedIn MCP server and the Agent Skills come prebuilt, and you build the agent backend.</li>
+
+        <div class="callout tip">
+          <span class="callout-label">Note — Lab 1</span>
+          <p><strong>Git</strong> and a <strong>GitHub account</strong>. In Lab 1 you'll fork the starter repo to your own GitHub account, then clone your fork at the <code>starter</code> tag: the web frontend, the LinkedIn MCP server and the Agent Skills come prebuilt, and you build the agent backend. Nothing to run now — this is just so the commands are familiar on Saturday:</p>
+        </div>
+        <ol>
+          <li>Fork <a href="https://github.com/sonikajanagill/ai-devcamp-labs/fork" target="_blank" rel="noopener">github.com/sonikajanagill/ai-devcamp-labs</a> into your own account (top-right <strong>Fork</strong> button).</li>
+          <li>Clone your fork at the <code>starter</code> tag:</li>
         </ol>
+        <div class="code-block">
+          <div class="code-head"><span>terminal — Lab 1, not now</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>git clone --branch starter --single-branch https://github.com/&lt;your-username&gt;/ai-devcamp-labs.git
+cd ai-devcamp-labs
+git checkout -b my-work</code></pre>
+        </div>
+        <p style="font-size:12.5px;color:var(--text-faint);margin-top:-10px">Cloning a tag (not a branch) leaves you in <strong>detached HEAD</strong>, so the last line cuts a real branch to work and commit on. Swap <code>&lt;your-username&gt;</code> for your GitHub handle.</p>
+
+        <div class="callout tip">
+          <span class="callout-label">Note — Lab 1</span>
+          <p><strong>ADK</strong>: nothing to install now. The starter repo pins an exact ADK version; Lab 1 installs it with <code>uv sync</code> and runs it as <code>uv run adk ...</code>. Please don't install ADK globally, so everyone runs the same version.</p>
+        </div>
 
         <div class="callout">
           <span class="callout-label">Why us-central1?</span>
@@ -555,40 +606,41 @@ gcloud services enable \
         </div>
 
         <figure class="diagram">
-          <svg viewBox="0 0 720 300" role="img" aria-label="One GCP project uses three different locations. Gemini model calls use the global location, set by GOOGLE_CLOUD_LOCATION. Deploying your agent to Agent Runtime and attaching governance policies uses us-central1, set by gcloud compute region. Model Armor in Lab 3 needs a real region, not global, and this camp uses us-central1.">
+          <svg viewBox="0 0 720 220" role="img" aria-label="One GCP project uses two different locations. Gemini model calls use the global location, set by GOOGLE_CLOUD_LOCATION. Everything else, deploying your agent to Agent Runtime, attaching governance policies, and Model Armor in Lab 3, uses the region us-central1, since Model Armor needs a real region and never answers on global.">
             <defs><marker id="loc-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
-            <rect x="8" y="80" width="222" height="80" rx="12" class="accent-stroke fill-accent" stroke-width="2"/>
-            <text x="119" y="112" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Your GCP project</text>
-            <text x="119" y="130" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.7">&lt;PROJECT_ID&gt;</text>
-            <text x="119" y="146" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.7">one project, three locations</text>
-            <line x1="230" y1="120" x2="330" y2="54" stroke="currentColor" stroke-width="1.4" marker-end="url(#loc-arrow)"/>
+            <rect x="8" y="60" width="222" height="100" rx="12" class="accent-stroke fill-accent" stroke-width="2"/>
+            <text x="119" y="97" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">Your GCP project</text>
+            <text x="119" y="115" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.7">&lt;PROJECT_ID&gt;</text>
+            <text x="119" y="131" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.7">one project, two locations</text>
+            <line x1="230" y1="110" x2="330" y2="54" stroke="currentColor" stroke-width="1.4" marker-end="url(#loc-arrow)"/>
             <rect x="332" y="20" width="376" height="68" rx="12" class="green-stroke fill-green" stroke-width="2"/>
             <text x="348" y="44" font-size="12.5" font-weight="700" fill="currentColor">Gemini model calls</text>
             <text x="348" y="63" font-size="10.5" fill="currentColor" opacity="0.75">GOOGLE_CLOUD_LOCATION in your .env.</text>
             <text x="348" y="77" font-size="10.5" fill="currentColor" opacity="0.75">Regions 404 on the newest models.</text>
             <rect x="618" y="30" width="82" height="24" rx="6" class="green-stroke" fill="none" stroke-width="1.4"/>
             <text x="659" y="46" font-size="11.5" font-weight="700" text-anchor="middle" fill="currentColor">global</text>
-            <line x1="230" y1="120" x2="330" y2="150" stroke="currentColor" stroke-width="1.4" marker-end="url(#loc-arrow)"/>
-            <rect x="332" y="116" width="376" height="68" rx="12" class="red-stroke fill-red" stroke-width="2"/>
-            <text x="348" y="140" font-size="12.5" font-weight="700" fill="currentColor">Deploying your agent (Labs 2 and 3)</text>
-            <text x="348" y="159" font-size="10.5" fill="currentColor" opacity="0.75">gcloud compute/region.</text>
-            <text x="348" y="173" font-size="10.5" fill="currentColor" opacity="0.75">Agent Runtime and Governance Policies.</text>
-            <rect x="618" y="126" width="82" height="24" rx="6" class="red-stroke" fill="none" stroke-width="1.4"/>
-            <text x="659" y="142" font-size="11.5" font-weight="700" text-anchor="middle" fill="currentColor">us-central1</text>
-            <line x1="230" y1="120" x2="330" y2="246" stroke="currentColor" stroke-width="1.4" marker-end="url(#loc-arrow)"/>
-            <rect x="332" y="212" width="376" height="68" rx="12" class="yellow-stroke fill-yellow" stroke-width="2"/>
-            <text x="348" y="236" font-size="12.5" font-weight="700" fill="currentColor">Model Armor (Lab 3)</text>
-            <text x="348" y="255" font-size="10.5" fill="currentColor" opacity="0.75">Answers only on a real region, never global.</text>
-            <text x="348" y="269" font-size="10.5" fill="currentColor" opacity="0.75">We use us-central1.</text>
-            <rect x="618" y="222" width="82" height="24" rx="6" class="yellow-stroke" fill="none" stroke-width="1.4"/>
-            <text x="659" y="238" font-size="11.5" font-weight="700" text-anchor="middle" fill="currentColor">a region</text>
+            <line x1="230" y1="110" x2="330" y2="166" stroke="currentColor" stroke-width="1.4" marker-end="url(#loc-arrow)"/>
+            <rect x="332" y="132" width="376" height="80" rx="12" class="red-stroke fill-red" stroke-width="2"/>
+            <text x="348" y="156" font-size="12.5" font-weight="700" fill="currentColor">Deploying agents &amp; Model Armor</text>
+            <text x="348" y="175" font-size="10.5" fill="currentColor" opacity="0.75">gcloud compute/region · Agent Runtime, Governance</text>
+            <text x="348" y="189" font-size="10.5" fill="currentColor" opacity="0.75">Policies (Labs 2–3) &amp; Model Armor (Lab 3, never global).</text>
+            <rect x="618" y="142" width="82" height="24" rx="6" class="red-stroke" fill="none" stroke-width="1.4"/>
+            <text x="659" y="158" font-size="11.5" font-weight="700" text-anchor="middle" fill="currentColor">us-central1</text>
           </svg>
-          <figcaption>The most common early mistake is treating these as one setting. They are three, and they are independent.</figcaption>
+          <figcaption>The most common early mistake is treating these as one setting. They are two, and they are independent — model calls use global, everything else uses us-central1.</figcaption>
         </figure>
 
         <div class="callout check">
           <span class="callout-label">Phase 2 checkpoint</span>
-          <p><code>uv --version</code>, <code>uv python list --only-installed</code> (shows 3.12 or newer), <code>node --version</code> and <code>gcloud config get-value project</code> (your <code>&lt;PROJECT_ID&gt;</code>) all return sensible answers.</p>
+          <p>Run these in one go — each should return a sensible answer (versions print, and the last line shows your <code>&lt;PROJECT_ID&gt;</code>):</p>
+        </div>
+        <div class="code-block">
+          <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>gcloud --version
+uv --version
+uv python list --only-installed
+node --version
+gcloud config get-value project</code></pre>
         </div>
 
         <div class="step-footer">
@@ -693,18 +745,19 @@ gcloud services enable \
 
         <h2>1. Environment variables</h2>
         <div class="callout tip">
-          <span class="callout-label">You can't create this file yet, and you don't need to</span>
-          <p>It lives at <code>backend/social_poster/.env</code> inside the repo you clone in Lab 1, so the folder doesn't exist until the workshop starts. Lab 1 Step 1 walks you through copying <code>.env.example</code> into place. What matters <em>now</em> is knowing these four values and why they're what they are, especially <code>GOOGLE_CLOUD_LOCATION</code>, the single most common cause of a 404 on the first model call.</p>
+          <span class="callout-label">You can't create these files yet, and you don't need to</span>
+          <p>There are two: the backend's at <code>backend/social_poster/.env</code>, the frontend's at <code>frontend/.env.local</code>. Both live inside the repo you clone in Lab 1, so neither exists until the workshop starts. Lab 1 walks you through copying each <code>.env.example</code> into place. What matters <em>now</em> is knowing the backend's four core values and why they're what they are, especially <code>GOOGLE_CLOUD_LOCATION</code>, the single most common cause of a 404 on the first model call.</p>
         </div>
-        <p>These are the values you'll put in it:</p>
+        <p>Backend — these are the values you'll put in <code>backend/social_poster/.env</code>:</p>
         <div class="code-block">
-          <div class="code-head"><span>.env — from Lab 1</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <div class="code-head"><span>backend/social_poster/.env — from Lab 1</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
           <pre><code>GOOGLE_GENAI_USE_VERTEXAI=TRUE
 GOOGLE_CLOUD_PROJECT=&lt;PROJECT_ID&gt;
 GOOGLE_CLOUD_LOCATION=global
 DRY_RUN=true</code></pre>
         </div>
         <p><code>DRY_RUN=true</code> means the LinkedIn posting tool logs posts instead of publishing. Nobody posts anything by accident in this camp.</p>
+        <p>Frontend — <code>frontend/.env.local</code> holds the web app's own settings, separate from the backend's: a <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> for Google Sign-In, and (only if you deploy the agent later) the Agent Runtime URL it should call instead of your local backend. Lab 1 gives you the values to fill in; there's nothing to note down now.</p>
 
         <div class="callout warn">
           <span class="callout-label">Use global, not a regional endpoint</span>
@@ -776,13 +829,14 @@ DRY_RUN=true</code></pre>
 
 <script>
   const STEPS = [
-    { i: 0, label: "Overview", dur: "" },
-    { i: 1, label: "Phase 1 · Cloud &amp; budget", dur: "20m" },
-    { i: 2, label: "Phase 2 · Local tools", dur: "15m" },
-    { i: 3, label: "Phase 3 · Coding agent", dur: "10m" },
-    { i: 4, label: "Phase 4 · Environment", dur: "10m" },
-    { i: 5, label: "Wrap-up", dur: "" },
+    { i: 0, label: "Overview", dur: "", hash: "overview" },
+    { i: 1, label: "Phase 1 · Cloud &amp; budget", dur: "20m", hash: "phase1" },
+    { i: 2, label: "Phase 2 · Local tools", dur: "15m", hash: "phase2" },
+    { i: 3, label: "Phase 3 · Coding agent", dur: "10m", hash: "phase3" },
+    { i: 4, label: "Phase 4 · Environment", dur: "10m", hash: "phase4" },
+    { i: 5, label: "Wrap-up", dur: "", hash: "wrapup" },
   ];
+  const HASH_TO_STEP = Object.fromEntries(STEPS.map(s => [s.hash, s.i]));
 
 
   const navEl = document.getElementById("stepNav");
@@ -811,7 +865,7 @@ DRY_RUN=true</code></pre>
   let current = 0;
   const seen = new Set([0]);
 
-  function goTo(n) {
+  function goTo(n, updateHash) {
     current = n;
     seen.add(n);
     document.querySelectorAll(".step-panel").forEach(p => {
@@ -828,7 +882,16 @@ DRY_RUN=true</code></pre>
     const pct = Math.round((n / (STEPS.length - 1)) * 100);
     document.getElementById("progressFill").style.width = pct + "%";
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    if (updateHash !== false) {
+      const hash = "#" + (STEPS[n] ? STEPS[n].hash : "overview");
+      if (location.hash !== hash) history.pushState({ step: n }, "", hash);
+    }
   }
+
+  window.addEventListener("popstate", () => {
+    const n = HASH_TO_STEP[location.hash.slice(1)];
+    goTo(n !== undefined ? n : 0, false);
+  });
 
   function copyBlock(btn) {
     const code = btn.closest(".code-block").querySelector("code");
@@ -839,7 +902,8 @@ DRY_RUN=true</code></pre>
     }
   }
 
-  goTo(0);
+  const initialStep = HASH_TO_STEP[location.hash.slice(1)];
+  goTo(initialStep !== undefined ? initialStep : 0, false);
 </script>
 
 <script>

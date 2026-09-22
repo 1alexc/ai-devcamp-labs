@@ -16,3 +16,12 @@ dependencies = [
     "google-cloud-secret-manager>=2.30.0",
     "google-cloud-dlp>=3.39.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

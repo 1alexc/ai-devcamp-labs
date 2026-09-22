@@ -10,7 +10,6 @@ import uuid
 
 import google.auth
 import google.auth.impersonated_credentials
-import google.auth.transport.requests
 from google import genai
 from google.cloud import storage
 from google.genai import types as genai_types

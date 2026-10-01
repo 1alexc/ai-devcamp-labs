@@ -20,6 +20,35 @@ log = logging.getLogger(__name__)
 
 load_dotenv(pathlib.Path(__file__).parent / "social_poster" / ".env")
 
+# --- Telemetry -------------------------------------------------------------------
+# ADK records traces either way, but something has to export them. ADK's own
+# server and the agents-cli template do that when the deploy sets
+# GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY; this app is hand-built, so it does
+# it itself, the same way. Without it Cloud Trace stays empty and the console
+# dashboard's "Reported by agent" tiles read 0. Metrics stay off, as in ADK's
+# server. A telemetry failure is logged, never raised: a deployed agent that
+# raises at import dies before it can log why.
+if os.environ.get("GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY", "").lower() in ("true", "1"):
+    try:
+        import google.auth
+        from google.adk.telemetry.google_cloud import get_gcp_exporters, get_gcp_resource
+        from google.adk.telemetry.setup import maybe_set_otel_providers
+
+        _credentials, _project = google.auth.default()
+        maybe_set_otel_providers(
+            otel_hooks_to_setup=[
+                get_gcp_exporters(
+                    enable_cloud_tracing=True,
+                    enable_cloud_logging=True,
+                    google_auth=(_credentials, _project),
+                )
+            ],
+            otel_resource=get_gcp_resource(_project),
+        )
+        log.info("Exporting OpenTelemetry traces and logs to Google Cloud")
+    except Exception:
+        log.exception("Telemetry export not set up; the agent runs without it")
+
 from backend.social_poster import config, db  # noqa: E402  (needs .env first)
 from backend.social_poster.agent import root_agent  # noqa: E402  (needs .env first)
 from backend.social_poster import guardrails  # noqa: E402
@@ -66,10 +95,15 @@ if _engine:
         location=_engine["location"],
         agent_engine_id=_engine["engine"],
     )
+    # ag_ui_adk deletes sessions idle for 20 minutes from the session service
+    # itself — here that's the managed store, so conversations vanished from
+    # the console's Sessions tab. Managed sessions expire on their own.
+    delete_idle_sessions = False
     log.info("Managed sessions + Memory Bank on engine %s", _engine["engine"])
 else:
     session_service = None  # ag_ui_adk falls back to its in-memory services
     memory_service = None
+    delete_idle_sessions = True  # frees memory; nothing outlives the process anyway
     log.info("In-memory sessions and memory — neither survives a restart")
 
 adk_agent = ADKAgent(
@@ -78,6 +112,7 @@ adk_agent = ADKAgent(
     user_id="devcamp-user",  # single-user POC; extract from auth in real apps
     session_service=session_service,
     memory_service=memory_service,
+    delete_session_on_cleanup=delete_idle_sessions,
 )
 
 if guardrails.MA_TEMPLATE:

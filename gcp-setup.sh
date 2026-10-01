@@ -62,6 +62,20 @@ else
     echo "Bucket:      $GCS_BUCKET_NAME"
     echo "Uploader SA: $SA_EMAIL"
 
+    # Bucket names are global, so pick one with your project ID in it.
+    # Private by default (Public Access Prevention on); us-central1 to sit
+    # next to the deployed agent.
+    if gcloud storage buckets describe "gs://$GCS_BUCKET_NAME" >/dev/null 2>&1; then
+      echo "0/3  Bucket already exists, skipping create."
+    else
+      echo "0/3  Creating gs://$GCS_BUCKET_NAME..."
+      gcloud storage buckets create "gs://$GCS_BUCKET_NAME" \
+        --project="$GOOGLE_CLOUD_PROJECT" \
+        --location=us-central1 \
+        --uniform-bucket-level-access \
+        --public-access-prevention >/dev/null
+    fi
+
     if gcloud iam service-accounts describe "$SA_EMAIL" --project="$GOOGLE_CLOUD_PROJECT" >/dev/null 2>&1; then
       echo "1/3  Service account already exists, skipping create."
     else
@@ -213,18 +227,48 @@ else
   unset buffer_key
 fi
 
-# The grant goes to the platform-managed Agent Engine service agent, NOT the
-# Agent Identity principal — the deploy fails with "Grant the runtime service
-# account" otherwise, and the identity principal doesn't exist until after a
-# successful deploy anyway (a real chicken-and-egg).
+# Two grants, both up front (see docs/LEARNINGS.md):
+# - The Agent Identity principalSet is what actually reads the secret: the
+#   deployed agent gets only the secret's *name* (BUFFER_API_KEY_SECRET) and
+#   fetches the value at runtime. It's the project-wide principalSet, not one
+#   agent's principal, because that principal doesn't exist until after the
+#   first successful deploy (a real chicken-and-egg).
+# - The platform-managed Agent Engine service agent, which a Secret Manager
+#   reference in the deployment spec itself would need. Harmless to have.
+# Don't use `agents-cli deploy --secrets`: a container-based deployment rejects
+# it with an opaque "The Reasoning Engine failed to be updated".
 if gcloud secrets describe "$BUFFER_SECRET_ID" --project="$GOOGLE_CLOUD_PROJECT" >/dev/null 2>&1; then
   PROJECT_NUMBER="$(gcloud projects describe "$GOOGLE_CLOUD_PROJECT" --format='value(projectNumber)')"
+  gcloud secrets add-iam-policy-binding "$BUFFER_SECRET_ID" \
+    --project="$GOOGLE_CLOUD_PROJECT" \
+    --member="principalSet://agents.global.proj-$PROJECT_NUMBER.system.id.goog/attribute.platformContainer/aiplatform/projects/$PROJECT_NUMBER" \
+    --role="roles/secretmanager.secretAccessor" >/dev/null
+  echo "Granted secretAccessor to this project's Agent Identity principals."
   gcloud secrets add-iam-policy-binding "$BUFFER_SECRET_ID" \
     --project="$GOOGLE_CLOUD_PROJECT" \
     --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform-re.iam.gserviceaccount.com" \
     --role="roles/secretmanager.secretAccessor" >/dev/null
   echo "Granted secretAccessor to the Agent Engine service agent."
-  echo "Deploy the agent with:  --secrets BUFFER_API_KEY=$BUFFER_SECRET_ID:latest"
+  echo "Deploy the agent with the secret's name, not --secrets:"
+  echo "  --update-env-vars \"POST_VIA=buffer,BUFFER_API_KEY_SECRET=$BUFFER_SECRET_ID,BUFFER_REVIEW_DELAY_MINUTES=60\""
+fi
+echo
+
+# === Step 5b: deployed agent can write published posts to GCS ==============
+# A container's filesystem is wiped on every scale-to-zero, so the deployed
+# agent keeps published posts in GCS (db.py switches when GCS_BUCKET_NAME is
+# set) and writes them as its own Agent Identity. Same project-wide
+# principalSet as Step 5, for the same chicken-and-egg reason.
+echo "=== Step 5b: GCS write access for deployed agents ==="
+if [[ -z "${GCS_BUCKET_NAME:-}" ]]; then
+  echo "skipping — GCS_BUCKET_NAME not set in $ENV_FILE."
+else
+  PROJECT_NUMBER="${PROJECT_NUMBER:-$(gcloud projects describe "$GOOGLE_CLOUD_PROJECT" --format='value(projectNumber)')}"
+  gcloud storage buckets add-iam-policy-binding "gs://$GCS_BUCKET_NAME" \
+    --member="principalSet://agents.global.proj-$PROJECT_NUMBER.system.id.goog/attribute.platformContainer/aiplatform/projects/$PROJECT_NUMBER" \
+    --role="roles/storage.objectAdmin" >/dev/null
+  echo "Granted storage.objectAdmin on gs://$GCS_BUCKET_NAME to this project's Agent Identity principals."
+  echo "Deploy the agent with:  --update-env-vars \"GCS_BUCKET_NAME=$GCS_BUCKET_NAME\""
 fi
 echo
 

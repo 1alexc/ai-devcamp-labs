@@ -363,8 +363,14 @@ def _linkedin_connection() -> StdioConnectionParams:
             env={
                 "DRY_RUN": os.environ.get("DRY_RUN", "true"),
                 "LINKEDIN_ACCESS_TOKEN": os.environ.get("LINKEDIN_ACCESS_TOKEN", ""),
+                # FastMCP asks PyPI for a newer version on every start. On a
+                # cold Agent Runtime container that round trip, plus a fresh
+                # Python process, overran ADK's 5s default and create_post
+                # silently went missing ("Failed to create MCP session").
+                "FASTMCP_CHECK_FOR_UPDATES": "off",
             },
         ),
+        timeout=30.0,  # same headroom as the Buffer toolset below
     )
 
 

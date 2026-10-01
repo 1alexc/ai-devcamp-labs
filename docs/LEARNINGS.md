@@ -22,7 +22,8 @@ attendee has), but `scaffold create`/`enhance` does *not* fit this repo, as
 already established in `docs/cloud-run-deploy.md` back in August (it clobbers
 the hand-pinned `pyproject.toml` and expects `app/`, not
 `backend/social_poster/`). **Scale** — `agents-cli deploy` is the documented
-path, full stop. **Govern** — no commands exist for Agent Gateway or Semantic
+path, full stop (with a hand-written manifest, since `enhance` rejects the
+nested agent directory; see the Scale entry on it). **Govern** — no commands exist for Agent Gateway or Semantic
 Governance; it's REST/gcloud/Terraform/Console. **Optimise** — `agents-cli
 eval` fits. **Codelab material**: standardise on `agents-cli` where it exists
 so attendees learn one tool rather than four idioms, and say out loud in Lab 3
@@ -118,6 +119,146 @@ mandatory pre-camp steps everyone has to do.
 *Agent Runtime, identity, sessions, memory, deploying the frontend.*
 
 <!-- Add new Scale entries here, newest first. -->
+
+### The LinkedIn MCP toolset intermittently vanished on cold starts: ADK's 5s MCP connect timeout vs. FastMCP's startup update check
+
+Symptom: after some redeploys, approving a post failed with `ValueError:
+Tool 'create_post' not found`, and a few seconds earlier the log said
+`Failed to get tools from toolset McpToolset: Failed to create MCP session`
+(a `WARNING`, so easy to miss). It came and went across cold starts: it failed
+at 13:13, 13:37 and 13:39, but not at 13:19, which then published fine. It
+started *before* any of that day's code changes, so it isn't a regression.
+
+**Cause**: `StdioConnectionParams` defaults to a **5 second** connect timeout.
+The stdio server is a fresh Python process, and FastMCP 3.x also does a
+`GET https://pypi.org/pypi/fastmcp/json` update check on every start (visible
+as `[linkedin-mcp] HTTP Request: GET …pypi…` in the logs). Loading
+`create_post` locally, on a warm machine, already took **4.7s**. A cold
+container goes over. ADK logs the failure as a warning and carries on with
+the toolset's tools missing, so the agent only finds out when it tries to
+call one.
+
+**Fix** (`agent.py`, `_linkedin_connection`): `FASTMCP_CHECK_FOR_UPDATES=off`
+in the server's env, and `timeout=30.0`, the same headroom the Buffer toolset
+already had. The first cold start after deploying it loaded both LinkedIn
+toolsets cleanly. **Codelab material**: a slow MCP startup surfaces as a
+missing tool, not as an error. When a tool "isn't found", check for
+`Failed to create MCP session` before you look at the prompt.
+
+### `backend/main.py` never exported telemetry, so the console's "Reported by agent" tiles read 0 and Cloud Trace was empty
+
+The engine's Dashboard → Overview showed **Sessions 0, Avg. turns per
+session 0, Agent invocations 0** under *Reported by agent*, while the
+*Reported by Agent Runtime* charts below had data. Those tiles are built from
+the agent's own OpenTelemetry spans (`gen_ai.conversation.id`,
+`gen_ai.agent.name`, …), not from the Sessions API.
+
+**Cause**: `agents-cli deploy` sets `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY=true`,
+but that only does something when ADK's own server (`get_fast_api_app(otel_to_cloud=…)`)
+or the agents-cli template reads it. This repo serves a hand-built FastAPI
+app, so ADK created spans (hence the harmless OTel `detach` traceback below)
+and nothing exported them. The exporter packages weren't even installed.
+
+**Fix**: `google-adk[a2a,eval,gcp]==2.4.0` (same ADK pin; re-locking added 26
+packages, none changed), plus a block at the top of `main.py` that calls ADK's
+public helpers, `get_gcp_exporters(enable_cloud_tracing=True,
+enable_cloud_logging=True)` + `maybe_set_otel_providers(...)`, when that env
+var is true. It's wrapped so a failure logs and the app stays up. Metrics are
+off, as in ADK's server. No extra IAM was needed: the Telemetry API was
+already enabled and the deployed agent's spans arrived under its own identity.
+The spans carry `gen_ai.request.model` per agent, so the per-agent models
+(orchestrator `gemini-flash-latest`, research `gemini-flash-lite-latest`,
+draft `gemini-3.1-pro-preview`) are now visible in traces.
+
+Two things that wasted time verifying it: Cloud Trace's v1 `ListTraces` with a
+`startTime` filter returned **0** while the traces existed (list with
+`orderBy=start desc` and no time filter instead), and calls without
+`x-goog-user-project` hit a shared free-read quota and 429. Also, the "Exporting
+OpenTelemetry…" `log.info` never appears, because it runs before logging is
+configured. Its absence isn't a failure.
+
+### ag_ui_adk's session cleanup deletes *managed* sessions, so they disappear from the console
+
+The console's Sessions tab lost conversations, and a session id from earlier
+in the day returned 404. `ag_ui_adk`'s `SessionManager` sweeps every 300s and
+expires sessions idle for 1200s, and with `delete_session_on_cleanup=True`
+(the default) it deletes them **from the session service itself**. With
+`VertexAiSessionService` that is the managed store the console reads. Seen
+directly: session created 10:44, `Cleaned up 1 expired sessions` at 11:06,
+then 404. Whether a session survived depended on timing: if the container
+scaled to zero first, the timer died with it (the same race as the
+memory-ingestion entry below). That made Lab 2 Step 4's "still there after
+scale-to-zero" checkpoint a coin toss.
+
+**Fix** (`main.py`): `delete_session_on_cleanup=False` when running on an
+engine, `True` locally where sessions are in-memory anyway. Managed sessions
+already expire on their own (`expireTime` is a year out). Memory ingestion is
+explicit at publish, so nothing depended on the cleanup.
+
+**Verified**, with the container kept up by an `openapi.json` request every
+90s (which doesn't touch any session): session created 14:27, `Cleaned up 1
+expired sessions` at 14:47, and the session still returned 200 afterwards.
+Testing this needs the keep-alive. Left idle, the container shut down after
+about 7 minutes, before any sweep, so a surviving session proved nothing.
+Note that `Cleaned up N` is logged even when nothing is deleted. It counts
+sessions dropped from `ag_ui_adk`'s own tracking, not deletions.
+
+### A hand-written `agents-cli-manifest.yaml` works for deploy; `scaffold enhance` can't write one for this repo
+
+`agents-cli scaffold enhance . --deployment-target agent_runtime
+--agent-directory backend/social_poster` fails (acli 1.7.0) with "Agent
+directory 'backend/social_poster' is not a valid Python identifier". The
+directory becomes a module name, so it must be one bare identifier, which means
+a nested path can never pass. It failed before writing anything, though it
+does make a backup under `~/.agents-cli/backups/` first.
+
+Writing the manifest by hand works. The field names come from a throwaway
+`scaffold create`, and the minimum that matters is `name`, `agent_directory`,
+`region` and `create_params.deployment_target` (plus `root_agent_name`, which
+`agents-cli info` would otherwise derive from `name`). Read from the CLI
+source rather than assumed:
+
+- **Deploy never validates `agent_directory`.** Only `playground`, `run` and
+  the `eval` commands call `require_agent_directory`. Deploy records the value
+  in `deployment_metadata.json` and uses it for the A2A card path, which we
+  don't serve. `agents-cli playground` doesn't fit this layout anyway (it runs
+  `adk web .` from the root), so local dev stays `uv run adk web backend`.
+- **`name` becomes the service name** (`--service-name` > `name` > `agent`),
+  and `region` replaces the CLI default of `us-east1`. Both stop being things
+  an attendee can mistype.
+- **`-d` still overrides per run.** `deploy -d cloud_run --dry-run` prints a
+  correct `gcloud run deploy social-spark-poster --source . --region
+  us-central1`. GKE is *not* unlocked by the manifest: it needs the
+  `deployment/terraform/` tree only `enhance` generates, and `--service-name`
+  is rejected for GKE.
+
+Verified with `agents-cli info`, `deploy --dry-run`, `deploy --status` and
+`deploy --list`, all without `-d`. Not verified: a real (non-dry-run) deploy
+from the manifest.
+
+**Codelab material**: the manifest ships from `pillar-build` onward, and Lab 2
+presents it as already there (attendees are assumed to be on `agents-cli`
+projects of their own). That drops `-d agent_runtime`, `--region` and
+`--service-name` from every command. That retires the old `--status`
+deliberate error (see the "Three real gotchas" entry below), so it's replaced
+by the next entry's.
+
+### `agents-cli deploy --status` is a one-shot follow-up on a local file, not a query of what's deployed
+
+`--status` reads the pending operation from `deployment_metadata.json`
+(gitignored, written by `deploy --no-wait`), polls it, and on success rewrites
+the file with the engine id and **clears the pending operation**. Run it again
+and you get "No pending deployment operation found. Run 'agents-cli deploy' or
+'agents-cli deploy --no-wait' first.", which reads like the agent has been
+deleted. It hasn't; `deploy --list` (which queries the project) still shows
+it. A buddy running `--status` from their own clone hits the same error,
+because their clone has no record of the operation. Reproduced on
+`social-spark-poster` in `adk-devcamp-poc`.
+
+**Codelab material**: this is Lab 2's deliberate error now. It's the same
+lesson the old one taught (read what the failing command actually checks
+before undoing work), it still happens with a manifest in place, and the fix
+is to use `--list`.
 
 ### Memory Bank was running on defaults; configuring it is a PATCH, not a redeploy, and the docs page does not say how
 
@@ -446,6 +587,10 @@ candidates from today's run are in the next entry.
 **Codelab material**: (1) belongs in the setup guide's API list. (2) is a
 strong candidate for Lab 2's deliberate error, replacing the now-obsolete
 `extra_packages` one — it's real, it's confusing, and the fix is one flag.
+*Update:* (2) and (3) only apply without a manifest. The repo now ships
+`agents-cli-manifest.yaml` from `pillar-build` onward, so neither is hit any more, and the deliberate
+error moved to `--status` being one-shot (see the hand-written manifest entry
+above).
 
 ### `useCopilotAction`/`useRenderTool`-style rendering cannot see tool calls nested inside an `AgentTool`
 

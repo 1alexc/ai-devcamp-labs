@@ -81,7 +81,7 @@ gcp-setup.sh             one-time Google Cloud setup: APIs, templates, grants
 **What's deployed right now?** An Agent Runtime engine scales to zero when idle, and the console only shows one region at a time, so a deployed agent can look missing. Ask the CLI:
 
 ```bash
-agents-cli deploy --list -d agent_runtime --project YOUR_PROJECT --region us-central1 --no-confirm-project
+agents-cli deploy --list --project YOUR_PROJECT --no-confirm-project
 ```
 
-`-d agent_runtime` is needed because this project has no `agents-cli-manifest.yaml`.
+Target and region come from `agents-cli-manifest.yaml` at the repo root.

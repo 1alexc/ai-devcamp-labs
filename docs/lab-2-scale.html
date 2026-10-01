@@ -475,10 +475,25 @@
 
         <div class="code-block">
           <div class="code-head"><span>terminal — from the repo root</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-          <pre><code>./gcs-setup.sh</code></pre>
+          <pre><code>./gcp-setup.sh</code></pre>
         </div>
 
-        <p>That script is idempotent — safe to re-run — and does four things that matter today: enables the APIs, grants you <code>roles/aiplatform.user</code>, creates a service account for the deployed frontend, and puts your Buffer key in Secret Manager (reading it out of your <code>.env</code>, so it never lands in your shell history).</p>
+        <p>First set <code>GCS_BUCKET_NAME</code> in <code>backend/social_poster/.env</code>. Bucket names are global, so include your project ID, for example <code>YOUR_PROJECT-social-spark</code>. Your deployed agent keeps published posts there, because a container's own disk is wiped every time it scales to zero.</p>
+
+        <p>The script is idempotent, so it's safe to re-run. It reads <code>GOOGLE_CLOUD_PROJECT</code> and <code>GCS_BUCKET_NAME</code> from that <code>.env</code> and acts as whichever account <code>gcloud</code> is logged in as. For the Scale stage it:</p>
+
+        <ul>
+          <li><strong>Checks your login.</strong> Runs <code>gcloud auth application-default login</code> if you don't have Application Default Credentials yet. Set <code>PERSONAL_EMAIL=you@example.com</code> in front of the command to grant the roles below to a different account.</li>
+          <li><strong>Enables the APIs a deploy needs:</strong> Agent Platform (<code>aiplatform</code>), Cloud Build, Artifact Registry and Cloud Run to build and host the container, Secret Manager, and Cloud Resource Manager. Without that last one, the deploy fails with a <code>403 SERVICE_DISABLED</code> buried in a stack trace.</li>
+          <li><strong>Creates your bucket</strong> in <code>us-central1</code> if it doesn't exist yet, private by default.</li>
+          <li><strong>Grants you <code>roles/aiplatform.user</code></strong>, so you can call your deployed agent (see below).</li>
+          <li><strong>Creates <code>social-spark-frontend@YOUR_PROJECT.iam.gserviceaccount.com</code></strong> and grants it the same role. This is the identity the web UI runs as on Cloud Run in Step 7.</li>
+          <li><strong>Stores your Buffer key in Secret Manager</strong> as <code>buffer-api-key</code>, read straight from your <code>.env</code> so it never lands in your shell history. It skips this if <code>BUFFER_API_KEY</code> isn't set.</li>
+          <li><strong>Lets your deployed agent read that secret.</strong> The agent is given only the secret's name, <code>BUFFER_API_KEY_SECRET=buffer-api-key</code>, and fetches the value at runtime as its own Agent Identity. The script grants access to every Agent Identity in the project, because your agent's own identity doesn't exist until its first deploy.</li>
+          <li><strong>Lets your deployed agent write to the bucket</strong>, the same way: <code>roles/storage.objectAdmin</code> for every Agent Identity in the project.</li>
+        </ul>
+
+        <p>There's no service account for the agent itself. In Step 2, <code>--agent-identity</code> gives the deployed agent a principal of its own.</p>
 
         <div class="callout tip">
           <span class="callout-label">Why <code>roles/aiplatform.user</code> matters more than it looks</span>
@@ -487,7 +502,7 @@
 
         <div class="callout check">
           <span class="callout-label">Checkpoint</span>
-          <p>The script prints <code>Done.</code> with no errors, and <code>gcloud services list --enabled | grep cloudresourcemanager</code> returns a line. That last API is the one that fails most confusingly if it's missing — see the next step.</p>
+          <p>The script prints <code>Done.</code> with no errors, and <code>gcloud services list --enabled | grep cloudresourcemanager</code> returns a line. That last API is the one that fails most confusingly if it's missing.</p>
         </div>
 
         <div class="step-footer">
@@ -507,43 +522,63 @@
           <p>A managed runtime purpose-built for agents. You hand it your project; it builds a container image from the <code>Dockerfile</code> already in the repo and runs it, scaling to zero when idle so an unused agent costs approximately nothing. The important part isn't the hosting — it's <strong>Agent Identity</strong>: with <code>--agent-identity</code> the deployed agent gets its own cryptographic principal, separate from your user account. That principal is what you grant permissions to, and it's what Lab 3's governance policies will attach to. An agent with its own identity is the difference between "a script running as you" and "a service you can reason about".</p>
         </div>
 
+        <p>The repo root has an <code>agents-cli-manifest.yaml</code>. It's the file <code>agents-cli</code> reads to know <em>where</em> and <em>how</em> your agent runs: the deploy target, the service name and the region. <code>pyproject.toml</code> covers what the agent is built from; the manifest covers where it goes. Keeping them apart means changing where you deploy never touches your dependencies.</p>
+
+        <div class="code-block">
+          <div class="code-head"><span>agents-cli-manifest.yaml — repo root</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+          <pre><code>name: 'social-spark-poster'
+agent_directory: 'backend/social_poster'
+region: 'us-central1'
+create_params:
+  root_agent_name: 'social_poster'
+  deployment_target: 'agent_runtime'
+  is_a2a: false</code></pre>
+        </div>
+
+        <p><code>agents-cli info</code> prints what it read from it. Then deploy:</p>
+
         <div class="code-block">
           <div class="code-head"><span>terminal — replace YOUR_PROJECT</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-          <pre><code>agents-cli deploy -d agent_runtime \
-  --project YOUR_PROJECT --region us-central1 \
+          <pre><code>agents-cli deploy --project YOUR_PROJECT \
   --agent-identity \
-  --service-name social-spark-poster \
-  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true" \
+  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,GCS_BUCKET_NAME=YOUR_BUCKET,ORCHESTRATOR_MODEL=gemini-flash-latest,RESEARCH_MODEL=gemini-flash-lite-latest,DRAFT_MODEL=gemini-3.1-pro-preview" \
   --no-confirm-project --no-wait</code></pre>
         </div>
 
-        <p>Three flags are doing real work, and one is easy to get wrong:</p>
+        <p>What's doing the work, and one setting that's easy to get wrong:</p>
 
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Flag</th><th>Why</th></tr></thead>
+            <thead><tr><th>Setting</th><th>Why</th></tr></thead>
             <tbody>
-              <tr><td><code>-d agent_runtime</code></td><td>Required, because this project has no <code>agents-cli-manifest.yaml</code> — it was hand-built, not scaffolded. Without it the CLI doesn't know what you're deploying.</td></tr>
-              <tr><td><code>--region us-central1</code></td><td>Deliberate. Lab 3's Governance Policy engine doesn't exist in <code>global</code> or <code>europe-west2</code>, and a policy can only bind to an agent in the region it was registered in. Deploy elsewhere and you can't do Lab 3 against this agent.</td></tr>
+              <tr><td><code>deployment_target</code> and <code>name</code> (manifest)</td><td>Where to deploy and what to call it. Every <code>deploy</code>, <code>--status</code> and <code>--list</code> command reads them, so you never pass them as flags.</td></tr>
+              <tr><td><code>region: 'us-central1'</code> (manifest)</td><td>Deliberate, and the reason it lives in a file rather than your memory. Lab 3's Governance Policy engine doesn't exist in <code>global</code> or <code>europe-west2</code>, and a policy can only bind to an agent in the region it was registered in. Deploy elsewhere and you can't do Lab 3 against this agent.</td></tr>
+              <tr><td><code>--agent-identity</code></td><td>Gives the deployed agent its own principal (see the theory above). It's a flag rather than a manifest field, so pass it every time.</td></tr>
+              <tr><td><code>--update-env-vars</code></td><td>The deployed agent's whole configuration. Your local <code>.env</code> is gitignored, so it never reaches the container; only what you pass here does. <code>DRY_RUN=true</code> keeps LinkedIn posting simulated. <code>GCS_BUCKET_NAME</code> moves published posts off the container's disk. The three <code>*_MODEL</code> values give each agent its own model, matched to its job: a fast orchestrator, a cheap researcher and a strong writer. Because they differ, you can tell the agents apart in logs and traces later.</td></tr>
               <tr><td><code>--no-wait</code></td><td>Deploys take 5–10 minutes and can outlive a terminal timeout. The deployment carries on server-side regardless.</td></tr>
             </tbody>
           </table>
         </div>
 
+        <div class="callout tip">
+          <span class="callout-label">Same manifest, other targets</span>
+          <p>The manifest sets a <em>default</em> target, not the only one. <code>agents-cli deploy -d cloud_run</code> builds the same <code>Dockerfile</code> into a Cloud Run service instead (add <code>--dry-run</code> to see the <code>gcloud run deploy</code> it would run). GKE also needs a cluster and its Terraform and Kubernetes files, so it's more than a flag. We stay on Agent Runtime because Agent Identity, Sessions and Memory Bank all come with it.</p>
+        </div>
+
         <div class="callout warn">
           <span class="callout-label">Deliberate error — this one is on purpose</span>
-          <p>Now check on your deploy the obvious way:</p>
+          <p>Check on your deploy:</p>
           <div class="code-block">
             <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-            <pre><code>agents-cli deploy --status --project YOUR_PROJECT --region us-central1</code></pre>
+            <pre><code>agents-cli deploy --status --project YOUR_PROJECT --no-confirm-project</code></pre>
           </div>
-          <p>You'll get <code>Error: No agents-cli-manifest.yaml found in the current directory or its parents.</code> — which reads exactly like your <em>deploy</em> failed. It didn't. Only the status lookup did: <code>--status</code> needs <code>-d agent_runtime</code> too, for the same reason the deploy did. Add it and the status comes back fine.</p>
-          <p>Worth sitting with for a second, because it's a pattern you'll hit again: <strong>an error about the thing you just ran is not always an error about the thing you just did.</strong> Read which command actually failed before you start undoing work.</p>
+          <p>Once it says <code>✅ Deployment successful!</code>, run it again. You'll get <code>No pending deployment operation found</code>, which looks like your agent is gone. It isn't: <code>--status</code> only follows up on your last deploy, and forgets it once it has reported back. To see what's actually deployed, use <code>--list</code>.</p>
+          <p>The lesson: <strong>read what the failing command actually checks before you start undoing work.</strong></p>
         </div>
 
         <div class="callout check">
           <span class="callout-label">Checkpoint</span>
-          <p><code>agents-cli deploy --status -d agent_runtime --project YOUR_PROJECT --region us-central1</code> reports success, and the agent appears in the console under Agent Engine with an identity principal against it.</p>
+          <p><code>agents-cli deploy --list --project YOUR_PROJECT --no-confirm-project</code> shows <code>social-spark-poster</code> in <code>us-central1</code>, and the agent appears in the console under Agent Engine with an identity principal against it.</p>
         </div>
 
         <div class="step-footer">
@@ -738,7 +773,7 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
 
         <div class="callout">
           <span class="callout-label">Theory — two identities, not one</span>
-          <p>Running on Cloud Run, your frontend can't borrow your <code>gcloud</code> credentials — it needs an identity of its own. That's the service account <code>gcs-setup.sh</code> created, holding <code>roles/aiplatform.user</code> so it may call your agent. Your proxy code doesn't change at all: Application Default Credentials resolves to <em>you</em> locally and to <em>the service account</em> on Cloud Run, and the same code works in both places.</p>
+          <p>Running on Cloud Run, your frontend can't borrow your <code>gcloud</code> credentials — it needs an identity of its own. That's the service account <code>gcp-setup.sh</code> created, holding <code>roles/aiplatform.user</code> so it may call your agent. Your proxy code doesn't change at all: Application Default Credentials resolves to <em>you</em> locally and to <em>the service account</em> on Cloud Run, and the same code works in both places.</p>
         </div>
 
         <div class="code-block">
@@ -805,7 +840,7 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
 
         <div class="callout check">
           <span class="callout-label">Checkpoint</span>
-          <p>You can find your agent's own log lines among the platform noise, and you can tell the harmless OTel traceback from a real failure.</p>
+          <p>You can find your agent's own log lines among the platform noise, and you can tell the harmless OTel traceback from a real failure. Lines starting <code>Sending out request, model:</code> show all three models from Step 2 at work: <code>gemini-flash-latest</code> for the orchestrator, <code>gemini-flash-lite-latest</code> for research and <code>gemini-3.1-pro-preview</code> for drafting.</p>
         </div>
 
         <div class="step-footer">
@@ -833,8 +868,7 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
         <div class="code-block">
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
           <pre><code># list what you have
-agents-cli deploy --list -d agent_runtime \
-  --project YOUR_PROJECT --region us-central1
+agents-cli deploy --list --project YOUR_PROJECT
 
 # the frontend
 gcloud run services delete social-spark-frontend \
@@ -885,6 +919,7 @@ gcloud run services delete social-spark-frontend \
           <li><a href="https://docs.cloud.google.com/secret-manager/docs/integrate-secret-manager-with-adk" target="_blank" rel="noopener">Secret Manager with ADK</a> — how a deployed agent reads secrets with its own identity</li>
           <li><a href="https://google.github.io/adk-docs/" target="_blank" rel="noopener">ADK documentation</a></li>
           <li><a href="https://cloud.google.com/run/docs/securing/ingress" target="_blank" rel="noopener">Cloud Run — restricting ingress</a>, for making the frontend private properly</li>
+          <li><a href="https://medium.com/google-cloud/tutorial-series-gemini-enterprise-agent-platform-part-3-scaling-with-agent-runtime-memory-1fe9fe48d829" target="_blank" rel="noopener">Tutorial Series: Gemini Enterprise Agent Platform — Part 3: Scaling with Agent Runtime &amp; Memory</a> (Romin Irani), the same Scale pillar on a project scaffolded by <code>agents-cli</code>, including what <code>agents-cli-manifest.yaml</code> holds and why it's separate from <code>pyproject.toml</code></li>
         </ul>
 
         <div class="callout check">
@@ -903,18 +938,19 @@ gcloud run services delete social-spark-frontend \
 
 <script>
   const STEPS = [
-    { i: 0, label: "Overview", dur: "" },
-    { i: 1, label: "Prerequisites", dur: "10m" },
-    { i: 2, label: "Deploy to Agent Runtime", dur: "15m" },
-    { i: 3, label: "Talk to the deployed agent", dur: "10m" },
-    { i: 4, label: "Sessions that survive", dur: "15m" },
-    { i: 5, label: "Memory Bank", dur: "20m" },
-    { i: 6, label: "Point the web UI at it", dur: "15m" },
-    { i: 7, label: "Deploy the frontend", dur: "15m" },
-    { i: 8, label: "Read the logs", dur: "5m" },
-    { i: 9, label: "Tear it down", dur: "5m" },
-    { i: 10, label: "Wrap-up", dur: "" },
+    { i: 0, label: "Overview", dur: "", hash: "overview" },
+    { i: 1, label: "Prerequisites", dur: "10m", hash: "step1" },
+    { i: 2, label: "Deploy to Agent Runtime", dur: "15m", hash: "step2" },
+    { i: 3, label: "Talk to the deployed agent", dur: "10m", hash: "step3" },
+    { i: 4, label: "Sessions that survive", dur: "15m", hash: "step4" },
+    { i: 5, label: "Memory Bank", dur: "20m", hash: "step5" },
+    { i: 6, label: "Point the web UI at it", dur: "15m", hash: "step6" },
+    { i: 7, label: "Deploy the frontend", dur: "15m", hash: "step7" },
+    { i: 8, label: "Read the logs", dur: "5m", hash: "step8" },
+    { i: 9, label: "Tear it down", dur: "5m", hash: "step9" },
+    { i: 10, label: "Wrap-up", dur: "", hash: "wrapup" },
   ];
+  const HASH_TO_STEP = Object.fromEntries(STEPS.map(s => [s.hash, s.i]));
 
 
   const navEl = document.getElementById("stepNav");
@@ -943,7 +979,7 @@ gcloud run services delete social-spark-frontend \
   let current = 0;
   const seen = new Set([0]);
 
-  function goTo(n) {
+  function goTo(n, updateHash) {
     current = n;
     seen.add(n);
     document.querySelectorAll(".step-panel").forEach(p => {
@@ -960,7 +996,16 @@ gcloud run services delete social-spark-frontend \
     const pct = Math.round((n / 10) * 100);
     document.getElementById("progressFill").style.width = pct + "%";
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    if (updateHash !== false) {
+      const hash = "#" + (STEPS[n] ? STEPS[n].hash : "overview");
+      if (location.hash !== hash) history.pushState({ step: n }, "", hash);
+    }
   }
+
+  window.addEventListener("popstate", () => {
+    const n = HASH_TO_STEP[location.hash.slice(1)];
+    goTo(n !== undefined ? n : 0, false);
+  });
 
   function copyBlock(btn) {
     const code = btn.closest(".code-block").querySelector("code");
@@ -971,7 +1016,8 @@ gcloud run services delete social-spark-frontend \
     }
   }
 
-  goTo(0);
+  const initialStep = HASH_TO_STEP[location.hash.slice(1)];
+  goTo(initialStep !== undefined ? initialStep : 0, false);
 </script>
 
 <script>

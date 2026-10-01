@@ -24,19 +24,19 @@ a step is added.
 ## 1. Deploy the agent
 
 ```bash
-agents-cli deploy -d agent_runtime \
-  --project YOUR_PROJECT_ID --region us-central1 --agent-identity \
-  --service-name social-spark-poster \
+agents-cli deploy --project YOUR_PROJECT_ID --agent-identity \
   --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,RESEARCH_MODEL=gemini-2.5-flash,DRAFT_MODEL=gemini-2.5-flash,ORCHESTRATOR_MODEL=gemini-2.5-flash,GCS_BUCKET_NAME=YOUR_BUCKET" \
   --no-confirm-project --no-wait
 ```
 
 Why each part:
 
-- **`-d agent_runtime`** — required here because this project has no
-  `agents-cli-manifest.yaml` (it was hand-built, not scaffolded). Without it the
-  command errors with "No agents-cli-manifest.yaml found".
-- **`--region us-central1`**, deliberately. The Govern pillar's Semantic
+- **`agents-cli-manifest.yaml`** at the repo root supplies the target
+  (`agent_runtime`), service name (`social-spark-poster`) and region, so no
+  `-d`, `--service-name` or `--region`. It's hand-written: `scaffold enhance`
+  rejects the nested `backend/social_poster` agent directory (see LEARNINGS).
+  Pass `-d cloud_run` to deploy the same Dockerfile to Cloud Run instead.
+- **`region: 'us-central1'`** in the manifest, deliberately. The Govern pillar's Semantic
   Governance Policy Engine does not exist in `global` or `europe-west2`, and a
   policy can only bind to an agent in the region it was registered in. Deploy
   elsewhere and Session 3 cannot attach a policy to this agent at all.
@@ -56,13 +56,14 @@ repo's existing root `Dockerfile`, and file selection honours `.gitignore`, so
 ### Checking on it
 
 ```bash
-agents-cli deploy --status -d agent_runtime \
-  --project YOUR_PROJECT_ID --region us-central1 --no-confirm-project
+agents-cli deploy --status --project YOUR_PROJECT_ID --no-confirm-project
 ```
 
-> **Gotcha**: `--status` needs `-d agent_runtime` too. Without it you get "No
-> agents-cli-manifest.yaml found", which reads as though the *deploy* failed —
-> it hasn't, only the status lookup has.
+> **Gotcha**: `--status` follows up the one operation recorded in your local
+> `deployment_metadata.json` and clears it once it reports success. Run it
+> again and you get "No pending deployment operation found", which reads as
+> though the agent is gone. It isn't. Use `--list` (section 7) to ask what's
+> actually deployed.
 
 ## 2. Talk to it
 
@@ -152,7 +153,7 @@ Buffer toolset is never constructed, so asking for an X post still goes to
 LinkedIn. Use Buffer to reach X and other channels:
 
 ```bash
-agents-cli deploy -d agent_runtime ... \
+agents-cli deploy ... \
   --secrets "BUFFER_API_KEY=buffer-api-key:latest" \
   --update-env-vars "POST_VIA=buffer,BUFFER_REVIEW_DELAY_MINUTES=60,..."
 ```
@@ -179,7 +180,7 @@ gcloud secrets add-iam-policy-binding buffer-api-key \
 then deploy with the name only, no `--secrets`:
 
 ```bash
-agents-cli deploy -d agent_runtime ... \
+agents-cli deploy ... \
   --update-env-vars "POST_VIA=buffer,BUFFER_API_KEY_SECRET=buffer-api-key,BUFFER_REVIEW_DELAY_MINUTES=60,..."
 ```
 
@@ -201,7 +202,7 @@ which is the other common reason a deployment appears to have vanished. Ask
 the CLI:
 
 ```bash
-agents-cli deploy --list -d agent_runtime --project YOUR_PROJECT_ID --region us-central1 --no-confirm-project
+agents-cli deploy --list --project YOUR_PROJECT_ID --no-confirm-project
 ```
 
 ```bash
@@ -214,6 +215,6 @@ Agent Runtime is the weekly teardown item. It scales to zero, so an idle engine
 costs approximately nothing, but delete it when finished with:
 
 ```bash
-agents-cli deploy --list -d agent_runtime --project YOUR_PROJECT_ID --region us-central1
+agents-cli deploy --list --project YOUR_PROJECT_ID
 gcloud run services delete social-spark-frontend --region us-central1 --project YOUR_PROJECT_ID
 ```

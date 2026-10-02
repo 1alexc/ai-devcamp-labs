@@ -20,6 +20,18 @@ log = logging.getLogger(__name__)
 
 load_dotenv(pathlib.Path(__file__).parent / "social_poster" / ".env")
 
+# --- Agent Identity tokens ---------------------------------------------------------
+# With Agent Identity, google-auth asks for tokens bound to the agent's mTLS
+# certificate once that certificate is mounted. gRPC clients (Gemini, Secret
+# Manager, Sessions, Memory Bank) present the certificate; plain-HTTP clients
+# (google-cloud-storage in upload_image, httpx to DLP) don't, so they got
+# intermittent "401 Invalid Credentials" (intermittent because tokens fetched
+# before the certificate appears are unbound). Opting out gives unbound tokens
+# for every client. Trade-off: a leaked token isn't tied to this agent's
+# certificate. Set the variable to "true" on the deployment to keep binding.
+if os.environ.get("APP_URL"):
+    os.environ.setdefault("GOOGLE_API_PREVENT_AGENT_TOKEN_SHARING_FOR_GCP_SERVICES", "false")
+
 # --- Telemetry -------------------------------------------------------------------
 # ADK records traces either way, but something has to export them. ADK's own
 # server and the agents-cli template do that when the deploy sets

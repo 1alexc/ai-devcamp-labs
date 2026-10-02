@@ -40,6 +40,20 @@ if [[ -z "${GOOGLE_CLOUD_PROJECT:-}" ]]; then
   echo "GOOGLE_CLOUD_PROJECT is not set. Copy .env.example to $ENV_FILE and set it, then re-run."
   exit 1
 fi
+
+# Bill and quota-check API calls made with your ADC against this project.
+# Without it, user ADC has no quota project: every SDK call warns "without a
+# quota project", and some APIs (Cloud Trace reads, for one) reject or throttle
+# the call against a shared Google-owned quota instead of yours.
+current_quota="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('quota_project_id',''))" "$ADC_FILE" 2>/dev/null || true)"
+if [[ "$current_quota" == "$GOOGLE_CLOUD_PROJECT" ]]; then
+  echo "ADC quota project already $GOOGLE_CLOUD_PROJECT, skipping."
+elif gcloud auth application-default set-quota-project "$GOOGLE_CLOUD_PROJECT" >/dev/null 2>&1; then
+  echo "Set ADC quota project to $GOOGLE_CLOUD_PROJECT."
+else
+  echo "Could not set the ADC quota project (needs serviceusage.services.use on"
+  echo "$GOOGLE_CLOUD_PROJECT). Continuing; SDK calls will warn about a missing quota project."
+fi
 echo
 
 # === Step 1: GCS image hosting for Buffer (signed URLs, no key file) =======

@@ -120,6 +120,34 @@ mandatory pre-camp steps everyone has to do.
 
 <!-- Add new Scale entries here, newest first. -->
 
+### The intermittent 401s were Agent Identity's certificate-bound tokens
+
+With Agent Identity, google-auth (2.55) waits up to 30s for the agent's mTLS
+certificate (`/var/run/secrets/workload-spiffe-credentials/certificates.pem`)
+and, once it's there, requests tokens with `bindCertificateFingerprint`. That's
+the default unless `GOOGLE_API_PREVENT_AGENT_TOKEN_SHARING_FOR_GCP_SERVICES=false`
+(`google/auth/_agent_identity_utils.py`). A bound token only works on a
+connection that presents that certificate:
+
+- gRPC clients (Gemini, Secret Manager, Sessions, Memory Bank) do, so they never failed.
+- Plain-HTTP clients don't: `google-cloud-storage` in `upload_image` and the
+  raw httpx call to DLP got `401 Invalid Credentials`.
+- Tokens fetched before the certificate is mounted are unbound, which is why
+  early calls worked (the 15:21 post write, DLP on a fresh engine) and later
+  ones failed. That's what made it look random.
+
+Tested side by side on fresh engines, after waiting for the certificate:
+`GOOGLE_API_PREVENT_AGENT_TOKEN_SHARING_FOR_GCP_SERVICES=false` → 2/2 image
+uploads landed; `GOOGLE_API_USE_CLIENT_CERTIFICATE=true` (mTLS for the storage
+client) → 0/2. So `main.py` now defaults the opt-out on Agent Runtime
+(`APP_URL` set). Trade-off: tokens are no longer tied to the agent's
+certificate; set the variable to `true` on a deployment to keep binding.
+
+With auth fixed, DLP then answered **400**: the URL used `GOOGLE_CLOUD_PROJECT`,
+which is the project *number* inside the container, and DLP rejects numbers.
+`guardrails.py` now uses `PROJECT_ID` (as Lab 3 already did), and Lab 2's
+deploy command passes `PROJECT_ID=YOUR_PROJECT`.
+
 ### The `-latest` model aliases started returning 404 overnight; newer models hit 429 quickly
 
 On 2026-10-02 `gemini-flash-latest` and `gemini-flash-lite-latest` returned
@@ -170,7 +198,7 @@ All hit live on 2026-10-01 while demoing the Scale lab from a fresh engine.
   raw bearer-token calls don't. Unexplained so far: `db.py`'s post writes to
   the same bucket with the same `storage.Client()` succeeded on the same engine
   earlier the same day, and on 2026-10-02 `redact_pii_text` reached DLP fine on a
-  fresh engine. So the 401s are intermittent, not structural. Not yet root-caused.
+  fresh engine. **Root-caused 2026-10-03, see the token-binding entry.**
 - **`redact_pii_text` raising killed the whole turn.** After signing in, the
   orchestrator decided the user's name was personal data, called the tool, and
   the 401 surfaced as `DynamicNodeFailError`, before anything was posted.

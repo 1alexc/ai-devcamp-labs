@@ -51,7 +51,7 @@ Deploy. Your local `.env` never reaches the container; only these env vars do:
 
 ```bash
 agents-cli deploy --project adk-devcamp-poc --agent-identity \
-  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,GCS_BUCKET_NAME=YOUR_BUCKET,ORCHESTRATOR_MODEL=gemini-2.5-flash,RESEARCH_MODEL=gemini-2.5-flash-lite,DRAFT_MODEL=gemini-2.5-pro" \
+  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,GCS_BUCKET_NAME=YOUR_BUCKET,PROJECT_ID=YOUR_PROJECT,ORCHESTRATOR_MODEL=gemini-2.5-flash,RESEARCH_MODEL=gemini-2.5-flash-lite,DRAFT_MODEL=gemini-2.5-pro" \
   --no-confirm-project --no-wait
 ```
 
@@ -77,12 +77,16 @@ agents-cli deploy --list --project adk-devcamp-poc --no-confirm-project
 
 ## 3. Talk to it
 
-Set the engine ID (from the `deployment_metadata.json` that the successful
-`--status` wrote), the project number, and the passthrough base URL:
+Set the project number, the engine ID (looked up by name, so this works from
+any folder) and the passthrough base URL:
 
 ```bash
-export ENGINE_ID=$(python3 -c "import json;print(json.load(open('deployment_metadata.json'))['remote_agent_runtime_id'].split('/')[-1])")
-export PROJECT_NUMBER=$(gcloud projects describe adk-devcamp-poc --format='value(projectNumber)')
+# works from any folder; set ENGINE_NAME if you deployed with --service-name
+export ENGINE_NAME=social-spark-poster
+export PROJECT_NUMBER=$(gcloud projects describe "$(gcloud config get-value project 2>/dev/null)" --format='value(projectNumber)')
+TOK=$(gcloud auth print-access-token)
+export ENGINE_ID=$(curl -s -H "Authorization: Bearer $TOK" "https://us-central1-aiplatform.googleapis.com/v1/projects/$PROJECT_NUMBER/locations/us-central1/reasoningEngines?pageSize=100" | python3 -c "import json,sys; print(next((e['name'].split('/')[-1] for e in json.load(sys.stdin).get('reasoningEngines',[]) if e.get('displayName')==sys.argv[1]), ''))" "$ENGINE_NAME")
+echo "project $PROJECT_NUMBER, engine $ENGINE_ID"
 export BASE="https://us-central1-aiplatform.googleapis.com/reasoningEngines/v1/projects/$PROJECT_NUMBER/locations/us-central1/reasoningEngines/$ENGINE_ID/api"
 ```
 
@@ -98,9 +102,11 @@ After chatting in step 6, list the managed sessions. Each shows up with
 `userId: devcamp-user`:
 
 ```bash
+# reuses PROJECT_NUMBER and ENGINE_ID from Step 3 (in a new terminal, run that block first)
+: "${ENGINE_ID:?run the Step 3 block first}"
 curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-  "https://us-central1-aiplatform.googleapis.com/v1/projects/$PROJECT_NUMBER/locations/us-central1/reasoningEngines/$ENGINE_ID/sessions" \
-  | python3 -m json.tool
+  "https://us-central1-aiplatform.googleapis.com/v1/projects/$PROJECT_NUMBER/locations/us-central1/reasoningEngines/$ENGINE_ID/sessions?pageSize=100" \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); s=d.get('sessions'); print(d if s is None else '\n'.join(f\"{x['name'].split('/')[-1]}  {x.get('userId','')}  {x.get('updateTime','')[:19]}\" for x in s))"
 ```
 
 They also appear in the console: the engine's **Sessions** tab.

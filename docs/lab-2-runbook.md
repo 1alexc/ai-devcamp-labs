@@ -51,7 +51,7 @@ Deploy. Your local `.env` never reaches the container; only these env vars do:
 
 ```bash
 agents-cli deploy --project adk-devcamp-poc --agent-identity \
-  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,GCS_BUCKET_NAME=YOUR_BUCKET,ORCHESTRATOR_MODEL=gemini-flash-latest,RESEARCH_MODEL=gemini-flash-lite-latest,DRAFT_MODEL=gemini-3.1-pro-preview" \
+  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,GCS_BUCKET_NAME=YOUR_BUCKET,ORCHESTRATOR_MODEL=gemini-2.5-flash,RESEARCH_MODEL=gemini-2.5-flash-lite,DRAFT_MODEL=gemini-2.5-pro" \
   --no-confirm-project --no-wait
 ```
 
@@ -145,6 +145,22 @@ Open http://localhost:3000, choose **Continue as guest**, and run a post. The
 pipeline goes Idea → Consulting memory → Researching → Drafting → Approval,
 and the Approve button appears under the chat once you ask it to publish.
 Comment the variable out to go back to the local backend.
+
+**Fresh chat**: the app reopens the last conversation on every reload (the
+thread id is kept in the browser; signing out doesn't clear it). After a
+redeploy, or to show Memory Bank in a *new* conversation, use an incognito
+window or run this in the browser console:
+
+```js
+localStorage.removeItem("social-spark-thread"); location.reload();
+```
+
+Otherwise an old conversation can replay a stale approval against the new
+deployment.
+
+Generated images preview in the chat through the frontend's own `/outputs`
+route. On Agent Runtime they live on the container's disk, so they're gone
+after a redeploy or scale-to-zero.
 
 ## 7. Deploy the frontend
 

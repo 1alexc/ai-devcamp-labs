@@ -541,7 +541,7 @@ create_params:
           <div class="code-head"><span>terminal — replace YOUR_PROJECT</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
           <pre><code>agents-cli deploy --project YOUR_PROJECT \
   --agent-identity \
-  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,GCS_BUCKET_NAME=YOUR_BUCKET,ORCHESTRATOR_MODEL=gemini-flash-latest,RESEARCH_MODEL=gemini-flash-lite-latest,DRAFT_MODEL=gemini-3.1-pro-preview" \
+  --update-env-vars "POST_VIA=linkedin,DRY_RUN=true,GCS_BUCKET_NAME=YOUR_BUCKET,ORCHESTRATOR_MODEL=gemini-2.5-flash,RESEARCH_MODEL=gemini-2.5-flash-lite,DRAFT_MODEL=gemini-2.5-pro" \
   --no-confirm-project --no-wait</code></pre>
         </div>
 
@@ -687,7 +687,7 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
         <div class="callout">
           <span class="callout-label">Tell it what to remember</span>
           <p>Out of the box Memory Bank decides for itself what is worth keeping. For a social-post agent that is too vague, so configure it. The bank takes <strong>memory topics</strong>: managed ones (<code>USER_PREFERENCES</code>, <code>EXPLICIT_INSTRUCTIONS</code>, <code>USER_PERSONAL_INFO</code>, <code>KEY_CONVERSATION_DETAILS</code>) and custom ones you describe in a sentence. You can also set the extraction model, a TTL so memories expire, and few-shot examples of what to extract.</p>
-          <p>Here we keep preferences and explicit instructions, add one custom <code>posting_style</code> topic, and expire memories after 90 days. It is a PATCH on the engine, so no redeploy: <code>uv run python backend/memory_bank_config.py apply</code> (and <code>show</code> to read it back). It only affects memories generated from then on.</p>
+          <p>Here we keep preferences and explicit instructions, add one custom <code>posting_style</code> topic, and expire memories after 90 days. It is a PATCH on the engine, so no redeploy: <code>GOOGLE_CLOUD_PROJECT=YOUR_PROJECT AGENT_ENGINE_ID=ENGINE_ID uv run python backend/memory_bank_config.py apply</code> (and <code>show</code> to read it back). <code>ENGINE_ID</code> is the number at the end of your engine's resource name, from the deploy output or <code>deployment_metadata.json</code>. It only affects memories generated from then on.</p>
           <p>Try it before you wire anything else: send the bank a short conversation through <code>client.agent_engines.memories.generate(...)</code> and list what it kept. In our test a message about a sign-off, an emoji rule and a question opener came back as one clean style fact.</p>
         </div>
 
@@ -757,6 +757,10 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
         <div class="callout check">
           <span class="callout-label">Checkpoint</span>
           <p><code>npm run dev</code>, open the app, and run a full post: the pipeline panel lights up <em>Idea → Consulting memory → Researching → Drafting → Approval</em>, the approval dialog appears, and approving completes the post. Identical to Lab 1 — but the agent is in <code>us-central1</code>.</p>
+        </div>
+        <div class="callout tip">
+          <span class="callout-label">Start a fresh chat</span>
+          <p>The app reopens your last conversation on every reload (it keeps the thread id in the browser), and signing out doesn't clear it. After a redeploy, or to show Memory Bank recalling you in a <em>new</em> conversation, open the app in an incognito window, or run <code>localStorage.removeItem("social-spark-thread"); location.reload();</code> in the browser console. An old conversation can otherwise replay a stale approval against the new deployment.</p>
         </div>
 
         <div class="step-footer">
@@ -840,7 +844,7 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
 
         <div class="callout check">
           <span class="callout-label">Checkpoint</span>
-          <p>You can find your agent's own log lines among the platform noise, and you can tell the harmless OTel traceback from a real failure. Lines starting <code>Sending out request, model:</code> show all three models from Step 2 at work: <code>gemini-flash-latest</code> for the orchestrator, <code>gemini-flash-lite-latest</code> for research and <code>gemini-3.1-pro-preview</code> for drafting.</p>
+          <p>You can find your agent's own log lines among the platform noise, and you can tell the harmless OTel traceback from a real failure. Lines starting <code>Sending out request, model:</code> show all three models from Step 2 at work: <code>gemini-2.5-flash</code> for the orchestrator, <code>gemini-2.5-flash-lite</code> for research and <code>gemini-2.5-pro</code> for drafting.</p>
         </div>
 
         <div class="step-footer">

@@ -120,6 +120,86 @@ mandatory pre-camp steps everyone has to do.
 
 <!-- Add new Scale entries here, newest first. -->
 
+### The `-latest` model aliases started returning 404 overnight; newer models hit 429 quickly
+
+On 2026-10-02 `gemini-flash-latest` and `gemini-flash-lite-latest` returned
+`404 Publisher model … was not found` in `global`, with no change on our side.
+They had worked the day before. Every agent defaulting to them broke at once,
+deployed and local alike. Pinned names worked: `gemini-2.5-flash`,
+`gemini-2.5-flash-lite`, `gemini-2.5-pro`, `gemini-3.5-flash`,
+`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-3.1-pro-preview`.
+No official notice found; one third-party source says `-latest` aliases switch
+over when a model retires, and that `gemini-2.5-flash` retires on 2026-10-16.
+
+`gemini-3.5-flash` / `gemini-3.5-flash-lite` / `gemini-3.1-pro-preview` worked
+end to end on a fresh engine (routing, research, drafting, the approval
+request), but returned `429 RESOURCE_EXHAUSTED` on the second test
+conversation. New and preview models get small quotas, and every attendee runs
+in their own project, so a workshop would hit it.
+
+**Decision for the workshop**: pin GA models everywhere, `gemini-2.5-flash`
+(orchestrator, and the code defaults), `gemini-2.5-flash-lite` (research),
+`gemini-2.5-pro` (draft). That alone wasn't enough: `gemini-2.5-pro` also
+returned 429 on its fourth call in a burst inside `draft_agent`, which killed
+the turn. So every agent's model is now wrapped by `_model()` in `agent.py`:
+`Gemini(model=..., retry_options=HttpRetryOptions(attempts=5, initial_delay=2,
+max_delay=30, exp_base=2, http_status_codes=[429, 503]))`. Verified on a fresh
+engine: two back-to-back research + draft + image runs, three
+`google_genai._api_client: Retrying …` log lines, no error reaching the user.
+**Before 2026-10-16**: move to the 3.5 family (the retries matter even more
+there).
+**Codelab material**: never default to an alias in workshop code; a moving
+alias is a dependency you didn't pin.
+
+### Demo-day findings on a deployed engine: image links, plain-HTTP 401s, `DRY_RUN` with Buffer, stale approvals
+
+All hit live on 2026-10-01 while demoing the Scale lab from a fresh engine.
+
+- **Chat image previews were broken.** The draft agent builds the preview
+  link from `BACKEND_PUBLIC_ORIGIN`, which defaulted to `http://localhost:8000`.
+  Nothing listens there on a deployed engine. The frontend already has an
+  `/outputs/[...path]` route that fetches the file from the engine, so on
+  Agent Runtime (detected by `APP_URL`) the default is now a relative
+  `/outputs/…` link, which works from `localhost:3000` and from the Cloud Run
+  proxy alike. The images still live on the container's disk, so they're gone
+  after a redeploy or scale-to-zero.
+- **Plain-HTTP Google API calls from the container get `401 Invalid
+  Credentials`.** Seen on Cloud Storage uploads (`upload_image`, on both a
+  Buffer and a LinkedIn engine) and on Cloud DLP (`redact_pii_text`, via
+  httpx). It's the same family as the Secret Manager entry: gRPC clients work,
+  raw bearer-token calls don't. Unexplained so far: `db.py`'s post writes to
+  the same bucket with the same `storage.Client()` succeeded on the same engine
+  earlier the same day, and on 2026-10-02 `redact_pii_text` reached DLP fine on a
+  fresh engine. So the 401s are intermittent, not structural. Not yet root-caused.
+- **`redact_pii_text` raising killed the whole turn.** After signing in, the
+  orchestrator decided the user's name was personal data, called the tool, and
+  the 401 surfaced as `DynamicNodeFailError`, before anything was posted.
+  The tool now catches the failure and returns the text unredacted with an
+  explicit error, so the agent carries on and says so.
+- **`DRY_RUN=true` with `POST_VIA=buffer` is a trap.** Buffer has no dry run,
+  so it doesn't protect anything, but `upload_image` honours `DRY_RUN` and
+  returns a fake `dry-run-bucket` URL. An approved Buffer post would carry a
+  broken image link. On the Buffer route, use `DRY_RUN=false` plus
+  `BUFFER_REVIEW_DELAY_MINUTES` as the safety net.
+- **An approval pending across a redeploy replays with the old tool's
+  arguments.** The chat thread persists in the browser
+  (`localStorage["social-spark-thread"]`), so after switching the engine from
+  Buffer to LinkedIn, a Buffer `create_post` approved earlier ran against
+  LinkedIn's `create_post` and failed validation (`channelId`, `dueAt`, …
+  "Unexpected keyword argument"). Start a fresh chat after a redeploy (incognito
+  window, or clear that key).
+- **Google sign-in on the Cloud Run frontend needs the client ID at build
+  time.** `NEXT_PUBLIC_*` is inlined by `next build`, and `gcloud run deploy
+  --source` can't pass build args. What worked: client ID in Secret Manager
+  (`google-oauth-client-id`), a one-off Cloud Build that passes it as
+  `--build-arg`, then `gcloud run deploy --image`, plus the proxy origin
+  (`http://localhost:8090`) added to the OAuth client's Authorized JavaScript
+  origins. Sessions still record `devcamp-user`: the backend's `user_id` is
+  fixed and the signed-in identity isn't passed through yet.
+- **A Cloud Run service with traffic pinned to a revision stays pinned.**
+  After `update-traffic --to-revisions=…=100`, a new `gcloud run deploy`
+  builds a new revision that gets **0%**. Run `update-traffic --to-latest`.
+
 ### The LinkedIn MCP toolset intermittently vanished on cold starts: ADK's 5s MCP connect timeout vs. FastMCP's startup update check
 
 Symptom: after some redeploys, approving a post failed with `ValueError:

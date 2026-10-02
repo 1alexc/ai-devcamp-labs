@@ -483,7 +483,7 @@
         <p>The script is idempotent, so it's safe to re-run. It reads <code>GOOGLE_CLOUD_PROJECT</code> and <code>GCS_BUCKET_NAME</code> from that <code>.env</code> and acts as whichever account <code>gcloud</code> is logged in as. For the Scale stage it:</p>
 
         <ul>
-          <li><strong>Checks your login.</strong> Runs <code>gcloud auth application-default login</code> if you don't have Application Default Credentials yet. Set <code>PERSONAL_EMAIL=you@example.com</code> in front of the command to grant the roles below to a different account.</li>
+          <li><strong>Checks your login.</strong> Runs <code>gcloud auth application-default login</code> if you don't have Application Default Credentials yet. It then sets your project as the ADC <em>quota project</em>, so API calls made with your credentials are billed and rate-limited against your project (and the "without a quota project" warning goes away). Set <code>PERSONAL_EMAIL=you@example.com</code> in front of the command to grant the roles below to a different account.</li>
           <li><strong>Enables the APIs a deploy needs:</strong> Agent Platform (<code>aiplatform</code>), Cloud Build, Artifact Registry and Cloud Run to build and host the container, Secret Manager, and Cloud Resource Manager. Without that last one, the deploy fails with a <code>403 SERVICE_DISABLED</code> buried in a stack trace.</li>
           <li><strong>Creates your bucket</strong> in <code>us-central1</code> if it doesn't exist yet, private by default.</li>
           <li><strong>Grants you <code>roles/aiplatform.user</code></strong>, so you can call your deployed agent (see below).</li>
@@ -760,7 +760,7 @@ curl -s -H "Authorization: Bearer $TOK" "$BASE/openapi.json" | head -c 200</code
         </div>
         <div class="callout tip">
           <span class="callout-label">Start a fresh chat</span>
-          <p>The app reopens your last conversation on every reload (it keeps the thread id in the browser), and signing out doesn't clear it. After a redeploy, or to show Memory Bank recalling you in a <em>new</em> conversation, open the app in an incognito window, or run <code>localStorage.removeItem("social-spark-thread"); location.reload();</code> in the browser console. An old conversation can otherwise replay a stale approval against the new deployment.</p>
+          <p>The app reopens your last conversation on every reload (it keeps the thread id in the browser), and signing out doesn't clear it. After a redeploy, or to show Memory Bank recalling you in a <em>new</em> conversation, click <strong>New chat</strong> in the header. The old conversation stays in the console's Sessions tab. An old conversation can otherwise replay a stale approval against the new deployment.</p>
         </div>
 
         <div class="step-footer">

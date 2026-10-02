@@ -148,12 +148,10 @@ Comment the variable out to go back to the local backend.
 
 **Fresh chat**: the app reopens the last conversation on every reload (the
 thread id is kept in the browser; signing out doesn't clear it). After a
-redeploy, or to show Memory Bank in a *new* conversation, use an incognito
-window or run this in the browser console:
-
-```js
-localStorage.removeItem("social-spark-thread"); location.reload();
-```
+redeploy, or to show Memory Bank in a *new* conversation, click **New chat**
+in the header (on older checkouts without the button: incognito window, or
+`localStorage.removeItem("social-spark-thread"); location.reload();` in the
+browser console).
 
 Otherwise an old conversation can replay a stale approval against the new
 deployment.

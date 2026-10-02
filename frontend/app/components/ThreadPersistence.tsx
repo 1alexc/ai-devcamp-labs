@@ -17,6 +17,19 @@ import { useThreads } from "@copilotkit/react-core";
 
 const STORAGE_KEY = "social-spark-thread";
 
+// Start a fresh conversation: store a brand-new thread id and reload, so the
+// restore effect below picks it up and the chat, pipeline and activity panels
+// all start clean. The old conversation stays on the server (Sessions tab).
+// Signing out deliberately doesn't do this; this is the explicit way.
+export function startNewChat() {
+  try {
+    localStorage.setItem(STORAGE_KEY, crypto.randomUUID());
+  } catch {
+    /* storage disabled: reload still gives CopilotKit's own fresh thread */
+  }
+  window.location.reload();
+}
+
 export function ThreadPersistence() {
   const { threadId, setThreadId } = useThreads();
   const restored = useRef(false);

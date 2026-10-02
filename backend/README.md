@@ -63,6 +63,27 @@ uv run adk web backend
 Opens ADK's own dev UI (chat + a trace inspector) so you can exercise the
 agent — including watching tool calls fire — without running the Next.js app.
 
+### Try it with Postman
+
+Import [docs/social-spark.postman_collection.json](../docs/social-spark.postman_collection.json)
+to call a deployed agent (or this backend locally) directly:
+
+1. In the collection variables, set `PROJECT_NUMBER`, `REGION` (`us-central1`)
+   and `ENGINE_ID` (the number at the end of your engine's resource name,
+   from the deploy output or `deployment_metadata.json`).
+2. Set `TOKEN` to the output of `gcloud auth print-access-token`. It expires
+   after about an hour; a `401` means refresh it. Your account needs
+   `roles/aiplatform.user` (`gcp-setup.sh` Step 3).
+3. Run the requests in order: `openapi.json` → start a chat on
+   `POST /api/adk` (AG-UI, streamed as server-sent events) → continue it on
+   the same `THREAD_ID` → published posts → sessions → Memory Bank → the
+   engine's own spec.
+
+For the local backend, set `BASE` to `http://localhost:8000`; requests 1–4
+work, while sessions and Memory Bank exist only on a deployed engine.
+Publishing waits for an approval that only the web UI can give, so use
+Postman for drafting, sessions and memory.
+
 ## Optional pieces
 
 Each of these is off by default; the agent still works without any of them.

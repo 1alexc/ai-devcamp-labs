@@ -1,0 +1,105 @@
+{
+  "info": {
+    "name": "Social Spark — deployed agent",
+    "description": "Call a Social Spark agent deployed on Agent Runtime, or the local backend.\n\nSetup:\n1. Set PROJECT_NUMBER, REGION and ENGINE_ID in the collection variables (ENGINE_ID is the number at the end of your engine's resource name, from the deploy output or deployment_metadata.json; PROJECT_NUMBER from `gcloud projects describe YOUR_PROJECT --format='value(projectNumber)'`).\n2. Paste the output of `gcloud auth print-access-token` into TOKEN. It expires after about an hour; a 401 means refresh it.\n3. Your account needs roles/aiplatform.user on the project (gcp-setup.sh Step 3 grants it).\n\nLocal backend instead: set BASE to http://localhost:8000 (uv run uvicorn backend.main:app --port 8000). The token is ignored locally.\n\nPublishing needs the approval step, which only the web UI can answer, so use these requests for drafting, sessions and memory. Keep DRY_RUN=true on the engine.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{TOKEN}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "PROJECT_NUMBER", "value": "YOUR_PROJECT_NUMBER" },
+    { "key": "REGION", "value": "us-central1" },
+    { "key": "ENGINE_ID", "value": "YOUR_ENGINE_ID" },
+    { "key": "TOKEN", "value": "paste: gcloud auth print-access-token" },
+    { "key": "ENGINE", "value": "projects/{{PROJECT_NUMBER}}/locations/{{REGION}}/reasoningEngines/{{ENGINE_ID}}" },
+    { "key": "BASE", "value": "https://{{REGION}}-aiplatform.googleapis.com/reasoningEngines/v1/{{ENGINE}}/api" },
+    { "key": "PLATFORM", "value": "https://{{REGION}}-aiplatform.googleapis.com" },
+    { "key": "THREAD_ID", "value": "postman-thread-1" }
+  ],
+  "item": [
+    {
+      "name": "1. Your app is reachable (openapi.json)",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE}}/openapi.json",
+        "description": "Through the Agent Runtime /api passthrough. Expect title \"social-agent AG-UI backend\": your own FastAPI app (backend/main.py), not a generic wrapper."
+      }
+    },
+    {
+      "name": "2. Chat: start a conversation (AG-UI)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "text/event-stream" }
+        ],
+        "url": "{{BASE}}/api/adk",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"threadId\": \"{{THREAD_ID}}\",\n  \"runId\": \"run-{{$timestamp}}\",\n  \"messages\": [\n    { \"id\": \"m-{{$timestamp}}\", \"role\": \"user\", \"content\": \"Draft a one-line LinkedIn post about Agent Identity. No image.\" }\n  ],\n  \"state\": {}, \"tools\": [], \"context\": [], \"forwardedProps\": {}\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "The same AG-UI endpoint the web UI uses. The response is a server-sent event stream: RUN_STARTED, TOOL_CALL_* (load_memory, research_agent, draft_agent), TEXT_MESSAGE_CONTENT deltas, RUN_FINISHED. A RUN_ERROR with 429 means the model was rate-limited after retries; send again."
+      }
+    },
+    {
+      "name": "3. Chat: continue the same conversation",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "text/event-stream" }
+        ],
+        "url": "{{BASE}}/api/adk",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"threadId\": \"{{THREAD_ID}}\",\n  \"runId\": \"run-{{$timestamp}}\",\n  \"messages\": [\n    { \"id\": \"m-{{$timestamp}}\", \"role\": \"user\", \"content\": \"What exactly did I ask you in my previous message? Quote it.\" }\n  ],\n  \"state\": {}, \"tools\": [], \"context\": [], \"forwardedProps\": {}\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Same threadId, so it continues the managed session even if the container restarted in between (Lab 2 Step 4). Change THREAD_ID to start a fresh conversation."
+      }
+    },
+    {
+      "name": "4. Published posts (GCS-backed)",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE}}/api/posts",
+        "description": "Posts saved after an approved publish. One JSON object per post in GCS_BUCKET_NAME when deployed; SQLite locally."
+      }
+    },
+    {
+      "name": "5. Sessions: list",
+      "request": {
+        "method": "GET",
+        "url": "{{PLATFORM}}/v1/{{ENGINE}}/sessions",
+        "description": "Managed Agent Engine sessions (the console's Sessions tab). Not available against the local backend."
+      }
+    },
+    {
+      "name": "6. Sessions: events of one session",
+      "request": {
+        "method": "GET",
+        "url": "{{PLATFORM}}/v1beta1/{{ENGINE}}/sessions/SESSION_ID/events",
+        "description": "Replace SESSION_ID with a session id from request 5."
+      }
+    },
+    {
+      "name": "7. Memory Bank: list memories",
+      "request": {
+        "method": "GET",
+        "url": "{{PLATFORM}}/v1beta1/{{ENGINE}}/memories",
+        "description": "Facts Memory Bank distilled from published conversations (the console's Memories tab). Memories appear 30-60s after a publish."
+      }
+    },
+    {
+      "name": "8. Engine: deployment details",
+      "request": {
+        "method": "GET",
+        "url": "{{PLATFORM}}/v1beta1/{{ENGINE}}",
+        "description": "The engine's spec: env vars (models, POST_VIA, DRY_RUN), effectiveIdentity (Agent Identity), scaling. Handy to confirm what a deploy actually set."
+      }
+    }
+  ]
+}

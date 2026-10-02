@@ -129,7 +129,16 @@ def model(name: str):
     succeeds. The retry must live on the ADK model object; the same options in the
     request config were ignored inside the deployed agent."""
     if not MA_TEMPLATE:
-        return name
+        # No Model Armor: still retry 429/503. Agent Platform answers bursts
+        # with 429 RESOURCE_EXHAUSTED even on GA models (seen on gemini-2.5-pro
+        # inside draft_agent), and an unretried one kills the whole turn.
+        return Gemini(
+            model=name,
+            retry_options=genai_types.HttpRetryOptions(
+                attempts=5, initial_delay=2, max_delay=30, exp_base=2,
+                http_status_codes=[429, 503],
+            ),
+        )
     return Gemini(
         model=name,
         # 400 = the random "template not found". 429 = Agent Platform saying the regional Gemini
@@ -253,7 +262,18 @@ def redact_pii_text(text: str) -> dict:
         dict with 'status' and 'redacted_text' (PII replaced by placeholders
         like [PERSON_NAME]).
     """
-    return {"status": "success", "redacted_text": redact_pii(text)}
+    # A tool that raises kills the whole turn (DynamicNodeFailError), so a DLP
+    # failure (e.g. the 401 a plain-HTTP call gets inside Agent Runtime) is
+    # reported back to the model instead.
+    try:
+        return {"status": "success", "redacted_text": redact_pii(text)}
+    except Exception as e:  # noqa: BLE001
+        log.warning("redact_pii_text: DLP unavailable, text left unredacted: %s", e)
+        return {
+            "status": "error",
+            "error": f"PII redaction is unavailable ({type(e).__name__}); the text was NOT redacted.",
+            "redacted_text": text,
+        }
 
 
 def redact_before_post(

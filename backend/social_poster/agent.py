@@ -28,6 +28,7 @@ from typing import Any, Optional
 from google.adk.agents import Agent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
+from google.adk.models import Gemini
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.skills import load_skill_from_dir
@@ -90,7 +91,17 @@ use_gcs = bool(os.environ.get("GCS_BUCKET_NAME", "").strip())
 # depend on the bucket being public anyway. backend/main.py already serves
 # local gallery files at /outputs for exactly this reason (PostGallery.tsx
 # uses it client-side) — reuse that instead of the hosted URL for display.
-BACKEND_PUBLIC_ORIGIN = os.environ.get("BACKEND_PUBLIC_ORIGIN", "http://localhost:8000")
+#
+# Deployed on Agent Runtime there is no browser-reachable backend origin at all:
+# the browser only ever talks to the frontend, whose /outputs/[...path] route
+# fetches the file from the engine server-side. So there the link is relative
+# ("/outputs/x.png") and resolves against whichever origin the app is opened on
+# (localhost:3000, the Cloud Run proxy, ...). The localhost:8000 default left
+# every deployed preview broken.
+BACKEND_PUBLIC_ORIGIN = os.environ.get(
+    "BACKEND_PUBLIC_ORIGIN",
+    "" if os.environ.get("APP_URL") else "http://localhost:8000",
+)
 
 # --- Per-agent model pinning ---------------------------------------------
 # Each agent's model comes from env so cost/latency can be tuned per role
@@ -101,6 +112,7 @@ BACKEND_PUBLIC_ORIGIN = os.environ.get("BACKEND_PUBLIC_ORIGIN", "http://localhos
 RESEARCH_MODEL = os.environ.get("RESEARCH_MODEL", "gemini-flash-latest")
 DRAFT_MODEL = os.environ.get("DRAFT_MODEL", "gemini-flash-latest")
 ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "gemini-flash-latest")
+
 
 # --- Specialist: research -----------------------------------------------------
 # google_search stays isolated in its own agent (Agent Platform rejects mixing the

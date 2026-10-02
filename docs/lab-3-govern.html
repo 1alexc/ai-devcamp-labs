@@ -612,7 +612,7 @@
           <p>Gemini defaults to <code>global</code>, so it seems natural to leave it. Attach a template to a Gemini call made against <code>global</code>:</p><div class="code-block">
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
           <pre><code>GOOGLE_CLOUD_LOCATION=global uv run python probe.py   # any Gemini call with model_armor_config set</code></pre>
-        </div><p>You get <code>400 The template named ... was not found</code>, whichever template you use. <strong>A Gemini call on <code>global</code> cannot use a Model Armor template at all.</strong> Run Gemini in a region (<code>us-central1</code>) and pin the models, because <code>gemini-flash-latest</code> only resolves on <code>global</code>.</p>
+        </div><p>You get <code>400 The template named ... was not found</code>, whichever template you use. <strong>A Gemini call on <code>global</code> cannot use a Model Armor template at all.</strong> Run Gemini in a region (<code>us-central1</code>) and pin the models (for example <code>gemini-2.5-flash</code>): the <code>-latest</code> aliases only ever resolved on <code>global</code>, and since 2026-10-02 not at all.</p>
         </div>
         <div class="callout warn">
           <span class="callout-label">Deliberate error 2: the guardrail that does nothing</span>

@@ -88,9 +88,13 @@ BACKEND_PUBLIC_ORIGIN = os.environ.get("BACKEND_PUBLIC_ORIGIN", "http://localhos
 # are all flash. One cost experiment: move the two agents that don't need
 # deep reasoning (research summarisation, the routing orchestrator) to
 # flash-lite, keep draft_agent on flash where quality shows most.
-RESEARCH_MODEL = os.environ.get("RESEARCH_MODEL", "gemini-flash-latest")
-DRAFT_MODEL = os.environ.get("DRAFT_MODEL", "gemini-flash-latest")
-ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "gemini-flash-latest")
+# Pinned, not the -latest aliases: gemini-flash-latest and
+# gemini-flash-lite-latest started returning 404 overnight (2026-10-02), which
+# broke every agent at once. gemini-2.5-flash is reported to retire on
+# 2026-10-16; the 3.5 family (gemini-3.5-flash / -flash-lite) is next.
+RESEARCH_MODEL = os.environ.get("RESEARCH_MODEL", "gemini-2.5-flash")
+DRAFT_MODEL = os.environ.get("DRAFT_MODEL", "gemini-2.5-flash")
+ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "gemini-2.5-flash")
 
 # --- Specialist: research -----------------------------------------------------
 # google_search stays isolated in its own agent (Agent Platform rejects mixing the

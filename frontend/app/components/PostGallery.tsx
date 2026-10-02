@@ -13,7 +13,13 @@
 import { useEffect, useState } from "react";
 import { useCopilotChatInternal } from "@copilotkit/react-core";
 
-const BACKEND_ORIGIN = process.env.NEXT_PUBLIC_BACKEND_ORIGIN || "http://localhost:8000";
+// Same-origin by default: /api/posts and /outputs/* are proxied by this app's
+// own route handlers (app/api/posts, app/outputs/[...path]), which add the
+// bearer token when the backend is a deployed Agent Runtime engine. The
+// browser must not call the backend directly — it has no safe way to hold
+// that token. Set NEXT_PUBLIC_BACKEND_ORIGIN only to bypass the proxy and
+// point straight at a local backend.
+const BACKEND_ORIGIN = process.env.NEXT_PUBLIC_BACKEND_ORIGIN ?? "";
 
 type PostEntry = {
   id: string;
@@ -110,9 +116,7 @@ function collectGallery(messages: any[]): { images: ImageEntry[]; posts: PostEnt
   for (const msg of messages) {
     if (msg.role === "assistant" && Array.isArray(msg.toolCalls)) {
       for (const call of msg.toolCalls) {
-        // LinkedIn's tools arrive prefixed (linkedin_create_post) so they
-        // don't collide with Buffer's create_post; treat them the same here.
-        const name = call.function?.name?.replace(/^linkedin_/, "");
+        const name = call.function?.name;
         if (name === "generate_image" || name === "create_post" || name === "upload_image") {
           pending.set(call.id, { name, args: tryParseJSON(call.function?.arguments) });
         }

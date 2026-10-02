@@ -1,6 +1,16 @@
 """The social_poster multi-agent system: an orchestrator (`social_poster`)
 over `research_agent`, `draft_agent`, an optional `memory_agent`, and posting
-toolsets for LinkedIn and Buffer.
+toolsets, plus three guardrail layers from guardrails.py wired onto EVERY
+agent:
+
+- Model Armor screens each model call's input (before_model_callback) and
+  output (after_model_callback); MEDIUM_AND_ABOVE findings get a friendly
+  refusal instead of a model call.
+- Cloud DLP redacts PII (person names, emails, phone numbers, locations) from
+  final drafts on their way into create_post (before_tool_callback).
+
+All three no-op when MODEL_ARMOR_TEMPLATE_ID is unset, so ungoverned
+behaviour is one env var away for A/B demos.
 """
 
 import datetime
@@ -18,10 +28,11 @@ from typing import Any, Optional
 from google.adk.agents import Agent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
+from google.adk.models import Gemini
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.skills import load_skill_from_dir
-from google.adk.tools import google_search
+from google.adk.tools import google_search, load_memory
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.mcp_tool import McpToolset
@@ -34,7 +45,7 @@ from google.adk.tools.tool_context import ToolContext
 from google.genai import types as genai_types
 from mcp import StdioServerParameters
 
-from . import db
+from . import config, db, guardrails
 from .tools import (
     OUTPUTS_DIR,
     check_text_length,
@@ -80,7 +91,17 @@ use_gcs = bool(os.environ.get("GCS_BUCKET_NAME", "").strip())
 # depend on the bucket being public anyway. backend/main.py already serves
 # local gallery files at /outputs for exactly this reason (PostGallery.tsx
 # uses it client-side) — reuse that instead of the hosted URL for display.
-BACKEND_PUBLIC_ORIGIN = os.environ.get("BACKEND_PUBLIC_ORIGIN", "http://localhost:8000")
+#
+# Deployed on Agent Runtime there is no browser-reachable backend origin at all:
+# the browser only ever talks to the frontend, whose /outputs/[...path] route
+# fetches the file from the engine server-side. So there the link is relative
+# ("/outputs/x.png") and resolves against whichever origin the app is opened on
+# (localhost:3000, the Cloud Run proxy, ...). The localhost:8000 default left
+# every deployed preview broken.
+BACKEND_PUBLIC_ORIGIN = os.environ.get(
+    "BACKEND_PUBLIC_ORIGIN",
+    "" if os.environ.get("APP_URL") else "http://localhost:8000",
+)
 
 # --- Per-agent model pinning ---------------------------------------------
 # Each agent's model comes from env so cost/latency can be tuned per role
@@ -88,9 +109,27 @@ BACKEND_PUBLIC_ORIGIN = os.environ.get("BACKEND_PUBLIC_ORIGIN", "http://localhos
 # are all flash. One cost experiment: move the two agents that don't need
 # deep reasoning (research summarisation, the routing orchestrator) to
 # flash-lite, keep draft_agent on flash where quality shows most.
-RESEARCH_MODEL = os.environ.get("RESEARCH_MODEL", "gemini-flash-latest")
-DRAFT_MODEL = os.environ.get("DRAFT_MODEL", "gemini-flash-latest")
-ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "gemini-flash-latest")
+# Pinned, not the -latest aliases: gemini-flash-latest and
+# gemini-flash-lite-latest started returning 404 overnight (2026-10-02), which
+# broke every agent at once. gemini-2.5-flash is reported to retire on
+# 2026-10-16; the 3.5 family (gemini-3.5-flash / -flash-lite) is next.
+RESEARCH_MODEL = os.environ.get("RESEARCH_MODEL", "gemini-2.5-flash")
+DRAFT_MODEL = os.environ.get("DRAFT_MODEL", "gemini-2.5-flash")
+ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "gemini-2.5-flash")
+
+
+def _model(name: str) -> Gemini:
+    """The model with retries. Agent Platform answers bursts with 429
+    RESOURCE_EXHAUSTED (shared capacity, usually clear within seconds); one
+    unretried 429 inside draft_agent killed a whole turn in testing. Retrying
+    with backoff turns that into a short pause instead."""
+    return Gemini(
+        model=name,
+        retry_options=genai_types.HttpRetryOptions(
+            attempts=5, initial_delay=2, max_delay=30, exp_base=2,
+            http_status_codes=[429, 503],
+        ),
+    )
 
 # --- Specialist: research -----------------------------------------------------
 # google_search stays isolated in its own agent (Agent Platform rejects mixing the
@@ -98,13 +137,15 @@ ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "gemini-flash-latest")
 # output_key writes the summary into session state for draft_agent to read.
 research_agent = Agent(
     name="research_agent",
-    model=RESEARCH_MODEL,
+    model=_model(RESEARCH_MODEL),
     description="Researches facts, dates, and context on the web for a post idea.",
     instruction="""Research the given topic with google_search and return a
 concise, factual summary: key facts, dates, numbers, and anything surprising
 or quotable. No drafting — just the research notes.""",
     tools=[google_search],
     output_key="research_notes",
+    before_model_callback=guardrails.guard_input,
+    after_model_callback=guardrails.guard_output,
 )
 
 # --- Specialist: drafting -----------------------------------------------------
@@ -263,7 +304,7 @@ def _catch_image_placeholder(
 
 draft_agent = Agent(
     name="draft_agent",
-    model=DRAFT_MODEL,
+    model=_model(DRAFT_MODEL),
     description="Writes and revises the social media post draft, and generates images.",
     instruction=f"""You write social media post drafts.
 
@@ -309,7 +350,8 @@ Rules:
         *([upload_image] if use_gcs else []),
     ],
     output_key="current_draft",
-    after_model_callback=_catch_image_placeholder,
+    before_model_callback=guardrails.guard_input,
+    after_model_callback=[_catch_image_placeholder, guardrails.guard_output],
     after_tool_callback=_track_image_state,
 )
 
@@ -331,6 +373,16 @@ if MEMORY_AGENT_CARD_URL:
         agent_card=MEMORY_AGENT_CARD_URL,
     )
 
+# Memory Bank is the managed alternative to the A2A memory_agent above: same
+# job (recall what this user tends to post about), but backed by the Agent
+# Engine rather than a separately deployed RAG service, and populated from
+# finished conversations (ingested explicitly at publish time, see
+# _stage_after_agent) rather than needing its own ingestion pipeline. It only exists when deployed — backend/main.py wires
+# VertexAiMemoryBankService when Agent Runtime's APP_URL is present — so
+# locally this stays off and memory_agent remains the only memory path.
+# The two can run side by side; that contrast is the point for the lab.
+use_memory_bank = config.resolve_agent_engine() is not None
+
 # --- Posting toolsets -----------------------------------------------------
 def _linkedin_connection() -> StdioConnectionParams:
     return StdioConnectionParams(
@@ -340,8 +392,14 @@ def _linkedin_connection() -> StdioConnectionParams:
             env={
                 "DRY_RUN": os.environ.get("DRY_RUN", "true"),
                 "LINKEDIN_ACCESS_TOKEN": os.environ.get("LINKEDIN_ACCESS_TOKEN", ""),
+                # FastMCP asks PyPI for a newer version on every start. On a
+                # cold Agent Runtime container that round trip, plus a fresh
+                # Python process, overran ADK's 5s default and create_post
+                # silently went missing ("Failed to create MCP session").
+                "FASTMCP_CHECK_FOR_UPDATES": "off",
             },
         ),
+        timeout=30.0,  # same headroom as the Buffer toolset below
     )
 
 
@@ -350,32 +408,22 @@ def _linkedin_connection() -> StdioConnectionParams:
 # callable only sees a call's own args, not which tool it belongs to, so a
 # single toolset can't apply it selectively (see @experimental note in ADK
 # 2.4.0's McpTool.run_async). Two toolsets, split by tool_filter, can.
-#
-# tool_name_prefix="linkedin" exposes these as linkedin_get_profile and
-# linkedin_create_post. Buffer's remote server also has a create_post, and
-# Gemini rejects two function declarations with the same name ("Duplicate
-# function declaration found: create_post"), so with both publishers active
-# one of them has to be renamed. The filter still matches the ORIGINAL names,
-# and the MCP call itself still goes out under the original name.
 linkedin_toolset = McpToolset(
     connection_params=_linkedin_connection(),
     tool_filter=["get_profile"],
-    tool_name_prefix="linkedin",
 )
 linkedin_post_toolset = McpToolset(
     connection_params=_linkedin_connection(),
     tool_filter=["create_post"],
-    tool_name_prefix="linkedin",
     # Framework-level approval gate on the one tool that actually publishes.
     require_confirmation=True,
 )
 
-BUFFER_API_KEY = os.environ.get("BUFFER_API_KEY", "")
+BUFFER_API_KEY = config.resolve_buffer_key()
 # POST_VIA overrides the LLM's own routing (see _BUFFER_ROUTING below):
 # "buffer" forces Buffer-only (drops the LinkedIn tool entirely), "linkedin"
 # forces LinkedIn-only (drops Buffer even if a key is configured). Blank
-# (default) exposes both (LinkedIn's tools are prefixed, see above) and lets
-# the agent route by what the user asks for.
+# (default) exposes both and lets the agent route by what the user asks for.
 POST_VIA = os.environ.get("POST_VIA", "").strip().lower()
 if POST_VIA not in ("", "auto", "buffer", "linkedin"):
     raise RuntimeError(f"POST_VIA must be 'auto', 'buffer', or 'linkedin', got {POST_VIA!r}")
@@ -427,7 +475,19 @@ if BUFFER_API_KEY:
         require_confirmation=True,
     )
 elif POST_VIA == "buffer":
-    raise RuntimeError("POST_VIA=buffer requires BUFFER_API_KEY to be set.")
+    # Deliberately not a raise. This runs at import, so raising kills the
+    # container before it can log why — on Agent Runtime that surfaces only as
+    # "The Reasoning Engine failed to be updated", with no build output and no
+    # container logs to debug from. Degrading to LinkedIn keeps the agent
+    # serving and, crucially, keeps the logs readable.
+    log.error(
+        "POST_VIA=buffer but no Buffer key resolved "
+        "(BUFFER_API_KEY unset and BUFFER_API_KEY_SECRET=%r did not yield one) "
+        "— falling back to LinkedIn-only. Buffer-specific platforms such as X "
+        "will NOT be reachable.",
+        os.environ.get("BUFFER_API_KEY_SECRET", ""),
+    )
+    POST_VIA = "linkedin"
 
 use_linkedin = POST_VIA != "buffer"
 use_buffer = bool(BUFFER_API_KEY) and POST_VIA != "linkedin"
@@ -473,6 +533,7 @@ _TOOL_STAGES = {
     research_agent.name: "researching",
     draft_agent.name: "drafting",
     "memory_agent": "consulting_memory",
+    "load_memory": "consulting_memory",
 }
 
 
@@ -501,10 +562,7 @@ def _track_stage(
 ) -> Optional[dict]:
     if tool.name in _TOOL_STAGES:
         tool_context.state["pipeline_stage"] = _TOOL_STAGES[tool.name]
-    elif (
-        tool.name in ("create_post", "linkedin_create_post")
-        and tool_response.get("isError") is False
-    ):
+    elif tool.name == "create_post" and tool_response.get("isError") is False:
         # Fires on BLOCKED attempts too (require_confirmation returns an
         # {"error": ...} without "isError") — only a completed MCP call
         # carries isError: False. See LEARNINGS (2026-07-14).
@@ -534,18 +592,43 @@ def _track_stage(
     return None  # never modify the tool result
 
 
-def _stage_after_agent(callback_context: CallbackContext) -> None:
+async def _stage_after_agent(callback_context: CallbackContext) -> None:
     # A turn that ends mid-pipeline is waiting on the user (draft approval).
     if callback_context.state.get("pipeline_stage") in ("researching", "drafting"):
         callback_context.state["pipeline_stage"] = "awaiting_approval"
+        return
+
+    # A published post is a natural memory boundary: the conversation is done,
+    # and what the user asked for and approved is exactly what's worth recalling
+    # next time. Ingest it explicitly rather than relying on ag_ui_adk's
+    # automatic ingestion, which only runs when a session is *cleaned up*
+    # (default: 20 minutes idle, swept every 5) — an in-process timer that a
+    # scale-to-zero deployment kills before it ever fires. See LEARNINGS.
+    if use_memory_bank and callback_context.state.get("pipeline_stage") == "posted":
+        if callback_context.state.get("memory_ingested"):
+            return  # one ingestion per conversation, not one per turn
+        try:
+            # async: ADK awaits callbacks that return awaitables. Calling this
+            # without await silently creates a coroutine that never runs.
+            await callback_context.add_session_to_memory()
+            callback_context.state["memory_ingested"] = True
+            log.info("Session added to Memory Bank after publishing")
+        except Exception:  # noqa: BLE001 — memory is an enhancement, not a gate
+            log.exception("Could not add session to Memory Bank")
 
 
 # --- Orchestrator -------------------------------------------------------------
-_MEMORY_ROUTING = """
-0. FIRST, before researching or drafting, ask memory_agent what the user has
-   posted about before and how they phrase things; weave that into the draft
-   brief so the new post sounds like them and doesn't repeat old topics.
-""" if memory_agent else ""
+_MEMORY_SOURCES = " and ".join(
+    filter(None, ["memory_agent" if memory_agent else "", "load_memory" if use_memory_bank else ""])
+)
+_MEMORY_ROUTING = f"""
+0. FIRST, before researching or drafting, call {_MEMORY_SOURCES} to find out
+   what the user has posted about before, how they phrase things, and any
+   preferences they have stated (preferred platform, tone, topics to avoid).
+   Weave that into the draft brief so the new post sounds like them and
+   doesn't repeat old topics. If nothing comes back, say so briefly and carry
+   on — an empty memory is normal on a first conversation.
+""" if _MEMORY_SOURCES else ""
 
 if use_buffer and use_gcs:
     _BUFFER_IMAGE_NOTE = """
@@ -601,7 +684,7 @@ if use_linkedin and use_buffer:
     _BUFFER_ROUTING = f"""
 
 Two ways to publish, choose based on what the user wants:
-- LinkedIn tool (linkedin_create_post): an immediate post to LinkedIn only, right now.
+- LinkedIn tool (create_post): an immediate post to LinkedIn only, right now.
   Can include a generated image (pass the local image_path).
 - Buffer tools: use these instead if the user wants to SCHEDULE a post for
   later, or wants to post to a platform OTHER than LinkedIn (X, Facebook, etc.)
@@ -619,10 +702,19 @@ else:
 
 root_agent = Agent(
     name="social_poster",
-    model=ORCHESTRATOR_MODEL,
+    model=_model(ORCHESTRATOR_MODEL),
     description="Orchestrates research, drafting, and publishing of social media posts.",
     instruction=f"""You orchestrate turning an idea into a social media post.
 You do not research or draft yourself — you route work to specialist tools.
+
+IMPORTANT — before ANY other step, including memory consultation: if the
+user's message contains pasted or uploaded source text with real people's
+personal details (names, emails, phone numbers, locations), run
+redact_pii_text on that text immediately, show the user the cleaned version,
+and only ever work from the cleaned version afterwards. If the user asked to
+see the cleaned version before anything else (e.g. "before we draft
+anything"), STOP there: reply with only the cleaned text and ask whether to
+go ahead. Do not consult memory, research, or draft until they say so.
 
 Workflow:{_MEMORY_ROUTING}
 1. If the idea needs facts, dates, or context, call research_agent first.
@@ -645,6 +737,11 @@ Workflow:{_MEMORY_ROUTING}
 {_IMAGE_REUSE_NOTE}
 {_BUFFER_ROUTING}
 Posting rules (strict):
+- A request to write AND share/post/publish in one message is NOT approval:
+  the user has not yet seen any draft. Draft first, then END YOUR TURN by
+  showing the draft and asking for approval. Never call a posting tool in the
+  same turn that produced the draft, and never ask the platform's own
+  confirmation to stand in for the user's approval.
 - Only post AFTER the user has explicitly approved the exact draft shown to
   them in this conversation. "Yes", "post it", "approved" counts; silence,
   topic changes, or enthusiasm about the idea does not.
@@ -659,17 +756,25 @@ Posting rules (strict):
   those words are only correct once status is actually "sent". LinkedIn's
   own tool (Step 7) posts immediately for real, so its result can be
   reported as posted/published directly.
+- Report the outcome exactly as the tool returned it. If the result says
+  dry_run (or that nothing was posted), tell the user plainly that NOTHING was
+  published, and do not describe the post as sent, live, or successful. Only
+  name the platform the tool actually posted to — never one you were asked
+  for but did not use.
 """,
     tools=[
         *([AgentTool(agent=memory_agent)] if memory_agent else []),
+        *([load_memory] if use_memory_bank else []),
         AgentTool(agent=research_agent),
         AgentTool(agent=draft_agent),
+        guardrails.redact_pii_text,
         *([linkedin_toolset, linkedin_post_toolset] if use_linkedin else []),
         *([buffer_toolset, buffer_post_toolset] if use_buffer else []),
     ],
     before_agent_callback=_init_stage,
-    before_model_callback=_stage_attached_image,
-    before_tool_callback=_delay_buffer_post,
+    before_model_callback=[guardrails.guard_input, _stage_attached_image],
+    after_model_callback=guardrails.guard_output,
+    before_tool_callback=[_delay_buffer_post, guardrails.redact_before_post],
     after_tool_callback=_track_stage,
     after_agent_callback=_stage_after_agent,
 )

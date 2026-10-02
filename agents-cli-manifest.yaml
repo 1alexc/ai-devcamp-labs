@@ -1,0 +1,11 @@
+# Where and how agents-cli deploys this agent. Override the target per run
+# with `agents-cli deploy -d cloud_run`.
+name: 'social-spark-poster'
+agent_directory: 'backend/social_poster'
+# us-central1: Lab 3's Governance Policy engine isn't available in global or
+# europe-west2, and a policy binds only in the agent's own region.
+region: 'us-central1'
+create_params:
+  root_agent_name: 'social_poster'
+  deployment_target: 'agent_runtime'
+  is_a2a: false

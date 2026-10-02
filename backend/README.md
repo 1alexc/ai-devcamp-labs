@@ -63,6 +63,27 @@ uv run adk web backend
 Opens ADK's own dev UI (chat + a trace inspector) so you can exercise the
 agent — including watching tool calls fire — without running the Next.js app.
 
+### Try it with Postman
+
+Import [docs/social-spark.postman_collection.json](../docs/social-spark.postman_collection.json)
+to call a deployed agent (or this backend locally) directly:
+
+1. In the collection variables, set `PROJECT_NUMBER`, `REGION` (`us-central1`)
+   and `ENGINE_ID` (the number at the end of your engine's resource name,
+   from the deploy output or `deployment_metadata.json`).
+2. Set `TOKEN` to the output of `gcloud auth print-access-token`. It expires
+   after about an hour; a `401` means refresh it. Your account needs
+   `roles/aiplatform.user` (`gcp-setup.sh` Step 3).
+3. Run the requests in order: `openapi.json` → start a chat on
+   `POST /api/adk` (AG-UI, streamed as server-sent events) → continue it on
+   the same `THREAD_ID` → published posts → sessions → Memory Bank → the
+   engine's own spec.
+
+For the local backend, set `BASE` to `http://localhost:8000`; requests 1–4
+work, while sessions and Memory Bank exist only on a deployed engine.
+Publishing waits for an approval that only the web UI can give, so use
+Postman for drafting, sessions and memory.
+
 ## Optional pieces
 
 Each of these is off by default; the agent still works without any of them.
@@ -73,12 +94,19 @@ Each of these is off by default; the agent still works without any of them.
 | Publish/schedule via Buffer | `BUFFER_API_KEY` | free Buffer account, hosted MCP server, nothing to run locally |
 | Force one posting route | `POST_VIA=buffer` or `linkedin` | blank (default) lets the agent route by what the user asks for |
 | Let Buffer attach generated images | `GCS_BUCKET_NAME` + `GCS_SIGNING_SERVICE_ACCOUNT` | run `./gcp-setup.sh` from the repo root first (one-time IAM setup, no key file) — see the comment above it in `.env.example` |
-| Recall the user's past posts | `MEMORY_AGENT_CARD_URL` | local mock: `uv run python backend/mock_memory_agent.py`, then point at `http://localhost:8001/.well-known/agent.json`; real deploy: [docs/agent-engine-rag-setup.md](../docs/agent-engine-rag-setup.md) |
+| Recall the user's past posts | `MEMORY_AGENT_CARD_URL` | the A2A agent card URL. Local mock: `uv run python backend/mock_memory_agent.py`, then point at `http://localhost:8001/.well-known/agent.json` (`./evals/run.sh` does this for evals); real deploy, untested end to end: [docs/agent-engine-rag-setup.md](../docs/agent-engine-rag-setup.md) |
 | Guardrails (Model Armor + DLP) | `MODEL_ARMOR_TEMPLATE_ID` | see [docs/model-armor-setup.md](../docs/model-armor-setup.md) |
 
-`DRY_RUN=true` (the default) makes LinkedIn/Buffer posting log the payload
-and return a fake URL instead of actually publishing. Keep it `true` except
-for one deliberate happy-path check, then flip it back.
+`DRY_RUN=true` (the default) makes **LinkedIn** posting log the payload and
+return a fake URL instead of publishing. Keep it `true` except for one
+deliberate happy-path check, then flip it back.
+
+**Buffer has no dry run.** `DRY_RUN` doesn't touch the Buffer route: an
+approved Buffer post is real. The safety net there is
+`BUFFER_REVIEW_DELAY_MINUTES` (default `60`), which schedules every post at
+least that far ahead so you can delete it in Buffer before it goes out. Also
+set `DRY_RUN=false` when using Buffer with images: `upload_image` honours
+`DRY_RUN` and would otherwise hand Buffer a fake image URL.
 
 ## Evals
 

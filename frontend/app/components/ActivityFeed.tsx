@@ -14,8 +14,6 @@ const TOOL_ICONS: Record<string, string> = {
   generate_image: "🖼️",
   get_profile: "👤",
   create_post: "🚀",
-  linkedin_get_profile: "👤",
-  linkedin_create_post: "🚀",
 };
 
 type Entry = {

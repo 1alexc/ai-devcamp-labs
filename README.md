@@ -1,6 +1,6 @@
 # Social Spark
 
-An AI agent that turns an idea into a finished social post. It researches the web, drafts in your brand voice, generates an image, **waits for your approval**, and then publishes through Buffer or LinkedIn. It is the running project for the GDG London **Agentic DevCamp**: you build it in Lab 1.
+An AI agent that turns an idea into a finished social post. It researches the web, drafts in your brand voice, generates an image, **waits for your approval**, and then publishes through Buffer or LinkedIn. It is the running project for the GDG London **Agentic DevCamp**: you build it in Lab 1, run it for real in Lab 2.
 
 > **Start here:** [Setup guide](docs/setup-guide.html) (do this before Saturday) → [Lab 1: Build](docs/lab-1-build.html). All docs are listed in [docs/index.html](docs/index.html).
 >
@@ -17,13 +17,14 @@ You give the **orchestrator** (`social_poster`) an idea. It loads **Agent Skills
 | Layer | What we use | Why |
 |---|---|---|
 | Agent framework | [Google ADK](https://google.github.io/adk-docs/) (Python) | Agents, tools, sub-agents, sessions, evals |
-| Models | Gemini (`gemini-flash-latest`, Gemini image model) | Reasoning, drafting, image generation |
+| Models | Gemini (`gemini-2.5-flash`, Gemini image model) | Reasoning, drafting, image generation |
 | Agent knowledge | Agent Skills (`skills/`) | Brand voice as a reviewable markdown folder |
 | Publishing | MCP servers: Buffer (remote), LinkedIn (optional, stdio) | Real posts behind a human approval gate |
 | Agent-to-agent | A2A (`memory_agent`, optional) | A separate memory service the orchestrator can ask |
 | Backend | FastAPI + [`ag-ui-adk`](https://github.com/ag-ui-protocol/ag-ui) | Serves the agent to the UI over AG-UI at `/api/adk` |
 | Frontend | Next.js 16, React 19, [CopilotKit](https://copilotkit.ai) | Chat, draft preview and the approve button |
 | Data | SQLite (local), Cloud Storage (optional images) | Post history and hosted images |
+| Cloud | Google Cloud: Agent Runtime, Cloud Run, Cloud Build, Secret Manager | Lab 2 deploy and CI/CD |
 | Tooling | `uv`, `agents-cli`, `adk eval`, `gcloud` | Install, deploy, quality gate |
 
 ## What you build, lab by lab
@@ -32,11 +33,13 @@ You give the **orchestrator** (`social_poster`) an idea. It loads **Agent Skills
 |---|---|---|---|
 | Setup | [Setup guide](docs/setup-guide.html) | Google Cloud project, tools, coding agent | `starter` |
 | 1. Build | [Lab 1](docs/lab-1-build.html) | The agent, skills, tools, approval gate, web UI | `pillar-build` |
+| 2. Scale | [Lab 2](docs/lab-2-scale.html) | Deploy to Agent Runtime, managed sessions and Memory Bank | `pillar-scale` |
 
 ```bash
 git checkout pillar-build   # for example: the finished result of Lab 1
 ```
 
+<img src="docs/img/architecture-scale.png" alt="Scale: the web UI calls the agent on Agent Runtime, which keeps conversation state in Sessions and long-term facts in Memory Bank" width="800">
 
 ## Run it locally
 
@@ -76,7 +79,7 @@ gcp-setup.sh             one-time Google Cloud setup: APIs, templates, grants
 **What's deployed right now?** An Agent Runtime engine scales to zero when idle, and the console only shows one region at a time, so a deployed agent can look missing. Ask the CLI:
 
 ```bash
-agents-cli deploy --list -d agent_runtime --project YOUR_PROJECT --region us-central1 --no-confirm-project
+agents-cli deploy --list --project YOUR_PROJECT --no-confirm-project
 ```
 
-`-d agent_runtime` is needed because this project has no `agents-cli-manifest.yaml`.
+Target and region come from `agents-cli-manifest.yaml` at the repo root.

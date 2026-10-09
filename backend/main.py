@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from google.adk.memory import VertexAiMemoryBankService
 from google.adk.sessions import VertexAiSessionService
 
 load_dotenv(pathlib.Path(__file__).parent / "social_poster" / ".env")
@@ -30,12 +31,15 @@ app.add_middleware(
 
 # When running on Agent Runtime, APP_URL is injected and contains the engine's
 # full resource name: projects/{project}/locations/{location}/reasoningEngines/{engine_id}.
-# We parse project, location, and engine ID directly from APP_URL because
-# GOOGLE_CLOUD_LOCATION is set to global for Gemini while the engine and sessions
-# reside in us-central1. When running locally (APP_URL unset), session_service is
-# None, so ADKAgent keeps its in-memory default.
+# We can also configure session_service and memory_service for local development
+# by setting AGENT_ENGINE_ID (and GOOGLE_CLOUD_PROJECT).
 session_service = None
+memory_service = None
 app_url = os.environ.get("APP_URL", "").strip()
+project = os.environ.get("GOOGLE_CLOUD_PROJECT", "").strip()
+location = os.environ.get("AGENT_ENGINE_LOCATION", "us-central1").strip()
+engine_id = os.environ.get("AGENT_ENGINE_ID", "").strip()
+
 if app_url:
     match = re.search(
         r"projects/([^/]+)/locations/([^/]+)/reasoningEngines/([^/:]+)",
@@ -43,17 +47,26 @@ if app_url:
     )
     if match:
         project, location, engine_id = match.groups()
-        session_service = VertexAiSessionService(
-            project=project,
-            location=location,
-            agent_engine_id=engine_id,
-        )
+
+if project and engine_id:
+    session_service = VertexAiSessionService(
+        project=project,
+        location=location,
+        agent_engine_id=engine_id,
+    )
+    memory_service = VertexAiMemoryBankService(
+        project=project,
+        location=location,
+        agent_engine_id=engine_id,
+    )
 
 adk_agent = ADKAgent(
     adk_agent=root_agent,
     app_name="social_poster",
     user_id="devcamp-user",  # single-user POC; extract from auth in real apps
     session_service=session_service,
+    memory_service=memory_service,
+    delete_session_on_cleanup=bool(session_service is None),
 )
 
 add_adk_fastapi_endpoint(app, adk_agent, path="/api/adk")

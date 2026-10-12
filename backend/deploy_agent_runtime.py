@@ -119,7 +119,7 @@ def set_local_model_env() -> None:
     # Keep the baseline deploy simple: no GCS image hosting. Images stay local
     # and Buffer posts stay text-only, which is what the Scale lab demonstrates.
     # Enabling it would also require the signing service account (see
-    # gcs-setup.sh) to exist for the runtime identity, which is Lab 2 scope
+    # gcp-setup.sh) to exist for the runtime identity, which is Lab 2 scope
     # creep. Opt in with --with-gcs.
     os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "1")
 
@@ -191,7 +191,7 @@ def main() -> int:
     parser.add_argument(
         "--with-gcs",
         action="store_true",
-        help="enable GCS image hosting (needs gcs-setup.sh already run)",
+        help="enable GCS image hosting (needs gcp-setup.sh already run)",
     )
     args = parser.parse_args()
 
@@ -209,7 +209,7 @@ def main() -> int:
     if args.with_gcs:
         for var in ("GCS_BUCKET_NAME", "GCS_SIGNING_SERVICE_ACCOUNT"):
             if not os.environ.get(var):
-                print(f"--with-gcs needs {var} set (see gcs-setup.sh)", file=sys.stderr)
+                print(f"--with-gcs needs {var} set (see gcp-setup.sh)", file=sys.stderr)
                 return 2
 
     staging_dir = pathlib.Path(tempfile.mkdtemp(prefix="social-spark-deploy-"))

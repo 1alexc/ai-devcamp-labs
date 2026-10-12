@@ -22,7 +22,7 @@ Constraints, each learnt by hitting it:
   * STREAMING calls are not screened at all: an injection sails through with no
     block and no error. main.py therefore turns streaming off when this is on;
   * `global` templates cannot be created; use us-central1, the gateway's region;
-  * Agent Platform's own service agent needs roles/modelarmor.user (gcs-setup.sh step 7);
+  * Agent Platform's own service agent needs roles/modelarmor.user (gcp-setup.sh step 7);
   * Agent Platform's template lookup fails at random ("The template named ... was not
     found"). Fixed by retry options on the ADK model object (model() below): 15 of
     15 deployed checks passed with it, most failed without. The same options in
@@ -53,7 +53,7 @@ log = logging.getLogger(__name__)
 PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
 # DLP wants the project ID *string* and rejects the project NUMBER ("Malformed
 # parent field"), but inside Agent Runtime GOOGLE_CLOUD_PROJECT is the number.
-# Set PROJECT_ID on the deployment (gcs-setup.sh prints the flag).
+# Set PROJECT_ID on the deployment (gcp-setup.sh prints the flag).
 DLP_PROJECT = os.environ.get("PROJECT_ID") or PROJECT  # also used for the Model Armor template path
 # Where the TEMPLATE lives. Use the same region as the Agent Gateway and Gemini
 # (us-central1); `global` templates cannot be created.

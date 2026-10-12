@@ -32,6 +32,11 @@ This enables the APIs, creates the bucket and the frontend's service account,
 stores the Buffer secret, and gives deployed agents access to both. It's safe
 to re-run.
 
+On a new project the grants to the agent's own identity (the secret and the bucket)
+say `Waiting for your first deploy` and the script ends `Done for now`. That is
+expected: those identities exist only after the deploy in section 2. Run the
+script again once it has finished.
+
 Check:
 
 ```bash
@@ -69,6 +74,9 @@ reported back. Ask what's actually deployed with:
 ```bash
 agents-cli deploy --list --project adk-devcamp-poc --no-confirm-project
 ```
+
+Then finish the setup: `./gcp-setup.sh` again. Every line now says `Granted` and it
+ends `Done.`
 
 > In a project that already has an engine called `social-spark-poster`, this
 > deploy **updates** it, keeping its existing env vars. For a clean demo,

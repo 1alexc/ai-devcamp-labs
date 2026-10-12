@@ -63,6 +63,8 @@ if os.environ.get("GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY", "").lower() in (
 
 from backend.social_poster import config, db  # noqa: E402  (needs .env first)
 from backend.social_poster.agent import root_agent  # noqa: E402  (needs .env first)
+from backend.social_poster import guardrails  # noqa: E402
+from backend.pii_middleware import RedactUserMessages  # noqa: E402  (imports guardrails)
 
 app = FastAPI(title="social-agent AG-UI backend")
 
@@ -125,7 +127,27 @@ adk_agent = ADKAgent(
     delete_session_on_cleanup=delete_idle_sessions,
 )
 
+if guardrails.MA_TEMPLATE:
+    # Model Armor's inline screening is SKIPPED for streaming Gemini calls: with
+    # the adapter's default SSE streaming an injection sails through with no
+    # block and no error (verified 2026-09-21: 3/3 streamed calls passed, the
+    # non-streamed ones were blocked). So a guarded agent must not stream. The
+    # cost is that replies arrive whole instead of token by token.
+    from google.adk.agents.run_config import StreamingMode
+
+    def _non_streaming_run_config(run_input):
+        cfg = ADKAgent._default_run_config(adk_agent, run_input)
+        cfg.streaming_mode = StreamingMode.NONE
+        return cfg
+
+    adk_agent._run_config_factory = _non_streaming_run_config
+    log.info("Model Armor is on: streaming disabled so inline screening applies")
+
 add_adk_fastapi_endpoint(app, adk_agent, path="/api/adk")
+
+if guardrails.PII_REDACTION:
+    app.add_middleware(RedactUserMessages, path="/api/adk")
+    log.info("PII redaction on: user messages are de-identified before they reach the agent")
 
 # The console Playground and `reasoningEngines:streamQuery` call the runtime contract's
 # native streaming route, which a container has to serve itself (the AG-UI route above is
@@ -161,6 +183,13 @@ async def stream_reasoning_engine(payload: dict):
     message = args.get("message")
     if not isinstance(message, str) or not message.strip():
         return JSONResponse({"error": "input.message is required"}, status_code=400)
+    if guardrails.PII_REDACTION:
+        try:
+            message = guardrails.redact_boundary(message)
+        except Exception:  # noqa: BLE001  (fail closed, as the AG-UI middleware does)
+            log.exception("PII redaction failed; refusing the request")
+            return JSONResponse({"error": "PII redaction is unavailable, so the request was refused."},
+                                status_code=503)
 
     runner = _get_native_runner()
     user_id = args.get("user_id") or "devcamp-user"
@@ -171,7 +200,8 @@ async def stream_reasoning_engine(payload: dict):
     if session is None:
         session = await runner.session_service.create_session(app_name="social_poster", user_id=user_id)
 
-    cfg = RunConfig(streaming_mode=StreamingMode.SSE)
+    # Same reason as the AG-UI route: streamed Gemini calls skip Model Armor.
+    cfg = RunConfig(streaming_mode=StreamingMode.NONE if guardrails.MA_TEMPLATE else StreamingMode.SSE)
 
     async def lines():
         try:

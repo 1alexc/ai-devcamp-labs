@@ -2,7 +2,7 @@
 #
 # The frontend talks to the ADK backend server-side only (app/lib/backend.ts),
 # so the browser never needs a Google token. On Cloud Run the token comes from
-# the attached service account, which needs roles/aiplatform.user — gcs-setup.sh
+# the attached service account, which needs roles/aiplatform.user — gcp-setup.sh
 # Step 4 creates one. Build from the repo root:
 #   docker build -f frontend/Dockerfile -t social-spark-frontend frontend
 FROM node:20-slim AS deps

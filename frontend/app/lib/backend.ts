@@ -48,7 +48,7 @@ export async function googleAuthHeader(): Promise<Record<string, string>> {
   if (!token.token) {
     throw new Error(
       "No Google access token available. Run `gcloud auth application-default login`, " +
-        "or deploy with a service account that has roles/aiplatform.user (see gcs-setup.sh).",
+        "or deploy with a service account that has roles/aiplatform.user (see gcp-setup.sh).",
     );
   }
   return { Authorization: `Bearer ${token.token}` };

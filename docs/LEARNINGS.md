@@ -882,6 +882,68 @@ the unrelated packaging/model/tool-scope issues above are out of the way.
 
 <!-- Add new Govern entries here, newest first. -->
 
+### 2026-10-11 pre-workshop audit: what a fresh project, a stale deploy file and a stale frontend each taught us
+
+Run against `adk-devcamp-poc` and a nearly empty second project (`ai-devcamp-sonika`).
+
+- **`gcp-setup.sh` died on a fresh project.** Step 5b (bucket grant to the agent-identity
+  principalSet) failed with `Identity Pool does not exist (.../workloadIdentityPools/agents.global.proj-N.system.id.goog)`.
+  That pool exists only after the first `--agent-identity` deploy, and `set -e` stopped the script, so
+  Model Armor, the grants and the gateway never ran. The Step 5 secret grants and Step 7B (DLP) have the
+  same dependency; 7B failed silently with no message. Fix: an `agent_grant` helper prints one
+  calm "Waiting for your first deploy" line, carries on, and the script ends "Done for now ... run it
+  again"; any other failure is printed in full. Lab 2 and Lab 3 now say to re-run after the Step 2 deploy.
+  After the deploy the second run passed everything, including Step 7 A (the Gemini Enterprise service agent).
+- **`deployment_metadata.json` decides which engine `agents-cli deploy` targets.** It is git-ignored and
+  still named `social-spark-demo`, so a deploy with `--service-name social-spark-poster` failed with "has
+  display name ..., but expected ...". Switching engine or project means moving it aside; the next deploy
+  writes a fresh one. (Switching project also meant `GOOGLE_CLOUD_PROJECT` and `GCS_BUCKET_NAME` in `.env`,
+  `gcloud config set project`, and the ADC quota project, which the script sets itself.)
+- **The deployed frontend pointed at an unguarded engine.** `social-spark-frontend` sent chats to
+  `social-spark-demo` (no Model Armor, no PII redaction, no gateway, `POST_VIA=buffer`, `DRY_RUN=false`),
+  while all Govern work was on `social-spark-poster`. Nothing flagged it. Check `ADK_BACKEND_ORIGIN` after
+  any redeploy; the runbook has the check.
+- **The deployed poster ran older code than the checkout, and the PII boundary was not acting.** The
+  stored session held the raw email and phone. `probe_deployed.py` check 3 still said PASS, because it is
+  satisfied by the `redact_pii_text` tool (layer 2) and cannot tell the boundary (layer 1) from it. Redeploying
+  from the checkout fixed it. Read the stored session after any deploy (runbook test 7).
+- **A blocked message is screened again on every later turn of the same thread.** After an injection was
+  refused, an innocent PII message in the same chat got the same Model Armor refusal, because the injection
+  is still in the history. Use a new chat per test. The UI's New chat button was also hidden behind the open
+  chat panel at a narrow window; the fallback is `localStorage.removeItem("social-spark-thread")` and a reload.
+- **System prompt hardening was missing, and now exists.** A "Security rules" block in the orchestrator
+  instructions, plus a golden eval case (`keeps_instructions_private`). Verified both ways: it fails with the
+  block removed and passes with it, and the full golden set and the governance eval still pass. A prompt is
+  probabilistic, so a pass is evidence, not proof.
+- **Local evals 404 on retired model aliases.** The local `.env` still had `gemini-flash-latest`; a golden
+  run failed with `404 Publisher model ... gemini-flash-latest was not found`, which looked like an eval
+  failure. Pin the models in the environment for local runs.
+- **Governance Policy engine: new evidence, and a correction.** In the fresh project `governance.py provision`
+  (the empty gateway config) ran about 3 minutes and ended `ACTIVE` with `gatewayConfigs.default.state:
+  FAILED`; `create` then worked and `list` shows the policy resolved to the agent's identity. So "an empty
+  gateway config wedges the engine at provision time" is not what we saw there. In `adk-devcamp-poc` the
+  engine is `FAILED` / `DEPROVISIONING` (last update 2026-10-10 17:29, after a deprovision attempt), and
+  `create` fails with `SEMANTIC_GOVERNANCE_POLICY_ENGINE_NOT_ENABLED_IN_REGION`. What wedges it may be
+  deprovision, not provision. Untested: whether the fresh project's engine can be deprovisioned, and whether
+  a policy enforces anything (the gateway config is `FAILED`).
+- **The Console's Policies page asked to "Enable required APIs" in the fresh project**, although the
+  policy engine and `create` already worked through the API. The dialog lists three: Agent Registry API and
+  Agent Platform API (both already enabled) and **Cloud Identity-Aware Proxy API** (`iap.googleapis.com`,
+  not enabled). That is the only gap; `adk-devcamp-poc` had it enabled. `gcp-setup.sh` Step 9 now enables
+  `iap`. (A first guess from diffing the two projects' API lists, Agent Identity and Security Command
+  Center, was wrong; the dialog names the exact API.)
+- **The gateway protects a route Social Spark's UI does not use, and the native route fails.** The web UI
+  goes over our own `/api/adk` (AG-UI), which the gateway never sees; probe check 4 (native `streamQuery`)
+  gets a gateway 403 while check 1 (`/api/adk`) gets a 200 with our in-agent refusal. A benign native call now
+  returns `400 FAILED_PRECONDITION: Execution failed` (earlier notes say 404, and that the engine has no
+  `streamQuery`; `main.py` has served `/api/stream_reasoning_engine` since 2db87fd). Cause unknown. Lab 3's
+  grid now lists the in-agent layers first and the gateway last, and Step 7 says plainly that it does not
+  protect the UI.
+- **Attendees' repo (`ai-devcamp-labs`) does not contain the Lab 3 files**: no `lab-3-govern.html`, `governance.py`,
+  the probes, `pii_middleware.py`, `evals/governance.json`, the red-team sheet or the Govern steps of
+  `gcp-setup.sh`, and its `guardrails.py` is the old callback design (`guard_input`, direct sanitize call, which
+  401s under Agent Identity). Step 3's prompt also never says to remove those old callbacks. Publish the files first.
+
 ### Guarded mode gets 429s on the Gemini call itself, and the retry has to cover them
 
 After the PII boundary and template logging went in, the deployed agent began failing about one probe run in three with an EMPTY
@@ -905,7 +967,7 @@ logs feed the dashboard. The page itself says it is only fully populated when Ag
 Model Armor and agent tracing; we wired Model Armor to the gateway by hand (authz extension), not through the Console option, and we have not
 found the source. THE CATCH with logging: each entry carries `sanitizationInput.byteItem.byteData`, the prompt as base64-encoded
 plaintext, so raw prompts and replies land in Cloud Logging, and on the gateway path that is before the app's PII boundary. Hence opt-in:
-`MODEL_ARMOR_LOGGING=on ./gcs-setup.sh`. A `grep` for the prompt text will miss it: it is base64.
+`MODEL_ARMOR_LOGGING=on ./gcp-setup.sh`. A `grep` for the prompt text will miss it: it is base64.
 
 ### Model Armor on a deployed agent: the 401, the streaming bypass, the random "not found", and what finally worked
 

@@ -28,9 +28,9 @@ was run against a real deployment; anything we did not verify is marked **untest
 Run from the repo root, on the project you will demo from.
 
 ```bash
-./gcs-setup.sh                                   # re-run AFTER the Lab 2 deploy: two service agents only exist then
-uv run python backend/probe_deployed.py          # want: 1 PASS  2 PASS  3 PASS  4 PASS
-uv run python backend/probe_template.py          # want: 0 unexpected result(s) out of 10
+./gcp-setup.sh                                   # re-run AFTER the Lab 2 deploy: two service agents only exist then
+uv run python backend/probe_deployed.py --project PROJECT_ID   # want: 1 PASS  2 PASS  3 PASS  4 PASS
+uv run python backend/probe_template.py --project PROJECT_ID   # want: 0 unexpected result(s) out of 10
 ./evals/run.sh evals/governance.json             # want: PASSED
 MODEL_ARMOR_TEMPLATE_ID=off ./evals/run.sh evals/governance.json   # want: FAILED (proves the eval bites)
 ```
@@ -53,7 +53,7 @@ found`, redeploy (a `429` instead means the model is busy: wait a minute, see th
 ## Saturday (workshop, 120 min)
 
 The full lab is about three hours, so this session runs part of it live. Steps 1 and 6 are
-**not** live: Step 1 is pre-work (run `gcs-setup.sh` on Thursday night), Step 6 is a demo at most.
+**not** live: Step 1 is pre-work (run `gcp-setup.sh` on Thursday night), Step 6 is a demo at most.
 
 | Min | Step | Live? | Notes |
 |---|---|---|---|
@@ -75,14 +75,21 @@ curl -s -X POST "https://us-central1-aiplatform.googleapis.com/v1/projects/PROJE
 # 403 PERMISSION_DENIED  "Model Armor: Prompt violates content security configurations"
 ```
 
-A benign call to the same URL returns `404 Execution failed`. **That is expected**: our engine is a
-container that does not implement `streamQuery`, and the 404 comes from the agent, not from Model
-Armor. Say so before someone asks.
+A benign call to the same URL does not complete: it returns `400 Execution failed` (we saw `404` on
+earlier checks). The error comes from the agent, not from Model Armor, and we have not found why the
+native route fails, so the 403 is the only native result to show. Say so before someone asks.
 
 ```bash
 uv run python backend/governance.py registry-agents        # social-spark-poster appears on its own
 uv run python backend/governance.py registry-search bigquery
 ```
+
+## Showing what Model Armor blocked
+
+Use Monitoring, Metrics Explorer, *Model Armor template request count*, filter `sanitization_verdict =
+BLOCKED`, group by `client_name` (`Vertex AI` = our inline templates, `Agent Gateway` = the gateway).
+That works. Do **not** promise the Agent Platform Security tab: it stayed at zero for us even with
+tracing, content capture and project-wide floor settings on.
 
 ## Red team (35 min)
 
@@ -100,7 +107,7 @@ Anything **Owned** goes into `evals/governance.json` with the exact refusal expe
 |---|---|---|
 | `template ... was not found` | The template lookup fails at random | Retry; it is retried automatically. A stale revision means redeploy |
 | Injection refused, but not with our message | Model Armor did not fire; the model declined | This is the lesson. Check streaming is off and the template is set |
-| `401` from Model Armor in your own code | google-auth blocks agent token sharing | Do not turn the protection off. Use the inline route |
+| `401` from Model Armor in your own code | google-auth withholds the agent's token from calls made by your code | Don't call it from agent code. Use the inline route |
 | `Malformed parent field` from DLP | Project number given, DLP wants the ID | Set `PROJECT_ID` |
 | Replies arrive all at once | Streaming is off on purpose (streamed calls are not screened) | Expected in guarded mode |
 | A chat request hangs | The PII middleware replays the body forever | See Step 4: hand the body over once |

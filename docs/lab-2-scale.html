@@ -494,6 +494,8 @@
           <li><strong>Lets your deployed agent write to the bucket</strong>, the same way: <code>roles/storage.objectAdmin</code> for every Agent Identity in the project.</li>
         </ul>
 
+        <p><strong>The last two grants wait for your first deploy.</strong> They name identities that only exist once you have deployed with <code>--agent-identity</code> in Step 2. On a new project the script says <code>Waiting for your first deploy: …</code> next to them and finishes with <code>Done for now</code>. That is expected, not an error. You run the script again at the end of Step 2, and then those grants go through. Nothing else in it depends on them.</p>
+
         <p>There's no service account for the agent itself. In Step 2, <code>--agent-identity</code> gives the deployed agent a principal of its own.</p>
 
         <div class="callout tip">
@@ -577,9 +579,19 @@ create_params:
           <p>The lesson: <strong>read what the failing command actually checks before you start undoing work.</strong></p>
         </div>
 
+        <div class="callout tip">
+          <span class="callout-label">Finish the setup</span>
+          <p>Your agent now has an identity, so the grants that were waiting for it can go through. From the repo root:</p>
+          <div class="code-block">
+            <div class="code-head"><span>terminal — from the repo root</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
+            <pre><code>./gcp-setup.sh</code></pre>
+          </div>
+          <p>This time every line says <code>Granted</code> and it ends with <code>Done.</code></p>
+        </div>
+
         <div class="callout check">
           <span class="callout-label">Checkpoint</span>
-          <p><code>agents-cli deploy --list --project YOUR_PROJECT --no-confirm-project</code> shows <code>social-spark-poster</code> in <code>us-central1</code>, and the agent appears in the console under Agent Engine with an identity principal against it.</p>
+          <p><code>agents-cli deploy --list --project YOUR_PROJECT --no-confirm-project</code> shows <code>social-spark-poster</code> in <code>us-central1</code>, and the agent appears in the console under Agent Engine with an identity principal against it. Running <code>./gcp-setup.sh</code> again ends with <code>Done.</code></p>
         </div>
 
         <div class="step-footer">

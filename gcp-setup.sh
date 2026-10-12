@@ -56,6 +56,27 @@ else
 fi
 echo
 
+# Grants to the agent's own identity (the Agent Identity pool, the Reasoning Engine
+# service agent, the Gemini Enterprise service agent) can only succeed once your FIRST
+# `--agent-identity` deploy has created those identities. On a brand-new project
+# they are not ready yet, and that is expected: this script says so in one calm line
+# and carries on, and you run it again after your first deploy (Lab 2, Step 2).
+# Any other failure is printed in full.
+PENDING_DEPLOY=0
+agent_grant() {  # $1 = what is being granted; the rest is the gcloud command
+  local what="$1" out; shift
+  if out="$("$@" 2>&1)"; then
+    echo "Granted: $what."
+  elif grep -qiE "identity pool does not exist|service account.*does not exist" <<<"$out"; then
+    echo "Waiting for your first deploy: $what."
+    PENDING_DEPLOY=1
+  else
+    echo "FAILED: $what" >&2
+    echo "$out" >&2
+    return 1
+  fi
+}
+
 # === Step 1: GCS image hosting for Buffer (signed URLs, no key file) =======
 # Lets Buffer posts carry an image, via a signed URL rather than a public
 # bucket grant (Public Access Prevention blocks that outright on managed
@@ -241,7 +262,8 @@ else
   unset buffer_key
 fi
 
-# Two grants, both up front (see docs/LEARNINGS.md):
+# Two grants, both up front (see docs/LEARNINGS.md). On a brand-new project they are
+# "waiting for your first deploy" (see agent_grant above); run this script again after it.
 # - The Agent Identity principalSet is what actually reads the secret: the
 #   deployed agent gets only the secret's *name* (BUFFER_API_KEY_SECRET) and
 #   fetches the value at runtime. It's the project-wide principalSet, not one
@@ -253,16 +275,16 @@ fi
 # it with an opaque "The Reasoning Engine failed to be updated".
 if gcloud secrets describe "$BUFFER_SECRET_ID" --project="$GOOGLE_CLOUD_PROJECT" >/dev/null 2>&1; then
   PROJECT_NUMBER="$(gcloud projects describe "$GOOGLE_CLOUD_PROJECT" --format='value(projectNumber)')"
-  gcloud secrets add-iam-policy-binding "$BUFFER_SECRET_ID" \
+  agent_grant "secretAccessor on $BUFFER_SECRET_ID for this project's Agent Identity principals" \
+    gcloud secrets add-iam-policy-binding "$BUFFER_SECRET_ID" \
     --project="$GOOGLE_CLOUD_PROJECT" \
     --member="principalSet://agents.global.proj-$PROJECT_NUMBER.system.id.goog/attribute.platformContainer/aiplatform/projects/$PROJECT_NUMBER" \
-    --role="roles/secretmanager.secretAccessor" >/dev/null
-  echo "Granted secretAccessor to this project's Agent Identity principals."
-  gcloud secrets add-iam-policy-binding "$BUFFER_SECRET_ID" \
+    --role="roles/secretmanager.secretAccessor"
+  agent_grant "secretAccessor on $BUFFER_SECRET_ID for the Agent Engine service agent" \
+    gcloud secrets add-iam-policy-binding "$BUFFER_SECRET_ID" \
     --project="$GOOGLE_CLOUD_PROJECT" \
     --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform-re.iam.gserviceaccount.com" \
-    --role="roles/secretmanager.secretAccessor" >/dev/null
-  echo "Granted secretAccessor to the Agent Engine service agent."
+    --role="roles/secretmanager.secretAccessor"
   echo "Deploy the agent with the secret's name, not --secrets:"
   echo "  --update-env-vars \"POST_VIA=buffer,BUFFER_API_KEY_SECRET=$BUFFER_SECRET_ID,BUFFER_REVIEW_DELAY_MINUTES=60\""
 fi
@@ -278,10 +300,10 @@ if [[ -z "${GCS_BUCKET_NAME:-}" ]]; then
   echo "skipping — GCS_BUCKET_NAME not set in $ENV_FILE."
 else
   PROJECT_NUMBER="${PROJECT_NUMBER:-$(gcloud projects describe "$GOOGLE_CLOUD_PROJECT" --format='value(projectNumber)')}"
-  gcloud storage buckets add-iam-policy-binding "gs://$GCS_BUCKET_NAME" \
+  agent_grant "objectAdmin on gs://$GCS_BUCKET_NAME for this project's Agent Identity principals" \
+    gcloud storage buckets add-iam-policy-binding "gs://$GCS_BUCKET_NAME" \
     --member="principalSet://agents.global.proj-$PROJECT_NUMBER.system.id.goog/attribute.platformContainer/aiplatform/projects/$PROJECT_NUMBER" \
-    --role="roles/storage.objectAdmin" >/dev/null
-  echo "Granted storage.objectAdmin on gs://$GCS_BUCKET_NAME to this project's Agent Identity principals."
+    --role="roles/storage.objectAdmin"
   echo "Deploy the agent with:  --update-env-vars \"GCS_BUCKET_NAME=$GCS_BUCKET_NAME\""
 fi
 echo
@@ -324,7 +346,7 @@ RAI='"raiSettings":{"raiFilters":[
 # log entries contain the prompt and reply text (base64-encoded plaintext), so it is
 # OPT-IN: prompts with personal data would land in Cloud Logging, and on the gateway
 # path that is BEFORE the app's PII redaction. Enable for demos with dummy data:
-#   MODEL_ARMOR_LOGGING=on ./gcs-setup.sh
+#   MODEL_ARMOR_LOGGING=on ./gcp-setup.sh
 if [[ "${MODEL_ARMOR_LOGGING:-off}" == "on" ]]; then MA_LOG=true; else MA_LOG=false; fi
 META="\"templateMetadata\":{\"enforcementType\":\"INSPECT_AND_BLOCK\",\"logTemplateOperations\":$MA_LOG,\"logSanitizeOperations\":$MA_LOG}"
 ensure_template() {  # $1 id  $2 filterConfig body
@@ -364,13 +386,12 @@ echo "=== Step 7: permissions for Model Armor and DLP ==="
 PROJECT_NUMBER="$(gcloud projects describe "$GOOGLE_CLOUD_PROJECT" --format='value(projectNumber)')"
 VERTEX_SA="service-$PROJECT_NUMBER@gcp-sa-aiplatform.iam.gserviceaccount.com"
 AGENT_PRINCIPALS="principalSet://agents.global.proj-$PROJECT_NUMBER.system.id.goog/attribute.platformContainer/aiplatform/projects/$PROJECT_NUMBER"
-gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
-  --member="serviceAccount:$VERTEX_SA" --role="roles/modelarmor.user" --condition=None >/dev/null \
-  && echo "A. Granted roles/modelarmor.user to the Gemini Enterprise service agent." \
-  || echo "A. FAILED: $VERTEX_SA does not exist yet. It appears once Agent Platform has been used; re-run this script then."
-gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
-  --member="$AGENT_PRINCIPALS" --role="roles/dlp.user" --condition=None >/dev/null \
-  && echo "B. Granted roles/dlp.user to deployed agents (Agent Identity)."
+agent_grant "A. roles/modelarmor.user for the Gemini Enterprise service agent" \
+  gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
+  --member="serviceAccount:$VERTEX_SA" --role="roles/modelarmor.user" --condition=None
+agent_grant "B. roles/dlp.user for deployed agents (Agent Identity)" \
+  gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
+  --member="$AGENT_PRINCIPALS" --role="roles/dlp.user" --condition=None
 # C. THE REASONING ENGINE SERVICE AGENT (a DIFFERENT service agent from A) is what
 #    Agent Gateway uses to call Model Armor on ingress traffic, so it needs BOTH
 #    roles/modelarmor.calloutUser and roles/modelarmor.user. Only needed for the
@@ -379,10 +400,9 @@ gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
 #    (Egress traffic uses the Service Extensions service agent instead.)
 RE_SA="service-$PROJECT_NUMBER@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
 for role in roles/modelarmor.calloutUser roles/modelarmor.user; do
-  gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
-    --member="serviceAccount:$RE_SA" --role="$role" --condition=None >/dev/null \
-    && echo "C. Granted $role to the Reasoning Engine service agent." \
-    || echo "C. FAILED: $RE_SA does not exist yet. It appears after your FIRST Agent Runtime deploy (Lab 2); re-run this script after that."
+  agent_grant "C. $role for the Reasoning Engine service agent" \
+    gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
+    --member="serviceAccount:$RE_SA" --role="$role" --condition=None
 done
 echo
 echo "Deploy the guarded agent (Gemini must use a REGIONAL location, and pin the models):"
@@ -448,8 +468,10 @@ echo
 # needs roles/cloudtrace.agent. NOT verified end to end: the engine in our own
 # project is stuck (see docs/LEARNINGS.md), so this is from the docs.
 echo "=== Step 9: policy engine prerequisites (optional) ==="
-gcloud services enable compute.googleapis.com dns.googleapis.com cloudtrace.googleapis.com \
-  --project="$GOOGLE_CLOUD_PROJECT" >/dev/null && echo "Enabled compute, dns, cloudtrace."
+# iap: the Console's Agent Platform > Policies page will not load without Cloud
+# Identity-Aware Proxy (it shows "Enable required APIs"); it is not otherwise used here.
+gcloud services enable compute.googleapis.com dns.googleapis.com cloudtrace.googleapis.com iap.googleapis.com \
+  --project="$GOOGLE_CLOUD_PROJECT" >/dev/null && echo "Enabled compute, dns, cloudtrace, iap."
 gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
   --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform.iam.gserviceaccount.com" \
   --role="roles/cloudtrace.agent" --condition=None >/dev/null \
@@ -458,4 +480,9 @@ echo
 
 # === Step 10: (add the next one-time manual GCP step here) ==================
 
-echo "Done."
+if [[ "$PENDING_DEPLOY" == "1" ]]; then
+  echo "Done for now. Some grants are waiting for your first deploy (Lab 2, Step 2)."
+  echo "Once it has finished, run ./gcp-setup.sh again to finish them."
+else
+  echo "Done."
+fi

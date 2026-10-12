@@ -655,7 +655,7 @@
 
         <div class="callout agent">
           <span class="callout-label">Prompt for your coding agent</span>
-          <p>In <code>backend/social_poster/guardrails.py</code> build four things, each switched by <code>MODEL_ARMOR_TEMPLATE_ID</code> (blank or <code>off</code> means off): a <code>content_config(screen_input=True)</code> helper that returns a <code>GenerateContentConfig</code> carrying a Model Armor config (request template and response template; the two sub-agents use <code>screen_input=False</code> because their input is text the orchestrator wrote); a <code>friendly_block</code> <code>after_model_callback</code> that turns a Model Armor block into a readable refusal; a <code>model(name)</code> helper that wraps the model name in ADK's <code>Gemini</code> class with retry options; and, in <code>main.py</code>, a non-streaming run configuration when guardrails are on. Then wire them onto <code>root_agent</code>, <code>research_agent</code> and <code>draft_agent</code>. Use the project <em>id</em> (from <code>PROJECT_ID</code>), not the number.</p>
+          <p>In <code>backend/social_poster/guardrails.py</code> build four things, each switched by <code>MODEL_ARMOR_TEMPLATE_ID</code> (blank or <code>off</code> means off): a <code>content_config(screen_input=True)</code> helper that returns a <code>GenerateContentConfig</code> carrying a Model Armor config (request template and response template; the two sub-agents use <code>screen_input=False</code> because their input is text the orchestrator wrote); a <code>friendly_block</code> <code>after_model_callback</code> that turns a Model Armor block into a readable refusal; a <code>model(name)</code> helper that wraps the model name in ADK's <code>Gemini</code> class with retry options; and, in <code>main.py</code>, a non-streaming run configuration when guardrails are on. Then wire them onto <code>root_agent</code>, <code>research_agent</code> and <code>draft_agent</code>. Use the project <em>id</em> (from <code>PROJECT_ID</code>), not the number. The file already holds an older design from Lab 2: <code>guard_input</code> and <code>guard_output</code>, built on a <code>_sanitize</code> helper that calls the sanitize API directly (it also defaults to <code>europe-west2</code>). That direct call returns <code>401</code> inside Agent Runtime (Step 2). Replace it: remove both callbacks from all three agents, delete them and <code>_sanitize</code>, make <code>us-central1</code> the default region, and leave the DLP functions (<code>redact_pii_text</code>, <code>redact_before_post</code>) as they are.</p>
         </div>
         <div class="callout tip">
           <span class="callout-label">API facts your coding agent will not know</span>
@@ -850,20 +850,22 @@ uv run python backend/governance.py registry-search "bigquery"</code></pre>
           <p>Lab 1's <code>brand-voice</code> Agent Skill is governance in markdown: a reviewable file that constrains tone and content. Policies, skills, instructions and filters are all ways of writing down what the agent should do; they differ in who can change them and how hard they are to bypass.</p>
         </div>
 <div class="callout warn">
-          <span class="callout-label">Read this before you run anything: the setup is heavier than our spike</span>
-          <p><strong>Do not provision the engine with an empty gateway configuration, and do not deprovision it to tidy up:</strong> a failed provision cannot be cleared afterwards. Follow Google's guide, which needs more than a policy file:</p>
+          <span class="callout-label">Read this first: policies need a policy engine, and you can't undo it</span>
+          <p>Policies attach to a <strong>policy engine</strong> that exists once per project and region. <code>provision</code>, below, creates it. In a clean project it took about 3 minutes and ended <code>ACTIVE</code>, but its default gateway config showed <code>FAILED</code>, because we gave it no network. A policy can then be created, listed and seen in the Console. <strong>We have not seen a policy deny a turn.</strong></p>
+          <p><strong>Never deprovision the engine, and don't retry provisioning in a loop.</strong> In our first project the engine got stuck in <code>FAILED</code> / <code>DEPROVISIONING</code> and could not be cleared. Run this in a project where losing the engine doesn't matter.</p>
+          <p>For a policy to <em>enforce</em>, Google's guide asks for more than we set up. We have not run it:</p>
           <ul>
-            <li><strong>The agent must be eligible.</strong> It has to be deployed with <em>both</em> Agent Identity <em>and</em> an Agent Gateway. Both are immutable, so an agent that lacks either must be redeployed. Check with <code>gcloud ai reasoning-engines describe ... --format='value(spec.effectiveIdentity)'</code>: it should start with <code>agents.global.</code>.</li>
-            <li><strong>Enforcement is on the model traffic.</strong> An authorization extension points at the engine's DNS hostname, and an authorization policy on the gateway sends only <code>:generateContent</code> and <code>:streamGenerateContent</code> requests to it. It must exclude gRPC, or the agent fails to start.</li>
-            <li><strong>Provisioning takes a network.</strong> The recommended Google-managed binding takes a gateway name, a network, a subnetwork and a DNS zone (<code>--gateway-config</code>). More APIs are needed too: <code>compute</code>, <code>dns</code> and <code>networksecurity</code>, plus Cloud Trace.</li>
-            <li><strong>Start in dry-run.</strong> Set the extension's metadata <code>sgpEnforcementMode: DRY_RUN</code>: every call is allowed and each verdict and rationale is logged (<code>semantic-governance-policy</code> in Cloud Logging). Switch to enforcing once the verdicts look right.</li>
-            <li><strong>Supported locations</strong> in Google's docs include <code>us-central1</code>, <code>europe-west1</code> and <code>europe-west4</code>. We have only tested <code>us-central1</code>.</li>
+            <li><strong>An eligible agent:</strong> deployed with <em>both</em> Agent Identity <em>and</em> an Agent Gateway (both are immutable, so an agent without either must be redeployed). Check with <code>gcloud ai reasoning-engines describe ... --format='value(spec.effectiveIdentity)'</code>: it should start with <code>agents.global.</code>.</li>
+            <li><strong>A network for the engine:</strong> a gateway name, network, subnetwork and DNS zone (<code>--gateway-config</code>), plus the <code>compute</code>, <code>dns</code> and <code>networksecurity</code> APIs and Cloud Trace.</li>
+            <li><strong>Enforcement on the model traffic:</strong> an authorization extension plus an authorization policy that sends only <code>:generateContent</code> and <code>:streamGenerateContent</code> to the engine, and excludes gRPC (or the agent fails to start).</li>
+            <li><strong>Start in dry-run:</strong> set the extension's <code>sgpEnforcementMode: DRY_RUN</code>. Every call is allowed, and each verdict and rationale is logged (<code>semantic-governance-policy</code> in Cloud Logging).</li>
           </ul>
-          <p><strong>Status:</strong> creating a policy against a registered agent works and resolves to the agent's identity. Enforcement (a denied turn) is not demonstrated in this lab. The policy engine is an LLM judging your sentence, so verdicts are probabilistic: keep secrets out of constraints, because the rationale can be shown to users.</p>
+          <p>The engine is an LLM judging your sentence, so verdicts are probabilistic. Keep secrets out of constraints: the rationale can be shown to users.</p>
         </div>
 <div class="code-block">
           <div class="code-head"><span>terminal</span><button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-          <pre><code>uv run python backend/governance.py provision      # once, ~3 min
+          <pre><code>export GOOGLE_CLOUD_PROJECT=YOUR_PROJECT          # governance.py reads this, not .env
+uv run python backend/governance.py provision      # once, ~3 min
 uv run python backend/governance.py create \
   "The agent must never publish a social post without explicit human approval" \
   --name no-unapproved-posts
@@ -871,7 +873,7 @@ uv run python backend/governance.py list</code></pre>
         </div>
 <div class="callout check">
           <span class="callout-label">Checkpoint</span>
-          <p><code>list</code> shows your policy with an <code>identity: principal://agents.global...</code> line, and the policy is visible in the console under Agent Platform, Govern, Policies, on the <strong>Business policies</strong> tab (the default <em>Access policies</em> tab is something else and stays empty). Then try to get the agent to post without approval and record what happens: that observation is the evidence, not the policy's existence.</p>
+          <p><code>list</code> shows your policy with an <code>identity: principal://agents.global...</code> line, and the policy is visible in the console under Agent Platform, Govern, Policies, on the <strong>Business policies</strong> tab (the default <em>Access policies</em> tab is something else and stays empty). That shows the policy exists and is bound to your agent, not that it enforces anything. If you then ask the agent to post without approval, what stops it is the approval gate (<code>require_confirmation</code>), not the policy. Say that when you describe your result.</p>
         </div>
         <div class="step-footer">
           <button class="nav-btn" onclick="goTo(5)">← Back</button>

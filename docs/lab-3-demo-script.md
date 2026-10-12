@@ -12,8 +12,10 @@ was run against a real deployment; anything we did not verify is marked **untest
 
 ## Do not claim (we have not verified these)
 
-- That a **Governance Policy denies a live request.** We created one and it resolved to the
-  agent's identity. We have never seen a denial. The policy engine in our project is stuck.
+- That a **Governance Policy denies a live request.** We have never seen a denial. In a clean project
+  `provision` then `create` worked and the policy shows in the Console (Policies, **Business policies**
+  tab, resolved to the agent's identity), but the engine's gateway config was `FAILED`. In our original
+  project the engine is stuck and cannot create anything. Never deprovision it.
 - That **Agent Anomaly Detection, Agent Security risk views or Agent Compliance** work in this
   project. Anomaly Detection needs an approval form. The Security tab's *risks* panel needs an
   organisation and Security Command Center (the console says so). Compliance has no public

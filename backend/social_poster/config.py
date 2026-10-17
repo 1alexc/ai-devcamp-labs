@@ -6,7 +6,14 @@ agents and their tools — not about where configuration comes from.
 
 import logging
 import os
+import pathlib
 import re
+
+from dotenv import load_dotenv
+
+_env_file = pathlib.Path(__file__).resolve().parent / ".env"
+if _env_file.exists():
+    load_dotenv(_env_file)
 
 log = logging.getLogger(__name__)
 

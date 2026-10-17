@@ -61,7 +61,7 @@ if os.environ.get("GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY", "").lower() in (
     except Exception:
         log.exception("Telemetry export not set up; the agent runs without it")
 
-from backend.social_poster import config, db  # noqa: E402  (needs .env first)
+from backend.social_poster import config, db, guardrails  # noqa: E402  (needs .env first)
 from backend.social_poster.agent import root_agent  # noqa: E402  (needs .env first)
 
 app = FastAPI(title="social-agent AG-UI backend")
@@ -72,6 +72,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if os.environ.get("PII_REDACTION", "").strip().lower() in ("on", "true", "1"):
+    from backend.pii_middleware import RedactUserMessages
+
+    app.add_middleware(RedactUserMessages)
+    log.info("PII redaction active: RedactUserMessages middleware registered for /api/adk")
 
 # --- Managed session + memory services ----------------------------------------
 # ag_ui_adk defaults to InMemorySessionService and InMemoryMemoryService, which
@@ -125,6 +131,17 @@ adk_agent = ADKAgent(
     delete_session_on_cleanup=delete_idle_sessions,
 )
 
+if guardrails.is_enabled():
+    from google.adk.agents.run_config import StreamingMode
+
+    def no_stream(run_input):
+        cfg = ADKAgent._default_run_config(adk_agent, run_input)
+        cfg.streaming_mode = StreamingMode.NONE
+        return cfg
+
+    adk_agent._run_config_factory = no_stream
+    log.info("Guardrails active: non-streaming run configuration enabled")
+
 add_adk_fastapi_endpoint(app, adk_agent, path="/api/adk")
 
 # The console Playground and `reasoningEngines:streamQuery` call the runtime contract's
@@ -171,7 +188,8 @@ async def stream_reasoning_engine(payload: dict):
     if session is None:
         session = await runner.session_service.create_session(app_name="social_poster", user_id=user_id)
 
-    cfg = RunConfig(streaming_mode=StreamingMode.SSE)
+    streaming_mode = StreamingMode.NONE if guardrails.is_enabled() else StreamingMode.SSE
+    cfg = RunConfig(streaming_mode=streaming_mode)
 
     async def lines():
         try:

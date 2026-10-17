@@ -12,6 +12,19 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
+# 0. Load environment variables from backend/social_poster/.env if not already set
+if [[ -f backend/social_poster/.env ]]; then
+  eval "$(uv run python -c "
+import os, pathlib, dotenv
+p = pathlib.Path('backend/social_poster/.env')
+if p.exists():
+    for k, v in dotenv.dotenv_values(p).items():
+        if v is not None and k not in os.environ:
+            safe_v = v.replace('\"', '\\\"')
+            print(f'export {k}=\"{safe_v}\"')
+")"
+fi
+
 SET="${1:-evals/golden.json}"
 MOCK_URL="http://localhost:8001/.well-known/agent.json"
 started_mock=""

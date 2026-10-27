@@ -1,0 +1,11 @@
+name: agw-social-spark-authz-policy-modar
+target:
+  resources:
+    - projects/ai-devcamp-alexandercarr/locations/us-central1/agentGateways/agw-social-spark
+policyProfile: CONTENT_AUTHZ
+action: CUSTOM
+customProvider:
+  authzExtension:
+    resources:
+      - projects/ai-devcamp-alexandercarr/locations/us-central1/authzExtensions/agw-social-spark-authz-modar
+

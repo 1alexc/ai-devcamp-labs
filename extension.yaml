@@ -1,0 +1,6 @@
+name: agw-social-spark-authz-modar
+service: modelarmor.us-central1.rep.googleapis.com
+metadata:
+  model_armor_settings: '[{"request_template_id": "projects/ai-devcamp-alexandercarr/locations/us-central1/templates/devcamp-guardrails", "response_template_id": "projects/ai-devcamp-alexandercarr/locations/us-central1/templates/devcamp-guardrails-output"}]'
+failOpen: false
+timeout: 5s

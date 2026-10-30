@@ -16,10 +16,11 @@ COPY skills ./skills
 COPY mcp ./mcp
 
 # --no-dev: skip the eval/dev-only deps eval-gating already exercised in CI.
+ENV UV_COMPILE_BYTECODE=1
 RUN uv sync --frozen --no-dev
 
 # Cloud Run injects PORT; default matches local `run-backend.sh` for parity.
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["sh", "-c", "uv run uvicorn backend.main:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "uv run --no-sync uvicorn backend.main:app --host 0.0.0.0 --port ${PORT}"]

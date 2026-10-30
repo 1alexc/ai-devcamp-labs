@@ -693,6 +693,95 @@ publish now rather than schedule.{_BUFFER_CHANNEL_LOOKUP}{_BUFFER_IMAGE_NOTE}
 else:
     _BUFFER_ROUTING = ""
 
+
+def _recover_malformed_function_call(
+    callback_context: CallbackContext, llm_response: LlmResponse
+) -> Optional[LlmResponse]:
+    """Recovers when Gemini emits a malformed pseudo-code function call.
+
+    On pinned models, Gemini sometimes generates:
+    print(default_api.draft_agent(request='...'))
+    which triggers MALFORMED_FUNCTION_CALL. If this happens, parse out the intended
+    tool name and request argument and construct a genuine FunctionCall.
+    """
+    err = getattr(llm_response, "error_code", None) or getattr(llm_response, "finish_reason", None)
+    err_str = str(err).upper() if err else ""
+    if "MALFORMED_FUNCTION_CALL" not in err_str:
+        return None
+
+    msg = getattr(llm_response, "error_message", "") or ""
+    match = re.search(r"(?:print\()?(?:default_api\.)?([a-zA-Z0-9_]+)\((?:request\s*=\s*)?[\'\"]?(.*)", msg, re.DOTALL)
+    if match:
+        tool_name = match.group(1).strip()
+        raw_req = match.group(2).strip()
+        clean_req = re.sub(r"[\'\"\)\s]+$", "", raw_req).replace(r"\'", "'").replace(r'\"', '"').strip()
+        if clean_req.startswith("'") or clean_req.startswith('"'):
+            clean_req = clean_req[1:]
+        if tool_name in ("draft_agent", "research_agent") and clean_req:
+            log.warning(
+                "Recovered MALFORMED_FUNCTION_CALL for %s: converting pseudo-code to real FunctionCall",
+                tool_name,
+            )
+            return LlmResponse(
+                content=genai_types.Content(
+                    role="model",
+                    parts=[
+                        genai_types.Part(
+                            function_call=genai_types.FunctionCall(
+                                name=tool_name,
+                                args={"request": clean_req},
+                            )
+                        )
+                    ],
+                )
+            )
+    return None
+
+
+def _present_draft_if_silent(
+    callback_context: CallbackContext, llm_response: LlmResponse
+) -> Optional[LlmResponse]:
+    """Catches the model returning an empty text part after draft_agent ran.
+
+    If draft_agent has populated current_draft (and no new function call is
+    being made), but the model returned an empty text response or no parts,
+    synthesise the approval message from session state so the user is never
+    left staring at an empty, stalled chat.
+    """
+    if not llm_response or not llm_response.content or not llm_response.content.parts:
+        parts = []
+    else:
+        parts = llm_response.content.parts
+
+    # If there is already a function call this turn, let it proceed
+    if any(p.function_call for p in parts):
+        return None
+
+    # Check if there is non-empty text
+    has_text = any(bool(p.text and p.text.strip()) for p in parts)
+    if has_text:
+        return None
+
+    # Model returned empty/blank text with no tool call.
+    draft = callback_context.state.get("current_draft")
+    if draft and str(draft).strip():
+        image_md = ""
+        img_url = callback_context.state.get("current_image_display_url")
+        if img_url:
+            image_md = f"\n\n![post image]({img_url})"
+        text = f"{draft}{image_md}\n\nHow does this look? Let me know if you would like any changes or if you approve posting it."
+        log.warning(
+            "Orchestrator returned empty text after drafting; auto-presenting current_draft from session state"
+        )
+        return LlmResponse(
+            content=genai_types.Content(
+                role="model",
+                parts=[genai_types.Part.from_text(text=text)],
+            )
+        )
+    return None
+
+
 root_agent = Agent(
     name="social_poster",
     model=_model(ORCHESTRATOR_MODEL),
@@ -714,12 +803,15 @@ Workflow:{_MEMORY_ROUTING}
 2. Call draft_agent to write the post (and generate an image if wanted). It
    reads the research notes automatically; pass it the idea, target platform,
    and any user preferences.
-3. Show the finished draft to the user and ask for approval. If an image
-   was generated, the user needs to actually SEE it before approving, not
-   just read a description — embed it as Markdown on its own line right
-   after the draft text and hashtags, using EXACTLY this pre-resolved URL,
-   verbatim, do not substitute a different one from draft_agent's own
-   result text: `![post image]({{current_image_display_url?}})` (this
+   CRITICAL: Always invoke draft_agent and research_agent as proper tool calls.
+   NEVER write code like `print(default_api.draft_agent(...))` or wrap calls in code blocks.
+3. As soon as draft_agent returns, you MUST immediately output the finished draft
+   in your response and ask the user for approval. Never end your turn with an
+   empty response or silence. If an image was generated, the user needs to actually
+   SEE it before approving, not just read a description — embed it as Markdown on
+   its own line right after the draft text and hashtags, using EXACTLY this
+   pre-resolved URL, verbatim, do not substitute a different one from draft_agent's
+   own result text: `![post image]({{current_image_display_url?}})` (this
    renders the CURRENT local image via the backend's own /outputs route —
    deliberately not the GCS hosted URL draft_agent reports, which needs a
    public bucket grant this project's Public Access Prevention setting
@@ -767,7 +859,11 @@ Posting rules (strict):
     before_agent_callback=_init_stage,
     generate_content_config=guardrails.content_config(screen_input=True),
     before_model_callback=[_stage_attached_image],
-    after_model_callback=guardrails.friendly_block,
+    after_model_callback=[
+        _recover_malformed_function_call,
+        _present_draft_if_silent,
+        guardrails.friendly_block,
+    ],
     before_tool_callback=[_delay_buffer_post, guardrails.redact_before_post],
     after_tool_callback=_track_stage,
     after_agent_callback=_stage_after_agent,

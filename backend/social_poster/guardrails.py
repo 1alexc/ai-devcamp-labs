@@ -133,6 +133,11 @@ def model(name: str) -> Gemini:
     (which means the regional model is busy).
     """
     if is_enabled():
+        region = os.environ.get("MODEL_ARMOR_REGION", "us-central1")
+        # Gemini on `global` (the agents-cli deploy default) cannot resolve a
+        # regional Model Armor template and fails with 400 TEMPLATE_NOT_FOUND.
+        if os.environ.get("GOOGLE_CLOUD_LOCATION") in (None, "", "global"):
+            os.environ["GOOGLE_CLOUD_LOCATION"] = region
         return Gemini(
             model=name,
             retry_options=genai_types.HttpRetryOptions(
